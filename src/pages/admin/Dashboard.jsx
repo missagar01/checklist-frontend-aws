@@ -75,6 +75,7 @@ export default function AdminDashboard() {
     completedTasks: 0,
     pendingTasks: 0,
     overdueTasks: 0,
+    notDone: 0,
     completionRate: 0,
   })
 
@@ -97,41 +98,61 @@ useEffect(() => {
   // Handle date range change from DashboardHeader
   const handleDateRangeChange = async (startDate, endDate) => {
     if (startDate && endDate) {
-      // Set date range state
       setDateRange({
         startDate,
         endDate,
         filtered: true
       });
 
-      // Fetch data with date range filter
       try {
         setIsLoadingMore(true);
 
+        // Fetch stats first so cards update even if list trim/limit kicks in
+        let stats = null;
         if (dashboardType === "checklist") {
-          // Use the new date range API for checklist
-          const filteredData = await fetchChecklistDataByDateRangeApi(
+          const statsResponse = await getChecklistDateRangeStatsApi(
             startDate,
             endDate,
             dashboardStaffFilter,
-            departmentFilter,
-            1,
-            batchSize,
-            'all'
+            departmentFilter
           );
+          stats = statsResponse && typeof statsResponse === "object" ? statsResponse : null;
+        }
 
-          // Also get statistics for the date range
-          const stats = await getChecklistDateRangeStatsApi(
+        if (dashboardType === "checklist") {
+          const apiResponse = await fetchChecklistDataByDateRangeApi(
             startDate,
             endDate,
             dashboardStaffFilter,
             departmentFilter
           );
 
-          // Process the filtered data
-          processFilteredData(filteredData, stats);
+          const normalizedData = Array.isArray(apiResponse?.data)
+            ? apiResponse.data
+            : Array.isArray(apiResponse)
+              ? apiResponse
+              : Array.isArray(apiResponse?.tasks)
+                ? apiResponse.tasks
+                : [];
+
+          // Fallback to stats-only if list is empty
+          if (normalizedData.length === 0 && stats) {
+            processFilteredData([], stats);
+          } else if (normalizedData.length === 0) {
+            const fullData = await fetchDashboardDataApi(
+              dashboardType,
+              dashboardStaffFilter,
+              1,
+              batchSize,
+              "all",
+              departmentFilter
+            );
+            const fallbackFiltered = filterTasksByDateRange(fullData, startDate, endDate);
+            processFilteredData(fallbackFiltered, stats);
+          } else {
+            processFilteredData(normalizedData, stats);
+          }
         } else {
-          // For delegation, use the existing logic with date filtering
           await fetchDepartmentDataWithDateRange(startDate, endDate);
         }
       } catch (error) {
@@ -140,7 +161,6 @@ useEffect(() => {
         setIsLoadingMore(false);
       }
     } else {
-      // Clear date range filter
       setDateRange({
         startDate: "",
         endDate: "",
@@ -153,8 +173,6 @@ useEffect(() => {
         overdueTasks: 0,
         completionRate: 0,
       });
-
-      // Reload original data without date filter
       fetchDepartmentData(1, false);
     }
   };
@@ -170,6 +188,7 @@ useEffect(() => {
     let completedTasks = 0;
     let pendingTasks = 0;
     let overdueTasks = 0;
+    let notDoneTasks = 0;
 
     const monthlyData = {
       Jan: { completed: 0, pending: 0 },
@@ -209,15 +228,17 @@ useEffect(() => {
           totalTasks++;
 
           if (dashboardType === "checklist") {
-            // For checklist: Use status field directly
-            if (task.status === 'Yes') {
+            const statusValue = (task.status || "").toLowerCase();
+            if (statusValue === 'yes') {
               completedTasks++;
             } else {
               pendingTasks++;
+              if (statusValue === 'no') {
+                notDoneTasks++;
+              }
             }
 
-            // Overdue tasks for checklist: past tasks with status not 'Yes'
-            if (taskStartDate && taskStartDate < today && task.status !== 'Yes') {
+            if (taskStartDate && taskStartDate < today && statusValue !== 'yes') {
               overdueTasks++;
             }
           } else {
@@ -277,6 +298,7 @@ useEffect(() => {
       completedTasks,
       pendingTasks,
       overdueTasks,
+      notDone: notDoneTasks,
       completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0
     };
 
@@ -299,6 +321,7 @@ useEffect(() => {
       completedTasks: finalStats.completedTasks,
       pendingTasks: finalStats.pendingTasks,
       overdueTasks: finalStats.overdueTasks,
+      notDone: finalStats.notDone ?? notDoneTasks,
       completionRate: finalStats.completionRate,
     });
   };
@@ -375,6 +398,19 @@ useEffect(() => {
     } catch (error) {
       console.error("Error fetching data with date range:", error);
     }
+  };
+
+  const filterTasksByDateRange = (tasks, startDate, endDate) => {
+    if (!Array.isArray(tasks)) return [];
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    return tasks.filter(task => {
+      const taskDate = parseTaskStartDate(task.task_start_date);
+      return taskDate && taskDate >= start && taskDate <= end;
+    });
   };
 
   // Updated date parsing function to handle both formats
@@ -508,7 +544,7 @@ useEffect(() => {
         return
       }
 
-      console.log(`Fetched ${data.length} records successfully`)
+      // console.log(`Fetched ${data.length} records successfully`)
 
       const username = localStorage.getItem("user-name")
       const userRole = localStorage.getItem("role")
@@ -565,6 +601,11 @@ useEffect(() => {
       }
 
       setAvailableStaff(uniqueStaff)
+      // Sort staff names alphabetically for dropdowns
+      const sortedStaff = [...uniqueStaff].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+      setAvailableStaff(sortedStaff);
 
       // SECOND: Apply dashboard staff filter ONLY if not "all"
       if (dashboardStaffFilter !== "all") {
@@ -721,16 +762,16 @@ useEffect(() => {
     if (dashboardType === 'checklist') {
       try {
         const departments = await getUniqueDepartmentsApi();
-        console.log('All departments from API:', departments);
+        // console.log('All departments from API:', departments);
 
         // Get user's department access
         const userAccess = localStorage.getItem("user_access") || "";
-        console.log('User access from localStorage:', userAccess);
+        // console.log('User access from localStorage:', userAccess);
 
         const userDepartments = userAccess
           ? userAccess.split(',').map(dept => dept.trim().toLowerCase())
           : [];
-        console.log('Parsed user departments:', userDepartments);
+        // console.log('Parsed user departments:', userDepartments);
 
         // Filter departments based on user access for admin users
         let filteredDepartments = departments;
@@ -740,8 +781,12 @@ useEffect(() => {
           );
         }
 
-        console.log('Filtered departments:', filteredDepartments);
-        setAvailableDepartments(filteredDepartments);
+        // Sort alphabetically (case-insensitive) for the dropdown
+        const sortedDepartments = [...filteredDepartments].sort((a, b) =>
+          a.localeCompare(b, undefined, { sensitivity: "base" })
+        );
+
+        setAvailableDepartments(sortedDepartments);
       } catch (error) {
         console.error('Error fetching departments:', error);
         setAvailableDepartments([]);
@@ -985,6 +1030,7 @@ useEffect(() => {
 
   // const notDoneTask = (displayStats.totalTasks || 0) - (displayStats.completedTasks || 0);
   const notDoneTask = useSelector((state) => state.dashBoard.notDoneTask);
+  const displayNotDone = dateRange.filtered ? (filteredDateStats.notDone || 0) : notDoneTask;
 
   return (
     <AdminLayout>
@@ -1009,7 +1055,7 @@ useEffect(() => {
           completeTask={displayStats.completedTasks}
           pendingTask={displayStats.pendingTasks}
           overdueTask={displayStats.overdueTasks}
-          notDoneTask={notDoneTask}
+          notDoneTask={displayNotDone}
           dashboardType={dashboardType}
           dateRange={dateRange.filtered ? dateRange : null}
         />

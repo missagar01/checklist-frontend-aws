@@ -81,8 +81,8 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode }) {
       label: "Quick Task",
       icon: Zap,
       active: location.pathname === "/dashboard/quick-task",
-      // Only show for super admin (username = 'admin')
-      showFor: isSuperAdmin ? ["admin"] : [],
+      // Visible to admins
+      showFor: ["admin"],
     },
     {
       href: "/dashboard/assign-task",

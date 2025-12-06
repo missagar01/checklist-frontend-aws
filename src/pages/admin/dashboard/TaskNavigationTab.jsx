@@ -21,7 +21,7 @@ export default function TaskNavigationTabs({
   const [displayedTasks, setDisplayedTasks] = useState([])
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMoreData, setHasMoreData] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(null)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false) // Add this state
   const itemsPerPage = 50
 
@@ -39,14 +39,6 @@ export default function TaskNavigationTabs({
 
     try {
       setIsLoadingMore(true)
-
-      console.log('Loading tasks with filters:', {
-        dashboardType,
-        dashboardStaffFilter,
-        taskView,
-        page,
-        departmentFilter
-      });
 
       // Use departmentFilter for server call (only affects table data)
       const data = await fetchDashboardDataApi(
@@ -73,8 +65,6 @@ export default function TaskNavigationTabs({
         return
       }
 
-      console.log('Raw data received:', data.length, 'records');
-
       // Process the data similar to your existing logic
       const processedTasks = data.map((task) => {
         const taskStartDate = parseTaskStartDate(task.task_start_date)
@@ -100,8 +90,6 @@ export default function TaskNavigationTabs({
         }
       })
 
-      console.log('Processed tasks:', processedTasks.length, 'records');
-
       // Apply client-side search filter if needed
       let filteredTasks = processedTasks.filter((task) => {
         if (searchQuery && searchQuery.trim() !== "") {
@@ -114,8 +102,6 @@ export default function TaskNavigationTabs({
         }
         return true
       })
-
-      console.log('Final filtered tasks:', filteredTasks.length, 'records');
 
       if (append) {
         setDisplayedTasks(prev => [...prev, ...filteredTasks])
@@ -334,9 +320,13 @@ export default function TaskNavigationTabs({
         </div>
 
         {/* Show total count */}
-        {totalCount > 0 && (
+        {(totalCount !== null || displayedTasks.length > 0) && (
           <div className="mb-4 text-sm text-gray-600">
-            Total {taskView} tasks: {totalCount} | Showing: {displayedTasks.length}
+            {(() => {
+              const totalLabel = taskView === "recent" ? "recent" : taskView === "upcoming" ? "upcoming" : "overdue";
+              const totalValue = totalCount !== null ? totalCount : displayedTasks.length;
+              return `Total ${totalLabel} tasks: ${totalValue} | Showing: ${displayedTasks.length}`;
+            })()}
             {(dashboardStaffFilter !== "all" || departmentFilter !== "all") && (
               <div className="mt-1 text-xs">
                 {dashboardStaffFilter !== "all" && (

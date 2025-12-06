@@ -9,6 +9,15 @@ export default defineConfig({
     tailwindcss(),
   ],
   base: "/", // Changed from "./" to "/"
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://checklistbackend.sagartmt.com",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   build: {
     outDir: "dist",
   },

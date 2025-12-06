@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       {/* ✅ Realtime listener inside Router so useNavigate works */}
       {/* <RealtimeLogoutListener /> */}
 

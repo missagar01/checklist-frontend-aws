@@ -1,78 +1,93 @@
-// API BASE URL
-// const API_BASE = "http://localhost:5050/api";
-// const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/tasks`;
-const API_BASE = `${import.meta.env.VITE_API_BASE_URL}`;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+
+const jsonRequest = async (path, options = {}) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || `Request failed: ${res.status}`);
+  }
+
+  return res.json();
+};
 
 
 // =========================
 // FETCH CHECKLIST (PAGINATED)
 // =========================
-export const fetchChecklistData = async (page = 0, pageSize = 50, nameFilter = "") => {
-  const res = await fetch(`${API_BASE}/tasks/checklist`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page, pageSize, nameFilter }),
-  });
+export const fetchChecklistData = async (
+  page = 0,
+  pageSize = 50,
+  nameFilter = "",
+  dateRange = {}
+) => {
+  const payload = { page, pageSize, nameFilter };
 
-  return res.json();
+  if (dateRange.startDate) payload.startDate = dateRange.startDate;
+  if (dateRange.endDate) payload.endDate = dateRange.endDate;
+
+  return jsonRequest("/tasks/checklist", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 };
 
 // =========================
 // FETCH DELEGATION
 // =========================
-export const fetchDelegationData = async (page = 0, pageSize = 50, nameFilter = "") => {
-  const res = await fetch(`${API_BASE}/tasks/delegation`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page, pageSize, nameFilter }),
-  });
+export const fetchDelegationData = async (
+  page = 0,
+  pageSize = 50,
+  nameFilter = "",
+  dateRange = {}
+) => {
+  const payload = { page, pageSize, nameFilter };
 
-  return res.json();
+  if (dateRange.startDate) payload.startDate = dateRange.startDate;
+  if (dateRange.endDate) payload.endDate = dateRange.endDate;
+
+  return jsonRequest("/tasks/delegation", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 };
 
 // =========================
 // DELETE CHECKLIST TASKS
 // =========================
 export const deleteChecklistTasksApi = async (tasks) => {
-  const res = await fetch(`${API_BASE}/tasks/delete-checklist`, {
+  return jsonRequest("/tasks/delete-checklist", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tasks }),
   });
-
-  return res.json();
 };
 
 // =========================
 // DELETE DELEGATION TASKS
 // =========================
 export const deleteDelegationTasksApi = async (taskIds) => {
-  const res = await fetch(`${API_BASE}/tasks/delete-delegation`, {
+  return jsonRequest("/tasks/delete-delegation", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ taskIds }),
   });
-
-  return res.json();
 };
 
 // =========================
 // UPDATE CHECKLIST TASK
 // =========================
 export const updateChecklistTaskApi = async (updatedTask, originalTask) => {
-  const res = await fetch(`${API_BASE}/tasks/update-checklist`, {
+  return jsonRequest("/tasks/update-checklist", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ updatedTask, originalTask }),
   });
-
-  return res.json();
 };
 
 // =========================
 // FETCH USERS
 // =========================
 export const fetchUsersData = async () => {
-  const res = await fetch(`${API_BASE}/tasks/users`);
-  return res.json();
+  return jsonRequest("/tasks/users");
 };

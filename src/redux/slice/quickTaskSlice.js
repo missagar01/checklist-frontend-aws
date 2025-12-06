@@ -19,16 +19,42 @@ export const fetchUsers = createAsyncThunk(
 
 export const uniqueChecklistTaskData = createAsyncThunk(
   'fetch/checklistTask',
-  async ({ page = 0, pageSize = 50, nameFilter = '', append = false }) => {
-    const result = await fetchChecklistData(page, pageSize, nameFilter);
+  async (params = {}) => {
+    const { 
+      page = 0, 
+      pageSize = 50, 
+      nameFilter = '', 
+      startDate,
+      endDate,
+      append = false 
+    } = params;
+    const result = await fetchChecklistData(
+      page, 
+      pageSize, 
+      nameFilter, 
+      { startDate, endDate }
+    );
     return { ...result, append };
   }
 );
 
 export const uniqueDelegationTaskData = createAsyncThunk(
   'fetch/delegationTask',
-  async ({ page = 0, pageSize = 50, nameFilter = '', append = false }) => {
-    const result = await fetchDelegationData(page, pageSize, nameFilter);
+  async (params = {}) => {
+    const { 
+      page = 0, 
+      pageSize = 50, 
+      nameFilter = '', 
+      startDate,
+      endDate,
+      append = false 
+    } = params;
+    const result = await fetchDelegationData(
+      page, 
+      pageSize, 
+      nameFilter,
+      { startDate, endDate }
+    );
     return { ...result, append };
   }
 );
@@ -106,22 +132,35 @@ const quickTaskSlice = createSlice({
       })
       .addCase(uniqueChecklistTaskData.fulfilled, (state, action) => {
         state.loading = false;
-        const { data, total, append } = action.payload;
-        
+
+        const payloadData =
+          Array.isArray(action.payload?.data)
+            ? action.payload.data
+            : Array.isArray(action.payload)
+              ? action.payload
+              : [];
+
+        const total =
+          typeof action.payload?.total === "number"
+            ? action.payload.total
+            : payloadData.length;
+
+        const append = Boolean(action.payload?.append);
+
         if (append) {
-          state.quickTask = [...state.quickTask, ...data];
+          state.quickTask = [...state.quickTask, ...payloadData];
           state.checklistPage += 1;
         } else {
-          state.quickTask = data;
-          state.checklistPage = 1;
+          state.quickTask = payloadData;
+          state.checklistPage = payloadData.length > 0 ? 1 : 0;
         }
-        
+
         state.checklistTotal = total;
         state.checklistHasMore = state.quickTask.length < total;
       })
       .addCase(uniqueChecklistTaskData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || action.error?.message || "Failed to load checklist tasks";
       })
       
       .addCase(uniqueDelegationTaskData.pending, (state) => {
@@ -130,22 +169,35 @@ const quickTaskSlice = createSlice({
       })
       .addCase(uniqueDelegationTaskData.fulfilled, (state, action) => {
         state.loading = false;
-        const { data, total, append } = action.payload;
-        
+
+        const payloadData =
+          Array.isArray(action.payload?.data)
+            ? action.payload.data
+            : Array.isArray(action.payload)
+              ? action.payload
+              : [];
+
+        const total =
+          typeof action.payload?.total === "number"
+            ? action.payload.total
+            : payloadData.length;
+
+        const append = Boolean(action.payload?.append);
+
         if (append) {
-          state.delegationTasks = [...state.delegationTasks, ...data];
+          state.delegationTasks = [...state.delegationTasks, ...payloadData];
           state.delegationPage += 1;
         } else {
-          state.delegationTasks = data;
-          state.delegationPage = 1;
+          state.delegationTasks = payloadData;
+          state.delegationPage = payloadData.length > 0 ? 1 : 0;
         }
-        
+
         state.delegationTotal = total;
         state.delegationHasMore = state.delegationTasks.length < total;
       })
       .addCase(uniqueDelegationTaskData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || action.error?.message || "Failed to load delegation tasks";
       })
 
       .addCase(deleteChecklistTask.pending, (state) => {

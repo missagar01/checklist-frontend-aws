@@ -251,9 +251,21 @@ export const fetchChecklistDataByDateRangeApi = async (
   staffFilter = "all",
   departmentFilter = "all"
 ) => {
+  const role = localStorage.getItem("role");
+  const username = localStorage.getItem("user-name");
+
   staffFilter = getFinalStaffFilter(staffFilter);
 
-  const url = `${BASE_URL}/checklist/date-range?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}`;
+  const params = new URLSearchParams({
+    startDate,
+    endDate,
+    staffFilter,
+    departmentFilter,
+    role,
+    username,
+  });
+
+  const url = `${BASE_URL}/checklist/date-range?${params.toString()}`;
 
   const res = await fetch(url);
   return res.json();
@@ -305,7 +317,19 @@ export const getChecklistDateRangeStatsApi = async (
 ) => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
-  const url = `${BASE_URL}/checklist/date-range/stats?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}`;
+  const role = localStorage.getItem("role");
+  const username = localStorage.getItem("user-name");
+
+  const params = new URLSearchParams({
+    startDate,
+    endDate,
+    staffFilter,
+    departmentFilter,
+    role,
+    username,
+  });
+
+  const url = `${BASE_URL}/checklist/date-range/stats?${params.toString()}`;
 
   const res = await fetch(url);
   return res.json();

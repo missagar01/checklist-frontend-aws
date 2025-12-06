@@ -48,48 +48,6 @@ const LoginPage = () => {
     }
   }, [isLoggedIn, userData, error, navigate]);
 
-  useEffect(() => {
-    let subscription;
-
-    const checkUserStatus = async () => {
-      const username = localStorage.getItem('user-name');
-
-      if (!username) return;
-
-      // ✅ Subscribe to Supabase for real-time user status updates
-      subscription = supabase
-        .channel('user-status-watch')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'users',
-            filter: `user_name=eq.${username}`,
-          },
-          (payload) => {
-            const updatedUser = payload.new;
-            if (updatedUser.status !== 'active') {
-              // 🚨 Auto logout when status becomes inactive
-              localStorage.clear();
-              setToast({ show: true, message: "Your account has been deactivated.", type: "error" });
-              setTimeout(() => {
-                navigate("/login");
-              }, 2000);
-            }
-          }
-        )
-        .subscribe();
-    };
-
-    checkUserStatus();
-
-    // Cleanup subscription on unmount
-    return () => {
-      if (subscription) supabase.removeChannel(subscription);
-    };
-  }, []);
-
 
 
   const handleChange = (e) => {

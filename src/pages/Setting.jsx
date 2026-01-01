@@ -293,6 +293,7 @@ const Setting = () => {
       status: userForm.status || "active",
       user_access: departmentsString, // Join array into comma-separated string
       department: departmentsString, // Same data as user_access - goes to department column
+      givenBy: userForm.givenBy?.trim() || "", // Add givenBy field
       user_access1: userForm.user_access1?.trim() || "", // Text input value - supports multiple comma-separated values
       system_access: Array.isArray(userForm.systemAccess)
         ? userForm.systemAccess.join(",")

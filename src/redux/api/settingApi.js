@@ -173,10 +173,16 @@ export const createUserApi = async (newUser) => {
       body: JSON.stringify(newUser),
     });
     
-    return await response.json();
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || `Server error: ${response.status}`);
+    }
+    
+    return data;
   } catch (error) {
-    console.log("Error creating user", error);
-    return null;
+    console.error("Error creating user", error);
+    throw error;
   }
 };
 

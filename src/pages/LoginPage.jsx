@@ -11,12 +11,16 @@ const LoginPage = () => {
   const { isLoggedIn, userData, error } = useSelector((state) => state.login);
   const dispatch = useDispatch();
 
-  const [isDataLoading, setIsDataLoading] = useState(false)
   const [isLoginLoading, setIsLoginLoading] = useState(false)
-  const [masterData, setMasterData] = useState({
-    userCredentials: {},
-    userRoles: {}
-  })
+
+  // Check if user is already logged in (session persisted in localStorage)
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('user-name');
+    if (storedUsername) {
+      // User is already logged in, redirect to dashboard
+      navigate("/dashboard/admin");
+    }
+  }, [navigate]);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -30,16 +34,59 @@ const LoginPage = () => {
     dispatch(loginUser(formData));
   };
 
+  // Update the useEffect in LoginPage.jsx
+  // Update the useEffect in LoginPage.jsx to add more debugging
+  // In LoginPage.jsx - update the useEffect
   useEffect(() => {
     if (isLoggedIn && userData) {
-      console.log("User Data received:", userData); // Debug log
+      // Store all user data in localStorage - optimized batch operation
+      const dataToStore = {
+        'user-name': userData.user_name || userData.username || "",
+        'user_id': userData.id || userData.user_id || "",
+        'role': userData.role || "",
+        'email_id': userData.email_id || userData.email || "",
+      };
 
-      // Store all user data in localStorage
-      localStorage.setItem('user-name', userData.user_name || userData.username || "");
-      localStorage.setItem('role', userData.role || "");
-      localStorage.setItem('email_id', userData.email_id || userData.email || "");
+      // Batch localStorage operations
+      Object.entries(dataToStore).forEach(([key, value]) => {
+        if (value) {
+          localStorage.setItem(key, value);
+        } else {
+          localStorage.removeItem(key);
+        }
+      });
 
-      console.log("Stored email:", userData.email_id || userData.email); // Debug log
+      // Store user_access
+      if (userData.user_access) {
+        localStorage.setItem('user_access', userData.user_access);
+        localStorage.setItem('userAccess', userData.user_access);
+      } else {
+        localStorage.removeItem('user_access');
+        localStorage.removeItem('userAccess');
+      }
+
+      // Store user_access1 (for housekeeping)
+      if (userData.user_access1) {
+        localStorage.setItem('user_access1', userData.user_access1);
+        localStorage.setItem('userAccess1', userData.user_access1);
+      } else {
+        localStorage.removeItem('user_access1');
+        localStorage.removeItem('userAccess1');
+      }
+
+      // Store page_access if available
+      if (userData.page_access) {
+        localStorage.setItem('page_access', userData.page_access);
+      } else {
+        localStorage.removeItem('page_access');
+      }
+
+      // Store system_access
+      if (userData.system_access) {
+        localStorage.setItem('system_access', userData.system_access);
+      } else {
+        localStorage.removeItem('system_access');
+      }
 
       navigate("/dashboard/admin")
     } else if (error) {
@@ -47,6 +94,9 @@ const LoginPage = () => {
       setIsLoginLoading(false);
     }
   }, [isLoggedIn, userData, error, navigate]);
+
+  // Removed supabase subscription - not needed for current implementation
+  // User status is checked on login and session is managed via localStorage
 
 
 
@@ -113,9 +163,9 @@ const LoginPage = () => {
             <button
               type="submit"
               className="w-full py-2 px-4 gradient-bg text-white rounded-md font-medium gradient-bg:hover disabled:opacity-50"
-              disabled={isLoginLoading || isDataLoading}
+              disabled={isLoginLoading}
             >
-              {isLoginLoading ? "Logging in..." : isDataLoading ? "Loading..." : "Login"}
+              {isLoginLoading ? "Logging in..." : "Login"}
             </button>
           </div>
         </form>

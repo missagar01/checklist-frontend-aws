@@ -5,13 +5,14 @@ import AdminLayout from "../../components/layout/AdminLayout.jsx"
 import SalesDataPage from "./SalesDataPage.jsx"
 import ServiceDataPage from "./service-data-page.jsx"
 import JockeyDataPage from "./jockey-data-page.jsx"
-import AccountDataPage from "./account-data-page.jsx"
+import MaintenanceDataPage from "./maintenance-data-page.jsx"
 import WarehouseDataPage from "./ware-house-data.jsx"
 import PurchaseDataPage from "./purchase-data-page.jsx"
 import DirectorDataPage from "./director-data-page.jsx"
 import ManagingDirector from "./managingDirector-data-page.jsx"
 import AdminDataPage from "./admin-data-page.jsx"
 import Coo from "./coo-data-page.jsx"
+import UnifiedTaskPage from "./UnifiedTaskPage.jsx"
 
 export default function DataPage() {
   const { category } = useParams()
@@ -28,23 +29,22 @@ export default function DataPage() {
   // Render the appropriate component based on category
   switch (category) {
     case "main":
-      return <AdminDataPage/>
+      return <UnifiedTaskPage />
     case "sales":
       return <SalesDataPage />
     // case "service":
     //   return <ServiceDataPage />
     // case "jockey":
     //   return <JockeyDataPage />
-    case "account":
-      return <AccountDataPage />
-    case "warehouse":
-      return <WarehouseDataPage />
-      case "purchase":
-        return <PurchaseDataPage/>
-        case "director":
-        return <DirectorDataPage/>
-        case "managing-director":
-          return <ManagingDirector/>
+    case "maintenance-task":
+      return <MaintenanceDataPage />
+ 
+    case "purchase":
+      return <PurchaseDataPage />
+    case "director":
+      return <DirectorDataPage />
+    case "managing-director":
+      return <ManagingDirector />
     //       case "coo":
     //       return <Coo/>
     default:

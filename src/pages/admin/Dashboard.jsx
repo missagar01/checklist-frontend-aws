@@ -10,6 +10,11 @@ import CompletionRateCard from "./dashboard/CompletionRateCard.jsx"
 import TasksOverviewChart from "./dashboard/Chart/TaskOverviewChart.jsx"
 import TasksCompletionChart from "./dashboard/Chart/TaskCompletionChart.jsx"
 import StaffTasksTable from "./dashboard/StaffTaskTable.jsx"
+// Add these imports at the top with other imports
+import MaintenanceDashboard from "./MaintenanceDashboardNew.jsx"
+import HousekeepingDashboard from "./housekeppingDashboard.jsx"
+
+// Add this state variable with other state declarations
 import {
   completeTaskInTable,
   overdueTaskInTable,
@@ -36,6 +41,13 @@ export default function AdminDashboard() {
   const [availableStaff, setAvailableStaff] = useState([])
   const userRole = localStorage.getItem("role")
   const username = localStorage.getItem("user-name")
+  const [dashboardView, setDashboardView] = useState("checklist") // New state for dashboard 
+  
+  // Get system_access and role to check if user has housekeeping access
+  // Hide housekeeping tab for user role OR if user doesn't have housekeeping in system_access
+  const systemAccess = (localStorage.getItem("system_access") || "").split(',').map(item => item.trim().toLowerCase())
+  const hasHousekeepingAccess = userRole?.toLowerCase() !== "user" && (systemAccess.length === 0 || systemAccess.includes('housekeeping'))
+
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -75,84 +87,63 @@ export default function AdminDashboard() {
     completedTasks: 0,
     pendingTasks: 0,
     overdueTasks: 0,
-    notDone: 0,
     completionRate: 0,
   })
 
   const { dashboard, totalTask, completeTask, pendingTask, overdueTask } = useSelector((state) => state.dashBoard)
   const dispatch = useDispatch()
 
-useEffect(() => {
-  const role = localStorage.getItem("role");
-  const username = localStorage.getItem("user-name");
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    const username = localStorage.getItem("user-name");
 
-  if (role === "user") {
-    setDashboardStaffFilter(username);
-    setFilterStaff(username);
-    setDepartmentFilter("all");        // user cannot filter department
-  }
-}, []);
+    if (role === "user") {
+      setDashboardStaffFilter(username);
+      setFilterStaff(username);
+      setDepartmentFilter("all");        // user cannot filter department
+    }
+  }, []);
 
 
 
   // Handle date range change from DashboardHeader
   const handleDateRangeChange = async (startDate, endDate) => {
     if (startDate && endDate) {
+      // Set date range state
       setDateRange({
         startDate,
         endDate,
         filtered: true
       });
 
+      // Fetch data with date range filter
       try {
         setIsLoadingMore(true);
 
-        // Fetch stats first so cards update even if list trim/limit kicks in
-        let stats = null;
         if (dashboardType === "checklist") {
-          const statsResponse = await getChecklistDateRangeStatsApi(
+          // Use the new date range API for checklist
+          const filteredData = await fetchChecklistDataByDateRangeApi(
+            startDate,
+            endDate,
+            dashboardStaffFilter,
+            departmentFilter,
+            1,
+            batchSize,
+            'all'
+          );
+
+          // Also get statistics for the date range
+          const stats = await getChecklistDateRangeStatsApi(
             startDate,
             endDate,
             dashboardStaffFilter,
             departmentFilter
           );
-          stats = statsResponse && typeof statsResponse === "object" ? statsResponse : null;
-        }
 
-        if (dashboardType === "checklist") {
-          const apiResponse = await fetchChecklistDataByDateRangeApi(
-            startDate,
-            endDate,
-            dashboardStaffFilter,
-            departmentFilter
-          );
-
-          const normalizedData = Array.isArray(apiResponse?.data)
-            ? apiResponse.data
-            : Array.isArray(apiResponse)
-              ? apiResponse
-              : Array.isArray(apiResponse?.tasks)
-                ? apiResponse.tasks
-                : [];
-
-          // Fallback to stats-only if list is empty
-          if (normalizedData.length === 0 && stats) {
-            processFilteredData([], stats);
-          } else if (normalizedData.length === 0) {
-            const fullData = await fetchDashboardDataApi(
-              dashboardType,
-              dashboardStaffFilter,
-              1,
-              batchSize,
-              "all",
-              departmentFilter
-            );
-            const fallbackFiltered = filterTasksByDateRange(fullData, startDate, endDate);
-            processFilteredData(fallbackFiltered, stats);
-          } else {
-            processFilteredData(normalizedData, stats);
-          }
+          // Process the filtered data
+          processFilteredData(filteredData, stats);
         } else {
+          // For delegation, use the existing logic with date filtering
           await fetchDepartmentDataWithDateRange(startDate, endDate);
         }
       } catch (error) {
@@ -161,6 +152,7 @@ useEffect(() => {
         setIsLoadingMore(false);
       }
     } else {
+      // Clear date range filter
       setDateRange({
         startDate: "",
         endDate: "",
@@ -173,6 +165,8 @@ useEffect(() => {
         overdueTasks: 0,
         completionRate: 0,
       });
+
+      // Reload original data without date filter
       fetchDepartmentData(1, false);
     }
   };
@@ -188,7 +182,6 @@ useEffect(() => {
     let completedTasks = 0;
     let pendingTasks = 0;
     let overdueTasks = 0;
-    let notDoneTasks = 0;
 
     const monthlyData = {
       Jan: { completed: 0, pending: 0 },
@@ -228,17 +221,15 @@ useEffect(() => {
           totalTasks++;
 
           if (dashboardType === "checklist") {
-            const statusValue = (task.status || "").toLowerCase();
-            if (statusValue === 'yes') {
+            // For checklist: Use status field directly
+            if (task.status === 'Yes') {
               completedTasks++;
             } else {
               pendingTasks++;
-              if (statusValue === 'no') {
-                notDoneTasks++;
-              }
             }
 
-            if (taskStartDate && taskStartDate < today && statusValue !== 'yes') {
+            // Overdue tasks for checklist: past tasks with status not 'Yes'
+            if (taskStartDate && taskStartDate < today && task.status !== 'Yes') {
               overdueTasks++;
             }
           } else {
@@ -298,7 +289,6 @@ useEffect(() => {
       completedTasks,
       pendingTasks,
       overdueTasks,
-      notDone: notDoneTasks,
       completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0
     };
 
@@ -321,7 +311,6 @@ useEffect(() => {
       completedTasks: finalStats.completedTasks,
       pendingTasks: finalStats.pendingTasks,
       overdueTasks: finalStats.overdueTasks,
-      notDone: finalStats.notDone ?? notDoneTasks,
       completionRate: finalStats.completionRate,
     });
   };
@@ -398,19 +387,6 @@ useEffect(() => {
     } catch (error) {
       console.error("Error fetching data with date range:", error);
     }
-  };
-
-  const filterTasksByDateRange = (tasks, startDate, endDate) => {
-    if (!Array.isArray(tasks)) return [];
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
-    return tasks.filter(task => {
-      const taskDate = parseTaskStartDate(task.task_start_date);
-      return taskDate && taskDate >= start && taskDate <= end;
-    });
   };
 
   // Updated date parsing function to handle both formats
@@ -544,8 +520,6 @@ useEffect(() => {
         return
       }
 
-      // console.log(`Fetched ${data.length} records successfully`)
-
       const username = localStorage.getItem("user-name")
       const userRole = localStorage.getItem("role")
       const today = new Date()
@@ -601,11 +575,6 @@ useEffect(() => {
       }
 
       setAvailableStaff(uniqueStaff)
-      // Sort staff names alphabetically for dropdowns
-      const sortedStaff = [...uniqueStaff].sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base" })
-      );
-      setAvailableStaff(sortedStaff);
 
       // SECOND: Apply dashboard staff filter ONLY if not "all"
       if (dashboardStaffFilter !== "all") {
@@ -753,7 +722,7 @@ useEffect(() => {
 
       setIsLoadingMore(false)
     } catch (error) {
-      console.error(`Error fetching ${dashboardType} data:`, error)
+      // Error fetching data
       setIsLoadingMore(false)
     }
   }
@@ -762,16 +731,13 @@ useEffect(() => {
     if (dashboardType === 'checklist') {
       try {
         const departments = await getUniqueDepartmentsApi();
-        // console.log('All departments from API:', departments);
 
         // Get user's department access
         const userAccess = localStorage.getItem("user_access") || "";
-        // console.log('User access from localStorage:', userAccess);
 
         const userDepartments = userAccess
           ? userAccess.split(',').map(dept => dept.trim().toLowerCase())
           : [];
-        // console.log('Parsed user departments:', userDepartments);
 
         // Filter departments based on user access for admin users
         let filteredDepartments = departments;
@@ -781,14 +747,9 @@ useEffect(() => {
           );
         }
 
-        // Sort alphabetically (case-insensitive) for the dropdown
-        const sortedDepartments = [...filteredDepartments].sort((a, b) =>
-          a.localeCompare(b, undefined, { sensitivity: "base" })
-        );
-
-        setAvailableDepartments(sortedDepartments);
+        setAvailableDepartments(filteredDepartments);
       } catch (error) {
-        console.error('Error fetching departments:', error);
+        // Error fetching departments
         setAvailableDepartments([]);
       }
     } else {
@@ -862,12 +823,12 @@ useEffect(() => {
       }),
     )
     dispatch(
-  notDoneTaskInTable({
-    dashboardType,
-    staffFilter: dashboardStaffFilter,
-    departmentFilter,
-  })
-)
+      notDoneTaskInTable({
+        dashboardType,
+        staffFilter: dashboardStaffFilter,
+        departmentFilter,
+      })
+    )
   }, [dashboardType, dashboardStaffFilter, departmentFilter, dispatch])
 
   // Filter tasks based on criteria
@@ -957,7 +918,7 @@ useEffect(() => {
         return "bg-red-500 hover:bg-red-600 text-white"
       default:
         return "bg-gray-500 hover:bg-gray-600 text-white"
-        
+
     }
   }
 
@@ -1030,71 +991,113 @@ useEffect(() => {
 
   // const notDoneTask = (displayStats.totalTasks || 0) - (displayStats.completedTasks || 0);
   const notDoneTask = useSelector((state) => state.dashBoard.notDoneTask);
-  const displayNotDone = dateRange.filtered ? (filteredDateStats.notDone || 0) : notDoneTask;
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <DashboardHeader
-          dashboardType={dashboardType}
-          setDashboardType={setDashboardType}
-          dashboardStaffFilter={dashboardStaffFilter}
-          setDashboardStaffFilter={setDashboardStaffFilter}
-          availableStaff={availableStaff}
-          userRole={userRole}
-          username={username}
-          departmentFilter={departmentFilter}
-          setDepartmentFilter={setDepartmentFilter}
-          availableDepartments={availableDepartments}
-          isLoadingMore={isLoadingMore}
-          onDateRangeChange={handleDateRangeChange} // Add this prop
-        />
-
-        <StatisticsCards
-          totalTask={displayStats.totalTasks}
-          completeTask={displayStats.completedTasks}
-          pendingTask={displayStats.pendingTasks}
-          overdueTask={displayStats.overdueTasks}
-          notDoneTask={displayNotDone}
-          dashboardType={dashboardType}
-          dateRange={dateRange.filtered ? dateRange : null}
-        />
-
-        <TaskNavigationTabs
-          taskView={taskView}
-          setTaskView={setTaskView}
-          dashboardType={dashboardType}
-          dashboardStaffFilter={dashboardStaffFilter}
-          departmentFilter={departmentFilter}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterStaff={filterStaff}
-          setFilterStaff={setFilterStaff}
-          departmentData={departmentData}
-          getTasksByView={getTasksByView}
-          getFrequencyColor={getFrequencyColor}
-          isLoadingMore={isLoadingMore}
-          hasMoreData={hasMoreData}
-        />
-
-        {activeTab === "overview" && (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-purple-200 shadow-md bg-white">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
-                <h3 className="text-purple-700 font-medium">Staff Task Summary</h3>
-                <p className="text-purple-600 text-sm">Overview of tasks assigned to each staff member</p>
-              </div>
-              <div className="p-4">
-                <StaffTasksTable
-                  dashboardType={dashboardType}
-                  dashboardStaffFilter={dashboardStaffFilter}
-                  departmentFilter={departmentFilter}
-                  parseTaskStartDate={parseTaskStartDate}
-                />
-              </div>
-            </div>
+        {/* Navigation Buttons for Checklist, Housekeeping, Maintenance */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setDashboardView("checklist")}
+              className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${dashboardView === "checklist"
+                  ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+            >
+              Checklist
+            </button>
+            <button
+              onClick={() => setDashboardView("maintenance")}
+              className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${dashboardView === "maintenance"
+                  ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+            >
+              Maintenance
+            </button>
+            {hasHousekeepingAccess && (
+              <button
+                onClick={() => setDashboardView("housekeeping")}
+                className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${dashboardView === "housekeeping"
+                    ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+              >
+                Housekeeping
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Render the selected dashboard view */}
+        {dashboardView === "checklist" && (
+          <>
+            <DashboardHeader
+              dashboardType={dashboardType}
+              setDashboardType={setDashboardType}
+              dashboardStaffFilter={dashboardStaffFilter}
+              setDashboardStaffFilter={setDashboardStaffFilter}
+              availableStaff={availableStaff}
+              userRole={userRole}
+              username={username}
+              departmentFilter={departmentFilter}
+              setDepartmentFilter={setDepartmentFilter}
+              availableDepartments={availableDepartments}
+              isLoadingMore={isLoadingMore}
+              onDateRangeChange={handleDateRangeChange}
+            />
+
+            <StatisticsCards
+              totalTask={displayStats.totalTasks}
+              completeTask={displayStats.completedTasks}
+              pendingTask={displayStats.pendingTasks}
+              overdueTask={displayStats.overdueTasks}
+              notDoneTask={notDoneTask}
+              dashboardType={dashboardType}
+              dateRange={dateRange.filtered ? dateRange : null}
+            />
+
+            <TaskNavigationTabs
+              taskView={taskView}
+              setTaskView={setTaskView}
+              dashboardType={dashboardType}
+              dashboardStaffFilter={dashboardStaffFilter}
+              departmentFilter={departmentFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterStaff={filterStaff}
+              setFilterStaff={setFilterStaff}
+              departmentData={departmentData}
+              getTasksByView={getTasksByView}
+              getFrequencyColor={getFrequencyColor}
+              isLoadingMore={isLoadingMore}
+              hasMoreData={hasMoreData}
+            />
+
+            {activeTab === "overview" && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-purple-200 shadow-md bg-white">
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
+                    <h3 className="text-purple-700 font-medium">Staff Task Summary</h3>
+                    <p className="text-purple-600 text-sm">Overview of tasks assigned to each staff member</p>
+                  </div>
+                  <div className="p-4">
+                    <StaffTasksTable
+                      dashboardType={dashboardType}
+                      dashboardStaffFilter={dashboardStaffFilter}
+                      departmentFilter={departmentFilter}
+                      parseTaskStartDate={parseTaskStartDate}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
+
+        {dashboardView === "maintenance" && <MaintenanceDashboard />}
+        {dashboardView === "housekeeping" && <HousekeepingDashboard />}
       </div>
     </AdminLayout>
   )

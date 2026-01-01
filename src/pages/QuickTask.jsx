@@ -11,7 +11,7 @@ import { deleteChecklistTask, uniqueChecklistTaskData, uniqueDelegationTaskData,
 export default function QuickTask() {
   const [tasks, setTasks] = useState([]);
   const [delegationLoading, setDelegationLoading] = useState(false);
-  const [localError, setLocalError] = useState(null);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [activeTab, setActiveTab] = useState('checklist');
@@ -33,16 +33,12 @@ export default function QuickTask() {
     quickTask, 
     loading, 
     delegationTasks, 
-    users,
-    checklistPage,
-    checklistHasMore,
-    delegationPage,
-    delegationHasMore,
-    error: quickTaskError,
+    users,                    // Add this
+    checklistPage,            // Add this
+    checklistHasMore,         // Add this
+    delegationPage,           // Add this
+    delegationHasMore         // Add this
   } = useSelector((state) => state.quickTask);
-  const checklistTasks = Array.isArray(quickTask) ? quickTask : [];
-  const delegationList = Array.isArray(delegationTasks) ? delegationTasks : [];
-  const userList = Array.isArray(users) ? users : [];
   const dispatch = useDispatch();
 
 useEffect(() => {
@@ -135,7 +131,7 @@ useEffect(() => {
 
     } catch (error) {
       console.error("Failed to update task:", error);
-      setLocalError("Failed to update task");
+      setError("Failed to update task");
     } finally {
       setIsSaving(false);
     }
@@ -177,7 +173,7 @@ useEffect(() => {
       setSelectedTasks([]);
     } catch (error) {
       console.error("Failed to delete tasks:", error);
-      setLocalError("Failed to delete tasks");
+      setError("Failed to delete tasks");
     } finally {
       setIsDeleting(false);
     }
@@ -279,20 +275,20 @@ const clearNameFilter = () => {
 
   // FIXED: Added proper null/undefined checks and string validation
 const allNames = [
-  ...new Set(userList.map(user => user.user_name))
+  ...new Set(users.map(user => user.user_name))
 ].filter(name => name && typeof name === 'string' && name.trim() !== '')
  .sort();
 
   // Keep allFrequencies as is (or modify if you want to fetch frequencies from elsewhere)
   const allFrequencies = [
     ...new Set([
-      ...checklistTasks.map(task => task.frequency),
-      ...delegationList.map(task => task.frequency)
+      ...quickTask.map(task => task.frequency),
+      ...delegationTasks.map(task => task.frequency)
     ])
   ].filter(frequency => frequency && typeof frequency === 'string' && frequency.trim() !== '');
 
 
-const filteredChecklistTasks = checklistTasks.filter(task => {
+const filteredChecklistTasks = quickTask.filter(task => {
   const freqFilterPass = !freqFilter || task.frequency === freqFilter;
   const searchTermPass = !searchTerm || task.task_description
     ?.toLowerCase()
@@ -523,9 +519,9 @@ const filteredChecklistTasks = checklistTasks.filter(task => {
         </div>
       </div>
 
-      {(localError || quickTaskError) && (
+      {error && (
         <div className="mt-4 bg-red-50 p-4 rounded-md text-red-800 text-center">
-          {localError || quickTaskError}{" "}
+          {error}{" "}
           <button
             onClick={() => {
               dispatch(uniqueChecklistTaskData())
@@ -544,7 +540,7 @@ const filteredChecklistTasks = checklistTasks.filter(task => {
         </div>
       )}
 
-      {!(localError || quickTaskError) && (
+      {!error && (
         <>
           {activeTab === 'checklist' ? (
             <div className="mt-4 rounded-lg border border-purple-200 shadow-md bg-white overflow-hidden">

@@ -21,7 +21,7 @@ export default function TaskNavigationTabs({
   const [displayedTasks, setDisplayedTasks] = useState([])
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMoreData, setHasMoreData] = useState(true)
-  const [totalCount, setTotalCount] = useState(null)
+  const [totalCount, setTotalCount] = useState(0)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false) // Add this state
   const itemsPerPage = 50
 
@@ -113,7 +113,7 @@ export default function TaskNavigationTabs({
       setHasMoreData(data.length === itemsPerPage)
 
     } catch (error) {
-      console.error('Error loading tasks:', error)
+      // Error loading tasks
     } finally {
       setIsLoadingMore(false)
     }
@@ -320,13 +320,9 @@ export default function TaskNavigationTabs({
         </div>
 
         {/* Show total count */}
-        {(totalCount !== null || displayedTasks.length > 0) && (
+        {totalCount > 0 && (
           <div className="mb-4 text-sm text-gray-600">
-            {(() => {
-              const totalLabel = taskView === "recent" ? "recent" : taskView === "upcoming" ? "upcoming" : "overdue";
-              const totalValue = totalCount !== null ? totalCount : displayedTasks.length;
-              return `Total ${totalLabel} tasks: ${totalValue} | Showing: ${displayedTasks.length}`;
-            })()}
+            Total {taskView} tasks: {totalCount} | Showing: {displayedTasks.length}
             {(dashboardStaffFilter !== "all" || departmentFilter !== "all") && (
               <div className="mt-1 text-xs">
                 {dashboardStaffFilter !== "all" && (

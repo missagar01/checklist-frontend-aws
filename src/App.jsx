@@ -1,10 +1,9 @@
-"use client"
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
-import { useState } from "react"
 import LoginPage from "./pages/LoginPage"
 import AdminDashboard from "./pages/admin/Dashboard"
-import AdminAssignTask from "./pages/admin/AssignTask"
+import AdminAssignTask from "./pages/admin/AssignTaskMain"
+import AssignTaskForm from "./pages/admin/AssignTaskForm"
 import DataPage from "./pages/admin/DataPage"
 import AdminDataPage from "./pages/admin/admin-data-page"
 import AccountDataPage from "./pages/delegation"
@@ -14,7 +13,10 @@ import "./index.css"
 import Demo from "./pages/user/Demo"
 import Setting from "./pages/Setting"
 import MisReport from "./pages/MisReport"
-import RealtimeLogoutListener from "./components/RealtimeLogoutListener"   // ✅ Added listener
+import Machines from "./pages/admin/maintenance/machines"
+import NewMachine from "./pages/admin/maintenance/newMachine"
+import UnifiedTaskPage from "./pages/admin/UnifiedTaskPage"
+
 
 // Auth wrapper component to protect routes
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -36,10 +38,12 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 function App() {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      {/* ✅ Realtime listener inside Router so useNavigate works */}
-      {/* <RealtimeLogoutListener /> */}
-
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -68,8 +72,22 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/dashboard/machines"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Machines />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Assign Task route - only for admin */}
+        <Route path="/dashboard/machines/new" element={
+          <ProtectedRoute allowedRoles={['admin', 'user']}>
+            <NewMachine />
+          </ProtectedRoute>
+        } />
+
+        {/* Assign Task routes */}
         <Route
           path="/dashboard/assign-task"
           element={
@@ -78,6 +96,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/dashboard/assign-task/:taskType"
+          element={
+            <ProtectedRoute>
+              <AssignTaskForm />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/dashboard/delegation-task"
           element={
@@ -93,6 +120,15 @@ function App() {
           element={
             <ProtectedRoute>
               <AccountDataPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/all-task"
+          element={
+            <ProtectedRoute>
+              <UnifiedTaskPage />
             </ProtectedRoute>
           }
         />
@@ -139,8 +175,10 @@ function App() {
         <Route path="/admin/*" element={<Navigate to="/dashboard/admin" replace />} />
         <Route path="/admin/dashboard" element={<Navigate to="/dashboard/admin" replace />} />
         <Route path="/admin/quick" element={<Navigate to="/dashboard/quick-task" replace />} />
+        <Route path="/admin/machines" element={<Navigate to="/dashboard/machines" replace />} />
         <Route path="/admin/assign-task" element={<Navigate to="/dashboard/assign-task" replace />} />
         <Route path="/admin/delegation-task" element={<Navigate to="/dashboard/delegation-task" replace />} />
+        <Route path="/admin/all-task" element={<Navigate to="/dashboard/all-task" replace />} />
         <Route path="/admin/mis-report" element={<Navigate to="/dashboard/mis-report" replace />} />
         <Route path="/admin/data/:category" element={<Navigate to="/dashboard/data/:category" replace />} />
         <Route path="/user/*" element={<Navigate to="/dashboard/admin" replace />} />

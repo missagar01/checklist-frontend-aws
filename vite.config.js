@@ -9,16 +9,16 @@ export default defineConfig({
     tailwindcss(),
   ],
   base: "/", // Changed from "./" to "/"
+  build: {
+    outDir: "dist",
+  },
   server: {
     proxy: {
       "/api": {
-        target: "https://checklistbackend.sagartmt.com",
+        target: "https://cmh-backend.sagartmt.com",
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
-  },
-  build: {
-    outDir: "dist",
   },
 })

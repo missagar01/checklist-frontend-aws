@@ -149,18 +149,16 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
     );
   };
 
-  // Filter routes based on user role and super admin status
-  // Update the getAccessibleRoutes function in AdminLayout.jsx
-  // Replace the entire getAccessibleRoutes function with this:
-  // Remove the old getAccessibleRoutes function and replace it with this:
-  // Update the getAccessibleRoutes function to remove quotes
+  // Filter routes based on user role and page_access
   const getAccessibleRoutes = () => {
     const userRole = localStorage.getItem("role") || "user";
     const pageAccess = localStorage.getItem("page_access") || "";
 
     // Remove any quotes from the string before splitting
-    const cleanPageAccess = pageAccess.replace(/"/g, '');
-    const accessiblePages = cleanPageAccess.split(',').map(page => page.trim());
+    const cleanPageAccess = pageAccess.replace(/"/g, '').trim();
+    const accessiblePages = cleanPageAccess 
+      ? cleanPageAccess.split(',').map(page => page.trim()).filter(page => page !== '')
+      : [];
 
     // Define routes with pageKey properties
     const allRoutes = [
@@ -212,15 +210,6 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
         pageKey: "all-task",
         showFor: ["admin", "user"],
       },
-      // {
-      //   href: "#",
-      //   label: "Data",
-      //   icon: Database,
-      //   active: location.pathname.includes("/dashboard/data"),
-      //   submenu: true,
-      //   pageKey: "data",
-      //   showFor: ["admin", "user"],
-      // },
       {
         href: "/dashboard/mis-report",
         label: "MIS Report",
@@ -244,19 +233,15 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
       // Check if user has role permission
       const hasRolePermission = route.showFor.includes(userRole);
 
-      // 🔥 ADMIN SHOULD SEE EVERYTHING
-      if (userRole === "admin") {
-        return hasRolePermission;
+      // If page_access is set and not empty, ALL users (including admin) must respect it
+      if (accessiblePages.length > 0) {
+        // Check if this route's pageKey is in the accessible pages list
+        const hasPageAccess = accessiblePages.includes(route.pageKey);
+        return hasRolePermission && hasPageAccess;
       }
 
-      // 👤 USER: apply page_access restriction
-      let hasPageAccess = true;
-      if (accessiblePages.length > 0 && accessiblePages[0] !== "") {
-        hasPageAccess = accessiblePages.includes(route.pageKey);
-      }
-
-      return hasRolePermission && hasPageAccess;
-
+      // If page_access is empty/not set, show based on role permissions only
+      return hasRolePermission;
     });
 
     return filteredRoutes;

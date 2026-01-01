@@ -364,8 +364,12 @@ export const filterTasks = (tasks, filters) => {
     } = filters;
 
     return tasks.filter(task => {
-        // Source system filter
-        if (sourceSystem && task.sourceSystem !== sourceSystem) return false;
+        // Source system filter - strict comparison
+        if (sourceSystem && sourceSystem.trim() !== '') {
+            if (!task.sourceSystem || task.sourceSystem !== sourceSystem) {
+                return false;
+            }
+        }
 
         // Status filter
         if (status) {

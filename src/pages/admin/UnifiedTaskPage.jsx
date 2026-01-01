@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { BarChart3, CheckCircle, Clock, AlertTriangle } from "lucide-react"
 import AdminLayout from "../../components/layout/AdminLayout"
 import UnifiedTaskTable from "../../components/unified/UnifiedTaskTable"
 import { useDispatch, useSelector } from "react-redux"
@@ -330,26 +329,6 @@ export default function UnifiedTaskPage() {
         return Array.from(departmentsSet).filter(Boolean).sort()
     }, [allTasks])
 
-    // Calculate statistics
-    const statistics = useMemo(() => {
-        const total = allTasks.length
-        const completed = allTasks.filter(t =>
-            t.status === 'Completed' || t.originalStatus === 'Yes'
-        ).length
-        const pending = allTasks.filter(t =>
-            t.status === 'Pending' || t.originalStatus === 'Pending'
-        ).length
-        const highPriority = allTasks.filter(t => t.priority === 'High').length
-
-        const bySource = {
-            checklist: allTasks.filter(t => t.sourceSystem === 'checklist' && hasSystemAccess('checklist')).length,
-            maintenance: allTasks.filter(t => t.sourceSystem === 'maintenance' && hasSystemAccess('maintenance')).length,
-            housekeeping: allTasks.filter(t => t.sourceSystem === 'housekeeping' && hasSystemAccess('housekeeping')).length,
-        }
-
-        return { total, completed, pending, highPriority, bySource }
-    }, [allTasks, hasSystemAccess])
-
     // Handle task update
     const handleUpdateTask = useCallback(async (updateData) => {
         const { taskId, sourceSystem, status, remarks, image, originalData } = updateData
@@ -486,75 +465,6 @@ export default function UnifiedTaskPage() {
                     <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-blue-700">
                         Unified Task Management
                     </h1>
-
-                    {/* Statistics Cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-                        <div className="bg-white p-2 sm:p-3 md:p-4 rounded-lg shadow-sm border">
-                            <div className="flex items-center">
-                                <div className="bg-blue-100 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3">
-                                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs sm:text-sm text-gray-500 truncate">Total Tasks</p>
-                                    <p className="text-lg sm:text-xl font-bold">{statistics.total}</p>
-                                </div>
-                            </div>
-
-                            <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1 sm:gap-2 text-xs text-gray-500">
-                                {hasSystemAccess('checklist') && (
-                                    <span className="px-1 sm:px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
-                                        {statistics.bySource.checklist} C
-                                    </span>
-                                )}
-                                {hasSystemAccess('maintenance') && (
-                                    <span className="px-1 sm:px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                                        {statistics.bySource.maintenance} M
-                                    </span>
-                                )}
-                                {hasSystemAccess('housekeeping') && (
-                                    <span className="px-1 sm:px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-                                        {statistics.bySource.housekeeping} H
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-2 sm:p-3 md:p-4 rounded-lg shadow-sm border">
-                            <div className="flex items-center">
-                                <div className="bg-green-100 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3">
-                                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs sm:text-sm text-gray-500 truncate">Completed</p>
-                                    <p className="text-lg sm:text-xl font-bold">{statistics.completed}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-2 sm:p-3 md:p-4 rounded-lg shadow-sm border">
-                            <div className="flex items-center">
-                                <div className="bg-yellow-100 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3">
-                                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs sm:text-sm text-gray-500 truncate">Pending</p>
-                                    <p className="text-lg sm:text-xl font-bold">{statistics.pending}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-2 sm:p-3 md:p-4 rounded-lg shadow-sm border">
-                            <div className="flex items-center">
-                                <div className="bg-red-100 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3">
-                                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs sm:text-sm text-gray-500 truncate">High Priority</p>
-                                    <p className="text-lg sm:text-xl font-bold">{statistics.highPriority}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Error Display */}

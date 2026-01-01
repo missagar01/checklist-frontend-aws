@@ -17,6 +17,7 @@ import {
     fetchHousekeepingPendingTasks,
     fetchHousekeepingHistoryTasks,
     submitHousekeepingTasks,
+    fetchHousekeepingDepartments,
 } from "../../redux/slice/housekeepingSlice"
 
 /**
@@ -62,6 +63,7 @@ export default function UnifiedTaskPage() {
         error: housekeepingError,
         pendingPage: housekeepingPendingPage = 1,
         pendingHasMore: housekeepingPendingHasMore = false,
+        dashboardDepartments: housekeepingDepartments = [],
     } = housekeepingState || {}
 
     // Load user info
@@ -153,6 +155,7 @@ export default function UnifiedTaskPage() {
         if (hasSystemAccess('housekeeping') || systemAccess.length === 0) {
             loadHousekeepingData()
             loadHousekeepingHistoryData()
+            dispatch(fetchHousekeepingDepartments())
         }
     }, [dispatch, hasSystemAccess, systemAccess, loadHousekeepingData, loadHousekeepingHistoryData])
 
@@ -569,6 +572,7 @@ export default function UnifiedTaskPage() {
                     onBulkSubmit={handleBulkSubmit}
                     assignedToOptions={allAssignees}
                     departmentOptions={allDepartments}
+                    housekeepingDepartments={housekeepingDepartments}
                     userRole={userRole}
                     onLoadMore={() => {
                         // Load more for both checklist and housekeeping

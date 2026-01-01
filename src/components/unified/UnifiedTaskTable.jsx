@@ -27,6 +27,7 @@ export default function UnifiedTaskTable({
     userRole = "admin",
     onLoadMore,  // Callback for scroll-based loading
     hasMore = false,  // Whether more data is available
+    housekeepingDepartments = [],  // Departments from assign_task table
 }) {
     // State
     const [selectedItems, setSelectedItems] = useState(new Set());
@@ -135,8 +136,15 @@ export default function UnifiedTaskTable({
     const displayTasks = filteredTasks;
 
     // Check if all visible items are selected
-    const isAllSelected = displayTasks.length > 0 && displayTasks.every(t => selectedItems.has(t.id));
-    const isIndeterminate = displayTasks.some(t => selectedItems.has(t.id)) && !isAllSelected;
+    // For housekeeping tasks, only consider confirmed tasks
+    const selectableTasks = displayTasks.filter(task => {
+        if (task.sourceSystem === 'housekeeping') {
+            return task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+        }
+        return true;
+    });
+    const isAllSelected = selectableTasks.length > 0 && selectableTasks.every(t => selectedItems.has(t.id));
+    const isIndeterminate = selectableTasks.some(t => selectedItems.has(t.id)) && !isAllSelected;
 
     // Has active filters
     const hasFilters = useMemo(() => {
@@ -172,8 +180,15 @@ export default function UnifiedTaskTable({
 
     const handleSelectAll = useCallback((e) => {
         if (e.target.checked) {
-            // Select all visible tasks
-            const allIds = displayTasks.map(task => task.id);
+            // Select all visible tasks, but for housekeeping only select confirmed ones
+            const tasksToSelect = displayTasks.filter(task => {
+                if (task.sourceSystem === 'housekeeping') {
+                    // Only select housekeeping tasks with "Confirmed" in Confirmed By HOD
+                    return task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+                }
+                return true; // Select all other tasks
+            });
+            const allIds = tasksToSelect.map(task => task.id);
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
                 allIds.forEach(id => newSet.add(id));
@@ -329,6 +344,7 @@ export default function UnifiedTaskTable({
             <TaskFilterBar
                 filters={filters}
                 onFiltersChange={setFilters}
+                housekeepingDepartments={housekeepingDepartments}
             />
 
             {/* Success Message */}

@@ -4,15 +4,22 @@ import { Search, X, History, Clock, ListFilter } from "lucide-react";
 export default function TaskFilterBar({
     filters = {},
     onFiltersChange,
+    housekeepingDepartments = [],
 }) {
     const {
         searchTerm = "",
         sourceSystem = "",
         status = "",  // Default to empty to show all
+        department = "",
     } = filters;
 
     const handleChange = (key, value) => {
-        onFiltersChange({ ...filters, [key]: value });
+        const newFilters = { ...filters, [key]: value };
+        // Clear department filter when switching away from housekeeping
+        if (key === "sourceSystem" && value !== "housekeeping") {
+            newFilters.department = "";
+        }
+        onFiltersChange(newFilters);
     };
 
     const clearFilters = () => {
@@ -130,6 +137,28 @@ export default function TaskFilterBar({
                     </button>
                 </div>
             </div>
+
+            {/* Department Filter - Show only when housekeeping is selected */}
+            {sourceSystem === "housekeeping" && housekeepingDepartments.length > 0 && (
+                <div>
+                    <label htmlFor="department-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
+                        📁 Filter by Department:
+                    </label>
+                    <select
+                        id="department-filter"
+                        value={department}
+                        onChange={(e) => handleChange("department", e.target.value)}
+                        className="w-full sm:w-auto text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                    >
+                        <option value="">All Departments</option>
+                        {housekeepingDepartments.map((dept, idx) => (
+                            <option key={idx} value={dept}>
+                                {dept}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {/* Clear Button - Only show when filters are active */}
             {hasActiveFilters && (

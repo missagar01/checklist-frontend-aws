@@ -113,11 +113,23 @@ export default function UnifiedTaskTable({
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
         const filtered = filterTasks(tasks, filters);
+        
+        // Deduplicate tasks by creating a unique key for each task
+        const seen = new Set();
+        const deduplicated = filtered.filter(task => {
+            const uniqueKey = `${task.sourceSystem}-${task.id}`;
+            if (seen.has(uniqueKey)) {
+                return false; // Skip duplicate
+            }
+            seen.add(uniqueKey);
+            return true;
+        });
+        
         // If showing housekeeping only, use special sorting (confirmed first)
         if (filters.sourceSystem === 'housekeeping') {
-            return sortHousekeepingTasks(filtered);
+            return sortHousekeepingTasks(deduplicated);
         }
-        return sortByDate(filtered, true);
+        return sortByDate(deduplicated, true);
     }, [tasks, filters]);
 
     // Check if showing only housekeeping tasks
@@ -427,7 +439,7 @@ export default function UnifiedTaskTable({
                                     {displayTasks.length > 0 ? (
                                         displayTasks.map((task, index) => (
                                             <TaskRow
-                                                key={`${task.sourceSystem}-${task.id}`}
+                                                key={`${task.sourceSystem}-${task.id}-${index}`}
                                                 task={task}
                                                 isSelected={selectedItems.has(task.id)}
                                                 onSelect={handleSelectItem}

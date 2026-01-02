@@ -78,7 +78,7 @@ export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null
   }
 
   return housekeepingApi.post(
-    `/assigntask/generate/${taskId}/confirm`,
+    `/housekeeping-dashboard/assigntask/generate/${taskId}/confirm`,
     formData,
     {
       headers: { "Content-Type": "multipart/form-data" },
@@ -107,7 +107,7 @@ export const submitHousekeepingTasksAPI = async (tasks = []) => {
     }
     
     return housekeepingApi.patch(
-      `/assigntask/generate/${task.task_id}`,
+      `/housekeeping-dashboard/assigntask/generate/${task.task_id}`,
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -139,7 +139,7 @@ export const updateHousekeepingTaskAPI = (taskId, updateData) => {
   });
 
   return housekeepingApi.patch(
-    `/assigntask/generate/${taskId}`,
+    `/housekeeping-dashboard/assigntask/generate/${taskId}`,
     formData,
     {
       headers: { "Content-Type": "multipart/form-data" },

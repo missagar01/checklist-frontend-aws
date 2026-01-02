@@ -284,7 +284,22 @@ export default function UnifiedTaskPage() {
         )
 
         // Combine all tasks (pending + history)
-        const allCombined = [...pendingTasks, ...historyTasks]
+        // Deduplicate: if a task appears in both pending and history, prefer history version
+        const taskMap = new Map()
+        
+        // First add pending tasks
+        pendingTasks.forEach(task => {
+            const key = `${task.sourceSystem}-${task.id}`
+            taskMap.set(key, task)
+        })
+        
+        // Then add history tasks (will overwrite pending if duplicate)
+        historyTasks.forEach(task => {
+            const key = `${task.sourceSystem}-${task.id}`
+            taskMap.set(key, task)
+        })
+        
+        const allCombined = Array.from(taskMap.values())
 
         // Sort housekeeping tasks: confirmed first
         return sortHousekeepingTasks(allCombined)

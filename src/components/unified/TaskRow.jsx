@@ -98,17 +98,26 @@ const TaskRow = memo(function TaskRow({
     if (isHousekeepingOnly && task.sourceSystem === 'housekeeping') {
         return (
             <tr className={`${isSelected ? "bg-blue-50" : isCompleted ? "bg-green-50/30" : ""} hover:bg-gray-50 border-b border-gray-100`}>
-                {/* Checkbox */}
+                {/* Checkbox - Admin: select confirmed tasks, User: select pending tasks */}
                 <td className="px-2 sm:px-3 py-2 sm:py-4 w-12">
                     {isCompleted ? (
                         <CheckCircle className="h-4 w-4 text-green-500" title="Completed" />
                     ) : (
                         <input
                             type="checkbox"
-                            className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed" && task.originalData?.attachment !== "confirmed") ? "opacity-50 cursor-not-allowed" : ""}`}
+                            className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${
+                                (userRole?.toLowerCase() === 'user' 
+                                    ? (task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed")
+                                    : (task.originalData?.attachment !== "confirmed" && task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed")
+                                ) ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                             checked={isSelected}
                             onChange={handleCheckboxClick}
-                            disabled={task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed" && task.originalData?.attachment !== "confirmed"}
+                            disabled={
+                                userRole?.toLowerCase() === 'user' 
+                                    ? (task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed")
+                                    : (task.originalData?.attachment !== "confirmed" && task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed")
+                            }
                         />
                     )}
                 </td>
@@ -180,95 +189,124 @@ const TaskRow = memo(function TaskRow({
                     </div>
                 </td>
 
-                {/* Confirmed By HOD */}
+                {/* Confirmed By HOD - Show data from backend only (no select box) */}
                 <td className="px-2 sm:px-3 py-2 sm:py-4">
                     <div className="text-xs sm:text-sm text-gray-900">
-                        {task.confirmedByHOD || '—'}
+                        {task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed" ? (
+                            <span className="text-green-600 font-medium">Confirmed</span>
+                        ) : (
+                            task.confirmedByHOD || task.originalData?.attachment || '—'
+                        )}
                     </div>
                 </td>
 
-                {/* Status */}
-                <td className="px-2 sm:px-3 py-2 sm:py-4">
-                    {isCompleted ? (
-                        <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-                            ✅ {task.originalStatus || 'Yes'}
-                        </span>
-                    ) : (
-                        <select
-                            disabled={!isSelected}
-                            value={rowData.status || ""}
-                            onChange={(e) => handleDataChange("status", e.target.value)}
-                            className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                            <option value="">Select..</option>
-                            <option value="Yes">Yes</option>
-                            <option value="No">No</option>
-                        </select>
-                    )}
-                </td>
+                {/* Status - Hide for user role pending tasks */}
+                {!(userRole?.toLowerCase() === 'user' && 
+                   task.sourceSystem === 'housekeeping' && 
+                   !isCompleted &&
+                   task.originalData?.attachment !== "confirmed" &&
+                   task.confirmedByHOD !== "Confirmed" &&
+                   task.confirmedByHOD !== "confirmed") && (
+                    <td className="px-2 sm:px-3 py-2 sm:py-4">
+                        {isCompleted ? (
+                            <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                                ✅ {task.originalStatus || 'Yes'}
+                            </span>
+                        ) : (
+                            <select
+                                disabled={!isSelected}
+                                value={rowData.status || ""}
+                                onChange={(e) => handleDataChange("status", e.target.value)}
+                                className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                <option value="">Select..</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        )}
+                    </td>
+                )}
 
-                {/* Remarks */}
+                {/* Remarks - User role: input field for pending tasks, Admin: show data only */}
                 <td className="px-2 sm:px-3 py-2 sm:py-4">
-                    {isCompleted ? (
-                        <span className="text-xs text-gray-700 max-w-[100px] truncate block" title={task.remarks}>
-                            {task.remarks || '—'}
-                        </span>
-                    ) : (
+                    {userRole?.toLowerCase() === 'user' && 
+                     task.sourceSystem === 'housekeeping' && 
+                     !isCompleted &&
+                     task.originalData?.attachment !== "confirmed" &&
+                     task.confirmedByHOD !== "Confirmed" &&
+                     task.confirmedByHOD !== "confirmed" ? (
                         <input
                             type="text"
-                            placeholder="Remarks"
-                            disabled={!isSelected}
+                            placeholder="Enter remark"
                             value={rowData.remarks || ""}
                             onChange={(e) => handleDataChange("remarks", e.target.value)}
-                            className="border rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500"
                         />
-                    )}
-                </td>
-
-                {/* Image */}
-                <td className="px-2 sm:px-3 py-2 sm:py-4">
-                    {isCompleted ? (
-                        task.imageUrl ? (
-                            <img src={task.imageUrl} alt="Attached" className="h-8 w-8 object-cover rounded" />
-                        ) : (
-                            <span className="text-xs text-gray-400">No image</span>
-                        )
                     ) : (
-                        <>
-                            <label className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""}`}>
-                                <Upload className="h-4 w-4 mr-1" />
-                                <span>Upload</span>
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    disabled={!isSelected}
-                                />
-                            </label>
-                            {uploadedImage && (
-                                <div className="mt-1">
-                                    <img
-                                        src={uploadedImage.previewUrl}
-                                        alt="Preview"
-                                        className="h-8 w-8 object-cover rounded"
-                                    />
-                                </div>
-                            )}
-                        </>
+                        <span className="text-xs text-gray-700 max-w-[100px] truncate block" title={task.remarks || task.originalData?.remark || ''}>
+                            {task.remarks || task.originalData?.remark || '—'}
+                        </span>
                     )}
                 </td>
 
-                {/* View Details Button */}
-                <td className="px-2 sm:px-3 py-2 sm:py-4">
-                    <button
-                        onClick={handleViewClick}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                        title="View Details"
-                    >
-                        <Eye className="h-4 w-4" />
-                    </button>
-                </td>
+                {/* Image - Hide for user role pending tasks */}
+                {!(userRole?.toLowerCase() === 'user' && 
+                   task.sourceSystem === 'housekeeping' && 
+                   !isCompleted &&
+                   task.originalData?.attachment !== "confirmed" &&
+                   task.confirmedByHOD !== "Confirmed" &&
+                   task.confirmedByHOD !== "confirmed") && (
+                    <td className="px-2 sm:px-3 py-2 sm:py-4">
+                        {isCompleted ? (
+                            task.imageUrl ? (
+                                <img src={task.imageUrl} alt="Attached" className="h-8 w-8 object-cover rounded" />
+                            ) : (
+                                <span className="text-xs text-gray-400">No image</span>
+                            )
+                        ) : (
+                            <>
+                                <label className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""}`}>
+                                    <Upload className="h-4 w-4 mr-1" />
+                                    <span>Upload</span>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        disabled={!isSelected}
+                                    />
+                                </label>
+                                {uploadedImage && (
+                                    <div className="mt-1">
+                                        <img
+                                            src={uploadedImage.previewUrl}
+                                            alt="Preview"
+                                            className="h-8 w-8 object-cover rounded"
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </td>
+                )}
+
+                {/* View Details Button - Hide for user role pending tasks */}
+                {!(userRole?.toLowerCase() === 'user' && 
+                   task.sourceSystem === 'housekeeping' && 
+                   !isCompleted &&
+                   task.originalData?.attachment !== "confirmed" &&
+                   task.confirmedByHOD !== "Confirmed" &&
+                   task.confirmedByHOD !== "confirmed") && (
+                    <td className="px-2 sm:px-3 py-2 sm:py-4">
+                        <button
+                            onClick={handleViewClick}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                            title="View Details"
+                        >
+                            <Eye className="h-4 w-4" />
+                        </button>
+                    </td>
+                )}
             </tr>
         );
     }
@@ -276,17 +314,29 @@ const TaskRow = memo(function TaskRow({
     // Default unified row for mixed tasks
     return (
         <tr className={`${isSelected ? "bg-blue-50" : isCompleted ? "bg-green-50/30" : ""} hover:bg-gray-50 border-b border-gray-100`}>
-            {/* Checkbox - ONLY show for pending tasks */}
+            {/* Checkbox - Admin: select confirmed tasks, User: select pending tasks */}
             <td className="px-2 sm:px-3 py-2 sm:py-4 w-12">
                 {isCompleted ? (
                     <CheckCircle className="h-4 w-4 text-green-500" title="Completed" />
                 ) : (
                     <input
                         type="checkbox"
-                        className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(task.sourceSystem === 'housekeeping' && task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed" && task.originalData?.attachment !== "confirmed") ? "opacity-50 cursor-not-allowed" : ""}`}
+                        className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${
+                            task.sourceSystem === 'housekeeping' && (
+                                userRole?.toLowerCase() === 'user' 
+                                    ? (task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed")
+                                    : (task.originalData?.attachment !== "confirmed" && task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed")
+                            ) ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                         checked={isSelected}
                         onChange={handleCheckboxClick}
-                        disabled={task.sourceSystem === 'housekeeping' && task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed" && task.originalData?.attachment !== "confirmed"}
+                        disabled={
+                            task.sourceSystem === 'housekeeping' && (
+                                userRole?.toLowerCase() === 'user' 
+                                    ? (task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed")
+                                    : (task.originalData?.attachment !== "confirmed" && task.confirmedByHOD !== "Confirmed" && task.confirmedByHOD !== "confirmed")
+                            )
+                        }
                     />
                 )}
             </td>
@@ -410,21 +460,25 @@ const TaskRow = memo(function TaskRow({
                 )}
             </td>
 
-            {/* Remarks - For completed: show text, for pending: show input */}
+            {/* Remarks - User role: input field for pending housekeeping tasks, Admin: show data only */}
             <td className="px-2 sm:px-3 py-2 sm:py-4">
-                {isCompleted ? (
-                    <span className="text-xs text-gray-700 max-w-[100px] truncate block" title={task.remarks}>
-                        {task.remarks || '—'}
-                    </span>
-                ) : (
+                {userRole?.toLowerCase() === 'user' && 
+                 task.sourceSystem === 'housekeeping' && 
+                 !isCompleted &&
+                 task.originalData?.attachment !== "confirmed" &&
+                 task.confirmedByHOD !== "Confirmed" &&
+                 task.confirmedByHOD !== "confirmed" ? (
                     <input
                         type="text"
-                        placeholder="Remarks"
-                        disabled={!isSelected}
+                        placeholder="Enter remark"
                         value={rowData.remarks || ""}
                         onChange={(e) => handleDataChange("remarks", e.target.value)}
-                        className="border rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500"
                     />
+                ) : (
+                    <span className="text-xs text-gray-700 max-w-[100px] truncate block" title={task.remarks || task.originalData?.remark || ''}>
+                        {task.remarks || task.originalData?.remark || '—'}
+                    </span>
                 )}
             </td>
 
@@ -488,6 +542,7 @@ export function TaskTableHeader({
     isIndeterminate,
     isHistoryMode = false,
     isHousekeepingOnly = false,
+    userRole = "admin",  // User role to conditionally hide columns
 }) {
     // If showing only housekeeping tasks, use housekeeping-specific headers
     if (isHousekeepingOnly) {
@@ -533,18 +588,27 @@ export function TaskTableHeader({
                     <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Confirmed By HOD
                     </th>
-                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                    </th>
+                    {/* Status - Hide for user role in housekeeping-only mode */}
+                    {userRole?.toLowerCase() !== 'user' && (
+                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                    )}
                     <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Remarks
                     </th>
-                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Image
-                    </th>
-                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        View
-                    </th>
+                    {/* Image - Hide for user role in housekeeping-only mode */}
+                    {userRole?.toLowerCase() !== 'user' && (
+                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Image
+                        </th>
+                    )}
+                    {/* View - Hide for user role in housekeeping-only mode */}
+                    {userRole?.toLowerCase() !== 'user' && (
+                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            View
+                        </th>
+                    )}
                 </tr>
             </thead>
         );

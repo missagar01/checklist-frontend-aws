@@ -26,22 +26,10 @@ export default function TaskNavigationTabs({
   const [hasMoreData, setHasMoreData] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const totalItemsLoadedRef = useRef(0) // Track total items loaded from API (before filtering)
-  const [doerName2Selections, setDoerName2Selections] = useState({})
-  const [userRole, setUserRole] = useState("")
   const scrollContainerRef = useRef(null)
   const itemsPerPage = 50
 
-  const DOER2_OPTIONS = [
-    "Sarad Behera",
-    "Tikeshware Chakradhari(KH)",
-    "Makhan Lal",
-  ]
-
-  // Get user role
-  useEffect(() => {
-    const role = localStorage.getItem("role") || ""
-    setUserRole(role)
-  }, [])
+  // Removed: doerName2Selections, userRole, and DOER2_OPTIONS - no longer needed after removing Doer Name 2 and Remarks columns
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -332,20 +320,14 @@ export default function TaskNavigationTabs({
       { key: 'frequency', label: 'Frequency' }
     );
 
-    // Add DOER2 column for user role
-    if (userRole && userRole.toLowerCase() === 'user') {
-      baseHeaders.push({ key: 'doerName2', label: 'Doer Name 2' });
-    }
-
     // Add Status column for Recent tasks
     if (taskView === "recent") {
       baseHeaders.push({ key: 'status', label: 'Status' });
     }
 
-    // Add Remarks column only for Not Done tasks
-    if (taskView === "upcoming") {
-      baseHeaders.push({ key: 'remarks', label: 'Remarks' });
-    }
+    // Removed: Doer Name 2 and Remarks columns from housekeeping dashboard
+    // Doer Name 2 column removed (was for user role)
+    // Remarks column removed (was for upcoming tasks)
 
     return baseHeaders;
   };
@@ -479,30 +461,7 @@ export default function TaskNavigationTabs({
                         </td>
                       )}
 
-                      {/* Remarks column - only for Not Done tasks */}
-                      {taskView === "upcoming" && (
-                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                          {task.remarks || "—"}
-                        </td>
-                      )}
-
-                      {/* DOER2 select box - only for user role */}
-                      {userRole && userRole.toLowerCase() === 'user' && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <select
-                            value={doerName2Selections[task.id] || task.doerName2 || ""}
-                            onChange={(e) => setDoerName2Selections(prev => ({ ...prev, [task.id]: e.target.value }))}
-                            className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-gray-500"
-                          >
-                            <option value="">Select...</option>
-                            {DOER2_OPTIONS.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      )}
+                      {/* Removed: Remarks and Doer Name 2 columns from housekeeping dashboard */}
                     </tr>
                   );
                 })}

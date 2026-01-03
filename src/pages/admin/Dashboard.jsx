@@ -44,9 +44,16 @@ export default function AdminDashboard() {
   const [dashboardView, setDashboardView] = useState("checklist") // New state for dashboard 
   
   // Get system_access and role to check if user has housekeeping access
-  // Hide housekeeping tab for user role OR if user doesn't have housekeeping in system_access
+  // Allow users to see housekeeping if they have user_access1 (departments) or system_access includes housekeeping
   const systemAccess = (localStorage.getItem("system_access") || "").split(',').map(item => item.trim().toLowerCase())
-  const hasHousekeepingAccess = userRole?.toLowerCase() !== "user" && (systemAccess.length === 0 || systemAccess.includes('housekeeping'))
+  const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
+  const hasUserDepartments = userRole?.toLowerCase() === "user" && userAccess1.trim() !== ""
+  
+  // For admin: show if system_access is empty or includes 'housekeeping'
+  // For user: show if they have user_access1 (departments) OR if system_access includes 'housekeeping'
+  const hasHousekeepingAccess = userRole?.toLowerCase() === "user" 
+    ? (hasUserDepartments || systemAccess.includes('housekeeping'))
+    : (systemAccess.length === 0 || systemAccess.includes('housekeeping'))
 
 
   // Pagination state

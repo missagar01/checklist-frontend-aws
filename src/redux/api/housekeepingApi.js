@@ -10,13 +10,33 @@ const housekeepingApi = axios.create({
   }
 });
 
-// Add authorization header
+// Add authorization header and user access headers (for non-JWT authentication)
 housekeepingApi.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add user_access1, user_access, and role from localStorage (for non-JWT auth)
+    // These headers are used by backend to filter data by user's departments
+    // IMPORTANT: Encode header values to handle non-ASCII characters (Hindi/Unicode)
+    const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || "";
+    const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
+    const role = localStorage.getItem("role") || "";
+    
+    if (userAccess1) {
+      // URL encode to handle non-ASCII characters (Hindi/Unicode) in department names
+      config.headers["x-user-access1"] = encodeURIComponent(userAccess1);
+    }
+    if (userAccess) {
+      // URL encode to handle non-ASCII characters (Hindi/Unicode) in department names
+      config.headers["x-user-access"] = encodeURIComponent(userAccess);
+    }
+    if (role) {
+      config.headers["x-user-role"] = role; // Role is usually ASCII, but encode for safety
+    }
+    
     return config;
   },
   (error) => {

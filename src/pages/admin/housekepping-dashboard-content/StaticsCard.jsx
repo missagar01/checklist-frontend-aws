@@ -16,16 +16,19 @@ export default function StatisticsCards({
 
   const fetchStats = useCallback(async () => {
     try {
-      // Backend automatically filters by user_access from JWT token for user role
-      // For admin, pass department filter if selected
+      // For user role: Backend automatically filters by user_access1 from headers
+      // DO NOT pass any department parameter for user role - backend will use headers
+      // For admin: Pass department filter if selected (not "all")
       const role = localStorage.getItem("role") || ""
       let departmentParam = undefined
       
-      if (role.toLowerCase() !== "user" && selectedDepartment && selectedDepartment !== "all") {
-        // For admin, use selected department filter
-        departmentParam = selectedDepartment
+      if (role.toLowerCase() !== "user") {
+        // For admin, only pass department if it's not "all"
+        if (selectedDepartment && selectedDepartment !== "all") {
+          departmentParam = selectedDepartment
+        }
       }
-      // For user role, backend handles filtering from token - no need to pass department
+      // For user role: explicitly don't pass department - backend uses JWT token user_access1
       
       await dispatch(fetchHousekeepingDashboardSummary({
         department: departmentParam
@@ -183,49 +186,58 @@ export default function StatisticsCards({
 
         {/* Right side - Circular Progress Graph */}
         <div className="lg:w-1/2 flex flex-col gap-3">
-          <div className="rounded-lg border border-gray-200 bg-white/90 px-4 py-3 shadow-sm shadow-indigo-100/60 backdrop-blur transition hover:border-indigo-400">
-            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gray-500">
-              <span>Department</span>
-            </div>
-                
-            <div className="relative mt-3">
-              <select
-                id="department-select"
-                value={selectedDepartment || "all"}
-                onChange={(event) => onDepartmentChange(event.target.value)}
-                disabled={!departments || departments.length === 0}
-                className="h-11 w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 pr-10 text-sm font-medium text-gray-700 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100"
-              >
-                {!departments || departments.length === 0 ? (
-                  <option value="all">
-                    {departmentsError ? 'Unable to load departments' : 'Loading departments...'}
-                  </option>
-                ) : (
-                  <>
-                    <option value="all">All Departments</option>
-                    {departments.map((dept) => {
-                      const deptName = typeof dept === 'string' ? dept : (dept.name || dept.department || dept);
-                      return (
-                        <option key={deptName} value={deptName}>
-                          {deptName}
-                        </option>
-                      );
-                    })}
-                  </>
+          {/* Hide department dropdown completely for user role - backend auto-filters by user_access1 */}
+          {(() => {
+            const role = localStorage.getItem("role") || ""
+            if (role.toLowerCase() === "user") {
+              return null; // Hide completely for user role
+            }
+            return (
+              <div className="rounded-lg border border-gray-200 bg-white/90 px-4 py-3 shadow-sm shadow-indigo-100/60 backdrop-blur transition hover:border-indigo-400">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <span>Department</span>
+                </div>
+                    
+                <div className="relative mt-3">
+                  <select
+                    id="department-select"
+                    value={selectedDepartment || "all"}
+                    onChange={(event) => onDepartmentChange(event.target.value)}
+                    disabled={!departments || departments.length === 0}
+                    className="h-11 w-full rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 pr-10 text-sm font-medium text-gray-700 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100"
+                  >
+                    {!departments || departments.length === 0 ? (
+                      <option value="all">
+                        {departmentsError ? 'Unable to load departments' : 'Loading departments...'}
+                      </option>
+                    ) : (
+                      <>
+                        <option value="all">All Departments</option>
+                        {departments.map((dept) => {
+                          const deptName = typeof dept === 'string' ? dept : (dept.name || dept.department || dept);
+                          return (
+                            <option key={deptName} value={deptName}>
+                              {deptName}
+                            </option>
+                          );
+                        })}
+                      </>
+                    )}
+                  </select>
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+                {departmentsError && (
+                  <p className="mt-2 text-xs text-red-500">
+                    {departmentsError}
+                  </p>
                 )}
-              </select>
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </span>
-            </div>
-            {departmentsError && (
-              <p className="mt-2 text-xs text-red-500">
-                {departmentsError}
-              </p>
-            )}
-          </div>
+              </div>
+            )
+          })()}
           <div className="rounded-lg border border-l-4 border-l-indigo-500 shadow-md hover:shadow-lg transition-all bg-white h-auto">
             <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-tr-lg p-3">
               <h3 className="text-xs sm:text-sm font-medium text-indigo-700">

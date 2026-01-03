@@ -24,6 +24,7 @@ export default function UnifiedTaskTable({
     loading = false,
     onUpdateTask,
     onBulkSubmit,
+    onHODConfirm,  // Handler for HOD confirm (housekeeping tasks)
     userRole = "admin",
     onLoadMore,  // Callback for scroll-based loading
     hasMore = false,  // Whether more data is available
@@ -148,10 +149,14 @@ export default function UnifiedTaskTable({
     const displayTasks = filteredTasks;
 
     // Check if all visible items are selected
-    // For housekeeping tasks, only consider confirmed tasks
+    // For housekeeping tasks: Admin selects confirmed, User selects pending
+    const isUserRole = userRole?.toLowerCase() === 'user';
+    
     const selectableTasks = displayTasks.filter(task => {
         if (task.sourceSystem === 'housekeeping') {
-            return task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+            const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+            // Admin: select confirmed tasks, User: select pending tasks
+            return isUserRole ? !isConfirmed : isConfirmed;
         }
         return true;
     });
@@ -191,12 +196,15 @@ export default function UnifiedTaskTable({
     }, []);
 
     const handleSelectAll = useCallback((e) => {
+        const isUserRole = userRole?.toLowerCase() === 'user';
+        
         if (e.target.checked) {
-            // Select all visible tasks, but for housekeeping only select confirmed ones
+            // Select all visible tasks
+            // For housekeeping: Admin selects confirmed, User selects pending
             const tasksToSelect = displayTasks.filter(task => {
                 if (task.sourceSystem === 'housekeeping') {
-                    // Only select housekeeping tasks with "Confirmed" in Confirmed By HOD
-                    return task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+                    const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+                    return isUserRole ? !isConfirmed : isConfirmed;
                 }
                 return true; // Select all other tasks
             });
@@ -226,18 +234,46 @@ export default function UnifiedTaskTable({
                 }
             });
         }
-    }, [displayTasks, uploadedImages]);
+    }, [displayTasks, uploadedImages, userRole]);
 
     // Handle inline row data changes
     const handleRowDataChange = useCallback((taskId, field, value) => {
-        setRowData(prev => ({
-            ...prev,
-            [taskId]: {
-                ...prev[taskId],
-                [field]: value
+        setRowData(prev => {
+            const updated = {
+                ...prev,
+                [taskId]: {
+                    ...prev[taskId],
+                    [field]: value
+                }
+            };
+            
+            // If HOD confirm is selected, immediately call confirm API
+            if (field === "hodConfirm" && value === "Confirmed") {
+                const task = filteredTasks.find(t => t.id === taskId);
+                if (task && task.sourceSystem === 'housekeeping' && onHODConfirm) {
+                    // Use current rowData state (before update) for the confirm call
+                    const currentRowData = prev[taskId] || {};
+                    onHODConfirm(taskId, {
+                        remark: currentRowData.remarks || "",
+                        imageFile: uploadedImages[taskId]?.file || null,
+                        doerName2: currentRowData.doerName2 || ""
+                    }).catch(error => {
+                        console.error('HOD confirm failed:', error);
+                        // Revert the selection on error
+                        setRowData(prevState => ({
+                            ...prevState,
+                            [taskId]: {
+                                ...prevState[taskId],
+                                [field]: ""
+                            }
+                        }));
+                    });
+                }
             }
-        }));
-    }, []);
+            
+            return updated;
+        });
+    }, [filteredTasks, uploadedImages, onHODConfirm]);
 
     // Handle image upload
     const handleImageUpload = useCallback((taskId, file) => {
@@ -279,16 +315,44 @@ export default function UnifiedTaskTable({
             return;
         }
 
-        // Validate required fields - status is required
-        const missingStatus = selectedItemsArray.filter(id => {
-            const status = rowData[id]?.status;
-            return !status || status === "";
-        });
+        // Validate required fields
+        // For user role with pending housekeeping tasks: remarks are required (confirmHousekeepingTask)
+        // For admin role: status is required (submitHousekeepingTasks)
+        const userRole = localStorage.getItem("role") || "";
+        const isUserRole = userRole?.toLowerCase() === 'user';
+        
+        if (isUserRole) {
+            // User role: validate remarks for pending housekeeping tasks
+            const housekeepingTasks = selectedItemsArray.filter(id => {
+                const task = filteredTasks.find(t => t.id === id);
+                return task?.sourceSystem === 'housekeeping' && 
+                       task?.originalData?.attachment !== "confirmed" &&
+                       task?.confirmedByHOD !== "Confirmed" &&
+                       task?.confirmedByHOD !== "confirmed";
+            });
+            
+            const missingRemarks = housekeepingTasks.filter(id => {
+                const remark = rowData[id]?.remarks;
+                return !remark || remark.trim() === "";
+            });
+            
+            if (missingRemarks.length > 0) {
+                setErrorMessage("⚠️ Please enter remarks for all selected pending tasks");
+                setTimeout(() => setErrorMessage(""), 3000);
+                return;
+            }
+        } else {
+            // Admin role: validate status for all selected tasks
+            const missingStatus = selectedItemsArray.filter(id => {
+                const status = rowData[id]?.status;
+                return !status || status === "";
+            });
 
-        if (missingStatus.length > 0) {
-            setErrorMessage("⚠️ Please select status (Yes/No) for all selected tasks");
-            setTimeout(() => setErrorMessage(""), 3000);
-            return;
+            if (missingStatus.length > 0) {
+                setErrorMessage("⚠️ Please select status (Yes/No) for all selected tasks");
+                setTimeout(() => setErrorMessage(""), 3000);
+                return;
+            }
         }
 
         setIsSubmitting(true);
@@ -319,6 +383,7 @@ export default function UnifiedTaskTable({
                         remarks: taskRowData.remarks || "",
                         doerName2: taskRowData.doerName2 || "",  // Add doerName2 for housekeeping
                         image: imageBase64,
+                        imageFile: imageData?.file || null,  // Add file object for confirmHousekeepingTask API
                         originalData: task?.originalData,
                     };
                 })
@@ -386,7 +451,7 @@ export default function UnifiedTaskTable({
             )}
 
             {/* Table Card */}
-            <div className="rounded-lg border border-blue-200 shadow-md bg-white overflow-hidden">
+            <div className="w-full rounded-lg border border-blue-200 shadow-md bg-white overflow-hidden">
                 {/* Table Header */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100 px-2 sm:px-4 py-2 sm:py-3">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -417,7 +482,7 @@ export default function UnifiedTaskTable({
                 {/* Table Container */}
                 <div
                     ref={tableContainerRef}
-                    className="overflow-x-auto overflow-y-auto"
+                    className="w-full overflow-x-auto overflow-y-auto"
                     style={{ maxHeight: 'calc(100vh - 400px)' }}
                 >
                     {loading && displayTasks.length === 0 ? (
@@ -427,13 +492,14 @@ export default function UnifiedTaskTable({
                         </div>
                     ) : (
                         <>
-                            <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '800px' }}>
+                            <table className="w-full divide-y divide-gray-200" style={{ width: '100%', tableLayout: 'auto' }}>
                                 <TaskTableHeader
                                     onSelectAll={handleSelectAll}
                                     isAllSelected={isAllSelected}
                                     isIndeterminate={isIndeterminate}
                                     isHistoryMode={filters.status === "Completed"}
                                     isHousekeepingOnly={isHousekeepingOnly}
+                                    userRole={userRole}
                                 />
                                 <tbody className="bg-white divide-y divide-gray-100">
                                     {displayTasks.length > 0 ? (

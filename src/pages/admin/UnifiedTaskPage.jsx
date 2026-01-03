@@ -16,6 +16,7 @@ import {
     fetchHousekeepingPendingTasks,
     fetchHousekeepingHistoryTasks,
     submitHousekeepingTasks,
+    confirmHousekeepingTask,
     fetchHousekeepingDepartments,
 } from "../../redux/slice/housekeepingSlice"
 
@@ -344,6 +345,24 @@ export default function UnifiedTaskPage() {
         return Array.from(departmentsSet).filter(Boolean).sort()
     }, [allTasks])
 
+    // Handle HOD confirm for housekeeping tasks
+    const handleHODConfirm = useCallback(async (taskId, { remark = "", imageFile = null, doerName2 = "" }) => {
+        try {
+            await dispatch(confirmHousekeepingTask({
+                taskId,
+                remark,
+                imageFile,
+                doerName2
+            })).unwrap()
+            
+            // Refresh housekeeping data after confirm
+            await loadHousekeepingData()
+        } catch (error) {
+            console.error('HOD confirm failed:', error)
+            throw error
+        }
+    }, [dispatch, loadHousekeepingData])
+
     // Handle task update
     const handleUpdateTask = useCallback(async (updateData) => {
         const { taskId, sourceSystem, status, remarks, image, originalData } = updateData
@@ -434,16 +453,37 @@ export default function UnifiedTaskPage() {
                 : Promise.resolve(),
 
             // Update housekeeping tasks
+            // User role: use confirmHousekeepingTask for pending tasks
+            // Admin role: use submitHousekeepingTasks for confirmed tasks
             tasksBySource.housekeeping.length > 0
-                ? dispatch(submitHousekeepingTasks(
-                    tasksBySource.housekeeping.map(t => ({
-                        task_id: t.taskId,
-                        status: t.status,
-                        remark: t.remarks || '',
-                        doer_name2: t.doerName2 || '',  // Include doer_name2 from select box
-                        attachment: t.originalData?.attachment,
-                    }))
-                )).unwrap()
+                ? Promise.all(
+                    tasksBySource.housekeeping.map(async (t) => {
+                        // Check if task is pending using originalData from submission
+                        const isPending = t.originalData?.attachment !== "confirmed" && 
+                                        t.originalData?.confirmedByHOD !== "Confirmed" && 
+                                        t.originalData?.confirmedByHOD !== "confirmed";
+                        
+                        if (userRole?.toLowerCase() === 'user' && isPending) {
+                            // User role: use confirmHousekeepingTask API for pending tasks
+                            // Use imageFile directly (File object) for FormData, not base64
+                            return dispatch(confirmHousekeepingTask({
+                                taskId: t.taskId,
+                                remark: t.remarks || '',
+                                imageFile: t.imageFile || null,  // Use File object directly
+                                doerName2: t.doerName2 || ''
+                            })).unwrap();
+                        } else {
+                            // Admin role: use submitHousekeepingTasks API for confirmed tasks
+                            return dispatch(submitHousekeepingTasks([{
+                                task_id: t.taskId,
+                                status: t.status,
+                                remark: t.remarks || '',
+                                doer_name2: t.doerName2 || '',
+                                attachment: t.originalData?.attachment,
+                            }])).unwrap();
+                        }
+                    })
+                )
                 : Promise.resolve(),
         ])
 
@@ -495,6 +535,7 @@ export default function UnifiedTaskPage() {
                     loading={isLoading}
                     onUpdateTask={handleUpdateTask}
                     onBulkSubmit={handleBulkSubmit}
+                    onHODConfirm={handleHODConfirm}
                     assignedToOptions={allAssignees}
                     departmentOptions={allDepartments}
                     housekeepingDepartments={housekeepingDepartments}

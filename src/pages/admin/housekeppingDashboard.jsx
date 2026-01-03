@@ -14,23 +14,21 @@ export default function AdminDashboard() {
   const [userRole, setUserRole] = useState("")
   const [, setFilterStaff] = useState("all")
 
-  // Load user info and auto-set department filter for user role
+  // Load user info - for user role, backend handles filtering via JWT token
   useEffect(() => {
     const role = localStorage.getItem("role") || ""
     setUserRole(role)
     
-    // For user role, automatically filter by user_access departments
-    if (role.toLowerCase() === "user") {
-      const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
-      if (userAccess) {
-        const departments = userAccess.split(',').map(d => d.trim()).filter(Boolean)
-        // Set first department as default filter (or all if multiple)
-        if (departments.length > 0) {
-          // For housekeeping, we might want to show all user's departments
-          // But for now, let's use the first one or "all" if multiple
-          setDepartmentFilter(departments.length === 1 ? departments[0] : "all")
-        }
-      }
+    // For user role: Backend automatically filters by user_access1 from JWT token
+    // Don't set departmentFilter - backend will use token-based filtering
+    // For admin: departmentFilter can be changed via dropdown
+    if (role.toLowerCase() !== "user") {
+      // Admin can use "all" or specific department
+      setDepartmentFilter("all")
+    } else {
+      // For user role, keep as "all" but backend will filter by user_access1 from token
+      // The dropdown will be disabled for users
+      setDepartmentFilter("all")
     }
   }, [])
 

@@ -31,7 +31,7 @@ import {
 } from "../redux/slice/settingSlice";
 // import supabase from '../SupabaseClient';
 
-const SYSTEM_ACCESS_OPTIONS = ["Checklist", "Maintenance", "Housekeeping"];
+const SYSTEM_ACCESS_OPTIONS = ["CHECKLIST", "MAINTENANCE", "HOUSEKEEPING"];
 const PAGE_ACCESS_OPTIONS = [
   { value: "dashboard", label: "Dashboard" },
   { value: "quick-task", label: "Quick Task" },
@@ -66,6 +66,7 @@ const Setting = () => {
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [updateMessage, setUpdateMessage] = useState({ type: "", text: "" }); // Success/Error message
   const [isUpdating, setIsUpdating] = useState(false); // Loading state for update
+  const [originalSystemAccess, setOriginalSystemAccess] = useState(""); // Store original system_access from database to preserve other module values
 
   const { userData, department, departmentsOnly, givenBy, loading, error } =
     useSelector((state) => state.setting);
@@ -296,7 +297,7 @@ const Setting = () => {
       givenBy: userForm.givenBy?.trim() || "", // Add givenBy field
       user_access1: userForm.user_access1?.trim() || "", // Text input value - supports multiple comma-separated values
       system_access: Array.isArray(userForm.systemAccess)
-        ? userForm.systemAccess.join(",")
+        ? userForm.systemAccess.map(item => item.toUpperCase()).join(",")
         : "",
       page_access: Array.isArray(userForm.pageAccess)
         ? userForm.pageAccess.join(",")
@@ -371,6 +372,36 @@ const Setting = () => {
       ? userForm.departments.join(",")
       : "";
 
+    // Merge system_access: Update only SYSTEM_ACCESS_OPTIONS values, preserve others
+    let finalSystemAccess = "";
+    if (originalSystemAccess) {
+      // Get all values from original system_access
+      const originalValues = originalSystemAccess
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+      
+      // Get selected SYSTEM_ACCESS_OPTIONS values (uppercase)
+      const selectedSystemAccess = Array.isArray(userForm.systemAccess)
+        ? userForm.systemAccess.map(item => item.toUpperCase())
+        : [];
+      
+      // Separate values into SYSTEM_ACCESS_OPTIONS and other values
+      const systemAccessOptionsUpper = SYSTEM_ACCESS_OPTIONS.map(opt => opt.toUpperCase());
+      const otherValues = originalValues.filter(
+        (val) => !systemAccessOptionsUpper.some(opt => opt.toLowerCase() === val.toLowerCase())
+      );
+      
+      // Combine: selected SYSTEM_ACCESS_OPTIONS + other values
+      const allValues = [...selectedSystemAccess, ...otherValues];
+      finalSystemAccess = allValues.join(",");
+    } else {
+      // If no original system_access, just use selected values
+      finalSystemAccess = Array.isArray(userForm.systemAccess)
+        ? userForm.systemAccess.map(item => item.toUpperCase()).join(",")
+        : "";
+    }
+
     const updatedUser = {
       user_name: userForm.username?.trim() || "",
       email_id: userForm.email?.trim() || "",
@@ -381,9 +412,7 @@ const Setting = () => {
       user_access: departmentsString, // Join array into comma-separated string
       department: departmentsString, // Same data as user_access - goes to department column
       user_access1: userForm.user_access1?.trim() || "", // Text input value - supports multiple comma-separated values
-      system_access: Array.isArray(userForm.systemAccess)
-        ? userForm.systemAccess.join(",")
-        : "",
+      system_access: finalSystemAccess,
       page_access: Array.isArray(userForm.pageAccess)
         ? userForm.pageAccess.join(",")
         : "",
@@ -554,6 +583,10 @@ const Setting = () => {
       return;
     }
 
+    // Store original system_access to preserve other module values
+    const originalSystemAccessValue = user.system_access || "";
+    setOriginalSystemAccess(originalSystemAccessValue);
+
     setUserForm({
       username: user.user_name || "",
       email: user.email_id || "",
@@ -574,6 +607,15 @@ const Setting = () => {
             .split(",")
             .map((item) => item.trim())
             .filter(Boolean)
+            .map((dbValue) => {
+              // Match database value to SYSTEM_ACCESS_OPTIONS (case-insensitive)
+              // Handle variations like "CHECKLIST", "Checklist", "checklist", etc.
+              const matchedOption = SYSTEM_ACCESS_OPTIONS.find(
+                (option) => option.toLowerCase() === dbValue.toLowerCase()
+              );
+              return matchedOption || null; // Return matched option or null
+            })
+            .filter((value) => value !== null) // Remove null values
         : [],
       pageAccess: user.page_access
         ? user.page_access
@@ -618,6 +660,7 @@ const Setting = () => {
     setCurrentUserId(null);
     setIsUpdating(false); // Reset updating state when resetting form
     setUpdateMessage({ type: "", text: "" }); // Clear messages
+    setOriginalSystemAccess(""); // Reset original system_access
   };
 
   // Department form handlers

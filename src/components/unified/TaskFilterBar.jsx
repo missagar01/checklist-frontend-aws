@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Search, X, History, Clock, ListFilter } from "lucide-react";
 
 export default function TaskFilterBar({
     filters = {},
     onFiltersChange,
     housekeepingDepartments = [],
+    userRole = "admin",
 }) {
     const {
         searchTerm = "",
@@ -38,6 +39,36 @@ export default function TaskFilterBar({
     const hasActiveFilters = useMemo(() => {
         return searchTerm || sourceSystem || status;
     }, [searchTerm, sourceSystem, status]);
+
+    // Get user role from props or localStorage (fallback)
+    const currentUserRole = useMemo(() => {
+        return userRole || localStorage.getItem("role") || "admin";
+    }, [userRole]);
+
+    // Filter departments based on user role and user_access1
+    const filteredDepartments = useMemo(() => {
+        if (currentUserRole?.toLowerCase() !== 'user') {
+            // Admin role: show all departments
+            return housekeepingDepartments;
+        }
+        
+        // User role: filter by user_access1
+        const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || "";
+        if (!userAccess1) {
+            return [];
+        }
+        
+        // Parse comma-separated departments
+        const userDepartments = userAccess1.split(',').map(dept => dept.trim()).filter(dept => dept);
+        
+        // Filter housekeepingDepartments to only include user's accessible departments
+        return housekeepingDepartments.filter(dept => 
+            userDepartments.some(userDept => 
+                dept.toLowerCase().includes(userDept.toLowerCase()) || 
+                userDept.toLowerCase().includes(dept.toLowerCase())
+            )
+        );
+    }, [housekeepingDepartments, currentUserRole]);
 
     return (
         <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 md:p-4 shadow-sm space-y-3 sm:space-y-4">
@@ -138,8 +169,11 @@ export default function TaskFilterBar({
                 </div>
             </div>
 
-            {/* Department Filter - Show only when housekeeping is selected */}
-            {sourceSystem === "housekeeping" && housekeepingDepartments.length > 0 && (
+            {/* Department Filter - Show only when housekeeping is selected and user is admin */}
+            {/* Hide completely for user role */}
+            {sourceSystem === "housekeeping" && 
+             currentUserRole?.toLowerCase() !== 'user' && 
+             filteredDepartments.length > 0 && (
                 <div>
                     <label htmlFor="department-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
                         📁 Filter by Department:
@@ -151,7 +185,7 @@ export default function TaskFilterBar({
                         className="w-full sm:w-auto text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
                     >
                         <option value="">All Departments</option>
-                        {housekeepingDepartments.map((dept, idx) => (
+                        {filteredDepartments.map((dept, idx) => (
                             <option key={idx} value={dept}>
                                 {dept}
                             </option>

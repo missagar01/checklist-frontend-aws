@@ -422,6 +422,7 @@ export default function UnifiedTaskTable({
                 filters={filters}
                 onFiltersChange={setFilters}
                 housekeepingDepartments={housekeepingDepartments}
+                userRole={userRole}
             />
 
             {/* Success Message */}

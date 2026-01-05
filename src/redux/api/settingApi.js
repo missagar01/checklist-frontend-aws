@@ -197,10 +197,37 @@ export const updateUserDataApi = async ({ id, updatedUser }) => {
       body: JSON.stringify(updatedUser),
     });
     
-    return await response.json();
+    // Check if response is JSON
+    const contentType = response.headers.get("content-type");
+    let data;
+    
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      // If not JSON, get text and try to parse
+      const text = await response.text();
+      console.error("❌ Non-JSON response received:", text.substring(0, 200));
+      throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+    }
+    
+    if (!response.ok) {
+      console.error("❌ Update user API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: data
+      });
+      throw new Error(data.message || data.error || `Server error: ${response.status}`);
+    }
+    
+    return data;
   } catch (error) {
-    console.log("Error updating user", error);
-    return null;
+    console.error("❌ Error updating user:", error);
+    // If it's already an Error object, re-throw it
+    if (error instanceof Error) {
+      throw error;
+    }
+    // Otherwise wrap it
+    throw new Error(error.message || "Failed to update user");
   }
 };
 

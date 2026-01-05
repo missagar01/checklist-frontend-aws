@@ -295,7 +295,17 @@ const Setting = () => {
       user_access: departmentsString, // Join array into comma-separated string
       department: departmentsString, // Same data as user_access - goes to department column
       givenBy: userForm.givenBy?.trim() || "", // Add givenBy field
-      user_access1: userForm.user_access1?.trim() || "", // Text input value - supports multiple comma-separated values
+      user_access1: (() => {
+        // Handle user_access1: if it's an array, join with commas; if string, use as is; otherwise convert to string
+        if (Array.isArray(userForm.user_access1)) {
+          return userForm.user_access1.filter(Boolean).join(",");
+        } else if (userForm.user_access1 !== undefined && userForm.user_access1 !== null) {
+          return typeof userForm.user_access1 === 'string' 
+            ? userForm.user_access1.trim() 
+            : String(userForm.user_access1).trim();
+        }
+        return "";
+      })(), // Ensure user_access1 is always sent as comma-separated string
       system_access: Array.isArray(userForm.systemAccess)
         ? userForm.systemAccess.map(item => item.toUpperCase()).join(",")
         : "",
@@ -382,22 +392,28 @@ const Setting = () => {
         .filter(Boolean);
       
       // Get selected SYSTEM_ACCESS_OPTIONS values (uppercase)
-      const selectedSystemAccess = Array.isArray(userForm.systemAccess)
+      const selectedSystemAccess = Array.isArray(userForm.systemAccess) && userForm.systemAccess.length > 0
         ? userForm.systemAccess.map(item => item.toUpperCase())
         : [];
       
       // Separate values into SYSTEM_ACCESS_OPTIONS and other values
       const systemAccessOptionsUpper = SYSTEM_ACCESS_OPTIONS.map(opt => opt.toUpperCase());
       const otherValues = originalValues.filter(
-        (val) => !systemAccessOptionsUpper.some(opt => opt.toLowerCase() === val.toLowerCase())
+        (val) => {
+          // Check if this value matches any SYSTEM_ACCESS_OPTIONS (case-insensitive)
+          const matchesSystemOption = systemAccessOptionsUpper.some(
+            opt => opt.toLowerCase() === val.toLowerCase()
+          );
+          return !matchesSystemOption; // Keep only non-SYSTEM_ACCESS_OPTIONS values
+        }
       );
       
-      // Combine: selected SYSTEM_ACCESS_OPTIONS + other values
+      // Combine: selected SYSTEM_ACCESS_OPTIONS (uppercase) + other values (preserve original case)
       const allValues = [...selectedSystemAccess, ...otherValues];
-      finalSystemAccess = allValues.join(",");
+      finalSystemAccess = allValues.filter(Boolean).join(",");
     } else {
       // If no original system_access, just use selected values
-      finalSystemAccess = Array.isArray(userForm.systemAccess)
+      finalSystemAccess = Array.isArray(userForm.systemAccess) && userForm.systemAccess.length > 0
         ? userForm.systemAccess.map(item => item.toUpperCase()).join(",")
         : "";
     }
@@ -411,7 +427,17 @@ const Setting = () => {
       status: userForm.status || "active",
       user_access: departmentsString, // Join array into comma-separated string
       department: departmentsString, // Same data as user_access - goes to department column
-      user_access1: userForm.user_access1?.trim() || "", // Text input value - supports multiple comma-separated values
+      user_access1: (() => {
+        // Handle user_access1: if it's an array, join with commas; if string, use as is; otherwise convert to string
+        if (Array.isArray(userForm.user_access1)) {
+          return userForm.user_access1.filter(Boolean).join(",");
+        } else if (userForm.user_access1 !== undefined && userForm.user_access1 !== null) {
+          return typeof userForm.user_access1 === 'string' 
+            ? userForm.user_access1.trim() 
+            : String(userForm.user_access1).trim();
+        }
+        return "";
+      })(), // Ensure user_access1 is always sent as comma-separated string
       system_access: finalSystemAccess,
       page_access: Array.isArray(userForm.pageAccess)
         ? userForm.pageAccess.join(",")
@@ -422,6 +448,15 @@ const Setting = () => {
     if (userForm.password && userForm.password.trim() !== "") {
       updatedUser.password = userForm.password.trim();
     }
+
+    // Debug: Log the data being sent
+    console.log("Updating user with data:", {
+      id: currentUserId,
+      updatedUser: {
+        ...updatedUser,
+        password: updatedUser.password ? "***" : undefined
+      }
+    });
 
     try {
       const result = await dispatch(
@@ -450,11 +485,24 @@ const Setting = () => {
         throw new Error("Update failed - no response from server");
       }
     } catch (error) {
-      console.error("Error updating user:", error);
-      const errorMessage =
-        error?.message ||
-        error?.error ||
-        "Failed to update user. Please check your input and try again.";
+      console.error("❌ Error updating user:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        error: error?.error,
+        response: error?.response
+      });
+      
+      // Extract error message from various possible locations
+      let errorMessage = "Failed to update user. Please check your input and try again.";
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error) {
+        errorMessage = typeof error.error === 'string' ? error.error : error.error.message || errorMessage;
+      } else if (error?.detail) {
+        errorMessage = error.detail;
+      }
+      
       setUpdateMessage({
         type: "error",
         text: `Error: ${errorMessage}`,
@@ -587,6 +635,22 @@ const Setting = () => {
     const originalSystemAccessValue = user.system_access || "";
     setOriginalSystemAccess(originalSystemAccessValue);
 
+    // Extract systemAccess values that match SYSTEM_ACCESS_OPTIONS (case-insensitive)
+    const systemAccessArray = user.system_access
+      ? user.system_access
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .map((dbValue) => {
+            // Match database value to SYSTEM_ACCESS_OPTIONS (case-insensitive)
+            const matchedOption = SYSTEM_ACCESS_OPTIONS.find(
+              (option) => option.toLowerCase() === dbValue.toLowerCase()
+            );
+            return matchedOption || null; // Return matched option or null
+          })
+          .filter((value) => value !== null) // Remove null values
+      : [];
+
     setUserForm({
       username: user.user_name || "",
       email: user.email_id || "",
@@ -601,22 +665,10 @@ const Setting = () => {
         : [], // Split comma-separated string into array
       role: user.role || "user",
       status: user.status || "active",
-      user_access1: user.user_access1 || "", // Keep as string
-      systemAccess: user.system_access
-        ? user.system_access
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-            .map((dbValue) => {
-              // Match database value to SYSTEM_ACCESS_OPTIONS (case-insensitive)
-              // Handle variations like "CHECKLIST", "Checklist", "checklist", etc.
-              const matchedOption = SYSTEM_ACCESS_OPTIONS.find(
-                (option) => option.toLowerCase() === dbValue.toLowerCase()
-              );
-              return matchedOption || null; // Return matched option or null
-            })
-            .filter((value) => value !== null) // Remove null values
-        : [],
+      user_access1: user.user_access1 !== null && user.user_access1 !== undefined 
+        ? String(user.user_access1) 
+        : "", // Ensure it's always a string
+      systemAccess: systemAccessArray,
       pageAccess: user.page_access
         ? user.page_access
             .split(",")
@@ -825,9 +877,11 @@ const Setting = () => {
                       />
                       <datalist id="leaveUsernameOptions">
                         {Array.isArray(userData) &&
-                          userData.map((user) => (
-                            <option key={user.id} value={user.user_name} />
-                          ))}
+                          userData
+                            .filter((user) => user && user.id && user.user_name)
+                            .map((user) => (
+                              <option key={user.id} value={user.user_name} />
+                            ))}
                       </datalist>
 
                       {/* Clear button for input */}
@@ -1011,9 +1065,11 @@ const Setting = () => {
                       />
                       <datalist id="usernameOptions">
                         {Array.isArray(userData) &&
-                          userData.map((user) => (
-                            <option key={user.id} value={user.user_name} />
-                          ))}
+                          userData
+                            .filter((user) => user && user.id && user.user_name)
+                            .map((user) => (
+                              <option key={user.id} value={user.user_name} />
+                            ))}
                       </datalist>
 
                       {/* Clear button for input */}

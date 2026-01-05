@@ -341,6 +341,23 @@ export default function UnifiedTaskTable({
                 setTimeout(() => setErrorMessage(""), 3000);
                 return;
             }
+            
+            const checklistNoTasks = selectedItemsArray.filter(id => {
+                const task = filteredTasks.find(t => t.id === id);
+                const status = rowData[id]?.status;
+                return task?.sourceSystem === 'checklist' && status === "No";
+            });
+
+            const missingChecklistRemarks = checklistNoTasks.filter(id => {
+                const remark = rowData[id]?.remarks;
+                return !remark || remark.trim() === "";
+            });
+
+            if (missingChecklistRemarks.length > 0) {
+                setErrorMessage("⚠️ Please add remarks when setting a checklist task to 'No'");
+                setTimeout(() => setErrorMessage(""), 3000);
+                return;
+            }
         } else {
             // Admin role: validate status for all selected tasks
             const missingStatus = selectedItemsArray.filter(id => {

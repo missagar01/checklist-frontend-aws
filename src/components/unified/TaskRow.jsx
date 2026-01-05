@@ -43,6 +43,17 @@ const TaskRow = memo(function TaskRow({
         task.originalStatus === 'Completed' ||
         isHistoryMode;
 
+    const isUserRole = userRole?.toLowerCase() === 'user';
+    const isHousekeepingPendingEditable = isUserRole &&
+        task.sourceSystem === 'housekeeping' &&
+        !isCompleted &&
+        task.originalData?.attachment !== "confirmed" &&
+        task.confirmedByHOD !== "Confirmed" &&
+        task.confirmedByHOD !== "confirmed";
+    const shouldShowChecklistRemarkInput = isUserRole &&
+        task.sourceSystem === 'checklist' &&
+        !isCompleted;
+
     const handleCheckboxClick = (e) => {
         e.stopPropagation();
         onSelect?.(task.id, e.target.checked);
@@ -201,12 +212,7 @@ const TaskRow = memo(function TaskRow({
                 </td>
 
                 {/* Status - Hide for user role pending tasks */}
-                {!(userRole?.toLowerCase() === 'user' && 
-                   task.sourceSystem === 'housekeeping' && 
-                   !isCompleted &&
-                   task.originalData?.attachment !== "confirmed" &&
-                   task.confirmedByHOD !== "Confirmed" &&
-                   task.confirmedByHOD !== "confirmed") && (
+                {!isHousekeepingPendingEditable && (
                     <td className="px-2 sm:px-3 py-2 sm:py-4">
                         {isCompleted ? (
                             <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
@@ -250,12 +256,7 @@ const TaskRow = memo(function TaskRow({
                 </td>
 
                 {/* Image - Hide for user role pending tasks */}
-                {!(userRole?.toLowerCase() === 'user' && 
-                   task.sourceSystem === 'housekeeping' && 
-                   !isCompleted &&
-                   task.originalData?.attachment !== "confirmed" &&
-                   task.confirmedByHOD !== "Confirmed" &&
-                   task.confirmedByHOD !== "confirmed") && (
+                {!isHousekeepingPendingEditable && (
                     <td className="px-2 sm:px-3 py-2 sm:py-4">
                         {isCompleted ? (
                             task.imageUrl ? (
@@ -291,12 +292,7 @@ const TaskRow = memo(function TaskRow({
                 )}
 
                 {/* View Details Button - Hide for user role pending tasks */}
-                {!(userRole?.toLowerCase() === 'user' && 
-                   task.sourceSystem === 'housekeeping' && 
-                   !isCompleted &&
-                   task.originalData?.attachment !== "confirmed" &&
-                   task.confirmedByHOD !== "Confirmed" &&
-                   task.confirmedByHOD !== "confirmed") && (
+                {!isHousekeepingPendingEditable && (
                     <td className="px-2 sm:px-3 py-2 sm:py-4">
                         <button
                             onClick={handleViewClick}
@@ -460,27 +456,22 @@ const TaskRow = memo(function TaskRow({
                 )}
             </td>
 
-            {/* Remarks - User role: input field for pending housekeeping tasks, Admin: show data only */}
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-                {userRole?.toLowerCase() === 'user' && 
-                 task.sourceSystem === 'housekeeping' && 
-                 !isCompleted &&
-                 task.originalData?.attachment !== "confirmed" &&
-                 task.confirmedByHOD !== "Confirmed" &&
-                 task.confirmedByHOD !== "confirmed" ? (
-                    <input
-                        type="text"
-                        placeholder="Enter remark"
-                        value={rowData.remarks || ""}
-                        onChange={(e) => handleDataChange("remarks", e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500"
-                    />
-                ) : (
-                    <span className="text-xs text-gray-700 max-w-[100px] truncate block" title={task.remarks || task.originalData?.remark || ''}>
-                        {task.remarks || task.originalData?.remark || '—'}
-                    </span>
-                )}
-            </td>
+                {/* Remarks - User role: input field for pending housekeeping/checklist tasks, Admin: show data only */}
+                <td className="px-2 sm:px-3 py-2 sm:py-4">
+                    {(isHousekeepingPendingEditable || shouldShowChecklistRemarkInput) && !isCompleted ? (
+                        <input
+                            type="text"
+                            placeholder="Enter remark"
+                            value={rowData.remarks || ""}
+                            onChange={(e) => handleDataChange("remarks", e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500"
+                        />
+                    ) : (
+                        <span className="text-xs text-gray-700 max-w-[100px] truncate block" title={task.remarks || task.originalData?.remark || ''}>
+                            {task.remarks || task.originalData?.remark || '—'}
+                        </span>
+                    )}
+                </td>
 
             {/* Image - For completed: show if exists, for pending: show upload */}
             <td className="px-2 sm:px-3 py-2 sm:py-4">

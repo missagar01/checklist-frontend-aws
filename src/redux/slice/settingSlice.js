@@ -172,21 +172,29 @@ const settingsSlice = createSlice({
       .addCase(createUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-  
       })
-       .addCase(updateUser.pending, (state) => {
+      .addCase(updateUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.userData=action.payload;
-       
+        state.error = null;
+        // Update the specific user in the array instead of replacing the entire array
+        if (action.payload && Array.isArray(state.userData)) {
+          const index = state.userData.findIndex(user => user.id === action.payload.id);
+          if (index !== -1) {
+            state.userData[index] = action.payload;
+          } else {
+            // If user not found, add it (shouldn't happen, but just in case)
+            state.userData.push(action.payload);
+          }
+        }
       })
       .addCase(updateUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-  
+        state.error = action.error?.message || "Failed to update user";
+        console.error("❌ Update user rejected:", action.error);
       })
        .addCase(createDepartment.pending, (state) => {
         state.loading = true;

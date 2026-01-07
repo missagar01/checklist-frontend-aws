@@ -450,8 +450,9 @@ const TaskRow = memo(function TaskRow({
                         className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                         <option value="">Select Status</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
+                       <option value="Yes"> Yes / हाँ</option>
+<option value="No">NO / नहीं</option>
+
                     </select>
                 )}
             </td>

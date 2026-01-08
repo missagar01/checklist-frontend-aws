@@ -1,136 +1,3 @@
-// // import supabase from "../../SupabaseClient";
-
-
-
-// export const fetchUserDetailsApi = async () => {
-//   try {
-//     const response = await fetch("http://localhost:5050/api/settings/users");
-//     const data = await response.json();
-//     return data;
-//   } catch (error) {
-//     console.log("Error fetching users", error);
-//     return [];
-//   }
-// };
-
-
-
-// // export const fetchUserDetailsApi = async () => {
-// //   try {
-// //     const { data, error } = await supabase
-// //       .from("users")
-// //       .select('*, user_access, leave_date, leave_end_date, remark') // Add leave_end_date
-// //       .not("user_name", "is", null)
-// //       .neq("user_name", "");
-
-// //     if (error) {
-// //       console.log("Error when fetching data", error);
-// //       return [];
-// //     }
-
-// //     console.log("Fetched successfully", data);
-// //     return data;
-// //   } catch (error) {
-// //     console.log("Error from Supabase", error);
-// //     return [];
-// //   }
-// // };
-
-// export const fetchDepartmentDataApi = async () => {
-//   try {
-//     const res = await fetch("http://localhost:5050/api/settings/departments");
-//     return await res.json();
-//   } catch (error) {
-//     console.log("Error fetching departments", error);
-//     return [];
-//   }
-// };
-
-
-
-
-// export const createUserApi = async (newUser) => {
-//   try {
-//     const res = await fetch("http://localhost:5050/api/settings/users", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(newUser)
-//     });
-
-//     const data = await res.json();
-//     return data;
-//   } catch (error) {
-//     console.log("Error creating user", error);
-//   }
-// };
-
-
-// export const updateUserDataApi = async ({ id, updatedUser }) => {
-//   try {
-//     const res = await fetch(`http://localhost:5050/api/settings/users/${id}`, {
-//       method: "PUT",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(updatedUser)
-//     });
-
-//     return await res.json();
-//   } catch (error) {
-//     console.log("Error updating user", error);
-//   }
-// };
-
-
-
-// export const createDepartmentApi = async (newDept) => {
-//   try {
-//     const res = await fetch("http://localhost:5050/api/settings/departments", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(newDept)
-//     });
-
-//     return await res.json();
-//   } catch (error) {
-//     console.log("Error adding department", error);
-//   }
-// };
-
-
-// export const updateDepartmentDataApi = async ({ id, updatedDept }) => {
-//   try {
-//     const res = await fetch(`http://localhost:5050/api/settings/departments/${id}`, {
-//       method: "PUT",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(updatedDept)
-//     });
-
-//     return await res.json();
-//   } catch (error) {
-//     console.log("Error updating department", error);
-//   }
-// };
-
-
-
-// export const deleteUserByIdApi = async (id) => {
-//   try {
-//     await fetch(`http://localhost:5050/api/settings/users/${id}`, {
-//       method: "DELETE",
-//     });
-//   } catch (error) {
-//     console.log("Error deleting user", error);
-//   }
-// };
-
-
-
-
-// // In your settingApi.js file, add these functions:
-
-
-
-
-
 
 // Dynamic Base URL for settings APIs
 const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/settings`;
@@ -273,10 +140,38 @@ export const updateDepartmentDataApi = async ({ id, updatedDept }) => {
       body: JSON.stringify(updatedDept),
     });
     
-    return await response.json();
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.log("Error updating department", error);
-    return null;
+    console.error("Error updating department:", error);
+    throw error; // Re-throw to let Redux handle it
+  }
+};
+
+// =======================================================
+// DELETE DEPARTMENT
+// =======================================================
+export const deleteDepartmentDataApi = async (id) => {
+  try {
+    const response = await fetch(`${BASE_URL}/departments/${id}`, {
+      method: "DELETE",
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error deleting department:", error);
+    throw error; // Re-throw to let Redux handle it
   }
 };
 // Fetch only unique departments (without given_by)

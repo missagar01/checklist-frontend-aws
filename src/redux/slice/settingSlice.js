@@ -11,6 +11,7 @@ import {
   fetchUserDetailsApi, 
   updateDepartmentDataApi, 
   updateUserDataApi,
+  deleteDepartmentDataApi,
   fetchDepartmentsOnlyApi,  // Add this import
   fetchGivenByDataApi       // Add this import
 } from '../api/settingApi';
@@ -89,6 +90,14 @@ export const deleteUser = createAsyncThunk(
   'delete/user',
   async (id) => {
     const deletedId = await deleteUserByIdApi(id);
+    return deletedId;
+  }
+);
+
+export const deleteDepartment = createAsyncThunk(
+  'delete/department',
+  async (id) => {
+    const deletedId = await deleteDepartmentDataApi(id);
     return deletedId;
   }
 );
@@ -223,6 +232,18 @@ const settingsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
   
+      })
+      .addCase(deleteDepartment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteDepartment.fulfilled, (state, action) => {
+        state.loading = false;
+        state.department = state.department.filter((dept) => dept.id !== action.payload.id);
+      })
+      .addCase(deleteDepartment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       .addCase(deleteUser.pending, (state) => {
   state.loading = true;

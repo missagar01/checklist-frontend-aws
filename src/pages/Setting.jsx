@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Delete
 } from "lucide-react";
 import AdminLayout from "../components/layout/AdminLayout";
 import { useDispatch, useSelector } from "react-redux";
@@ -22,6 +23,7 @@ import {
   createDepartment,
   createUser,
   deleteUser,
+  deleteDepartment,
   departmentOnlyDetails,
   givenByDetails,
   departmentDetails,
@@ -67,6 +69,8 @@ const Setting = () => {
   const [updateMessage, setUpdateMessage] = useState({ type: "", text: "" }); // Success/Error message
   const [isUpdating, setIsUpdating] = useState(false); // Loading state for update
   const [originalSystemAccess, setOriginalSystemAccess] = useState(""); // Store original system_access from database to preserve other module values
+  const [deptUpdateMessage, setDeptUpdateMessage] = useState({ type: "", text: "" }); // Department success/error message
+  const [isDeptUpdating, setIsDeptUpdating] = useState(false); // Loading state for department update
 
   const { userData, department, departmentsOnly, givenBy, loading, error } =
     useSelector((state) => state.setting);
@@ -514,35 +518,129 @@ const Setting = () => {
   // Modified handleAddDepartment
   const handleAddDepartment = async (e) => {
     e.preventDefault();
-    const newDept = { ...deptForm };
+    
+    setIsDeptUpdating(true);
+    setDeptUpdateMessage({ type: "", text: "" });
+    
+    // Validate required fields
+    if (!deptForm.name || deptForm.name.trim() === "") {
+      setDeptUpdateMessage({
+        type: "error",
+        text: "Please enter a department name",
+      });
+      setIsDeptUpdating(false);
+      return;
+    }
+
+    const newDept = {
+      name: deptForm.name.trim(),
+      givenBy: deptForm.givenBy?.trim() || null,
+    };
 
     try {
-      await dispatch(createDepartment(newDept)).unwrap();
-      resetDeptForm();
-      setShowDeptModal(false);
-      setTimeout(() => window.location.reload(), 1000);
+      const result = await dispatch(createDepartment(newDept)).unwrap();
+      
+      if (result) {
+        // Show success message
+        setDeptUpdateMessage({
+          type: "success",
+          text: "Department created successfully! ✅",
+        });
+
+        // Refresh department data
+        dispatch(departmentDetails());
+        dispatch(departmentOnlyDetails());
+        dispatch(givenByDetails());
+        
+        // Keep modal open for 2 seconds to show success message, then close
+        setTimeout(() => {
+          resetDeptForm();
+          setShowDeptModal(false);
+          setDeptUpdateMessage({ type: "", text: "" });
+          // Refresh again to ensure UI updates
+          dispatch(departmentDetails());
+        }, 2000);
+      } else {
+        throw new Error("Creation failed - no response from server");
+      }
     } catch (error) {
       console.error("Error adding department:", error);
+      const errorMessage = error?.message || error?.error || "Failed to create department. Please try again.";
+      setDeptUpdateMessage({
+        type: "error",
+        text: `Error: ${errorMessage}`,
+      });
+      setIsDeptUpdating(false);
     }
   };
 
   // Modified handleUpdateDepartment
   const handleUpdateDepartment = async (e) => {
     e.preventDefault();
+    
+    setIsDeptUpdating(true);
+    setDeptUpdateMessage({ type: "", text: "" });
+    
+    // Validate required fields
+    if (!deptForm.name || deptForm.name.trim() === "") {
+      setDeptUpdateMessage({
+        type: "error",
+        text: "Please enter a department name",
+      });
+      setIsDeptUpdating(false);
+      return;
+    }
+
+    if (!currentDeptId) {
+      setDeptUpdateMessage({
+        type: "error",
+        text: "Department ID is missing. Please try again.",
+      });
+      setIsDeptUpdating(false);
+      return;
+    }
+
     const updatedDept = {
-      department: deptForm.name,
-      given_by: deptForm.givenBy,
+      department: deptForm.name.trim(),
+      given_by: deptForm.givenBy?.trim() || null,
     };
 
     try {
-      await dispatch(
+      const result = await dispatch(
         updateDepartment({ id: currentDeptId, updatedDept })
       ).unwrap();
-      resetDeptForm();
-      setShowDeptModal(false);
-      setTimeout(() => window.location.reload(), 1000);
+      
+      if (result) {
+        // Show success message
+        setDeptUpdateMessage({
+          type: "success",
+          text: "Department updated successfully! ✅",
+        });
+
+        // Refresh department data
+        dispatch(departmentDetails());
+        dispatch(departmentOnlyDetails());
+        dispatch(givenByDetails());
+        
+        // Keep modal open for 2 seconds to show success message, then close
+        setTimeout(() => {
+          resetDeptForm();
+          setShowDeptModal(false);
+          setDeptUpdateMessage({ type: "", text: "" });
+          // Refresh again to ensure UI updates
+          dispatch(departmentDetails());
+        }, 2000);
+      } else {
+        throw new Error("Update failed - no response from server");
+      }
     } catch (error) {
       console.error("Error updating department:", error);
+      const errorMessage = error?.message || error?.error || "Failed to update department. Please try again.";
+      setDeptUpdateMessage({
+        type: "error",
+        text: `Error: ${errorMessage}`,
+      });
+      setIsDeptUpdating(false);
     }
   };
 
@@ -727,6 +825,32 @@ const Setting = () => {
       givenBy: "",
     });
     setCurrentDeptId(null);
+    setIsDeptUpdating(false);
+    setDeptUpdateMessage({ type: "", text: "" });
+  };
+
+  // Modified handleDeleteDepartment
+  const handleDeleteDepartment = async (deptId) => {
+    if (!window.confirm("Are you sure you want to delete this department?")) {
+      return;
+    }
+
+    try {
+      const result = await dispatch(deleteDepartment(deptId)).unwrap();
+      
+      if (result) {
+        // Refresh department data
+        dispatch(departmentDetails());
+        dispatch(departmentOnlyDetails());
+        dispatch(givenByDetails());
+        
+        alert("Department deleted successfully! ✅");
+      }
+    } catch (error) {
+      console.error("Error deleting department:", error);
+      const errorMessage = error?.message || error?.error || "Failed to delete department. Please try again.";
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   // Add this filtered users calculation for leave tab
@@ -1451,17 +1575,32 @@ const Setting = () => {
                               {dept.department}
                             </td>
                             <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex space-x-2 justify-end">
-                                <button
-                                  onClick={() => handleEditDepartment(dept.id)}
-                                  className="text-blue-600 hover:text-blue-900"
-                                >
-                                  <Edit
-                                    size={16}
-                                    className="sm:w-[18px] sm:h-[18px]"
-                                  />
-                                </button>
-                              </div>
+
+
+                               <div className="flex space-x-1 sm:space-x-2 justify-end">
+                              <button
+                               onClick={() => handleEditDepartment(dept.id)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Edit User"
+                              >
+                                <Edit
+                                  size={16}
+                                  className="sm:w-[18px] sm:h-[18px]"
+                                />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDepartment(dept.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete User"
+                              >
+                                <Trash2
+                                  size={16}
+                                  className="sm:w-[18px] sm:h-[18px]"
+                                />
+                              </button>
+                            </div>
+                             
+                             
                             </td>
                           </tr>
                         ))

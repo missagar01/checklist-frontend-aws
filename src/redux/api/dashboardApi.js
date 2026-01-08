@@ -233,8 +233,32 @@ export const getUniqueDepartmentsApi = async () => {
 };
 
 export const getStaffNamesByDepartmentApi = async (department) => {
-  const res = await fetch(`${BASE_URL}/staff?department=${department}`);
-  return res.json();
+  try {
+    const res = await fetch(`${BASE_URL}/staff?department=${department}`);
+    
+    if (!res.ok) {
+      console.error(`Staff API Error: ${res.status} ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    
+    // Ensure we return an array
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    // If it's an error object, return empty array
+    if (data.error) {
+      console.error("Staff API Error:", data.error);
+      return [];
+    }
+    
+    return [];
+  } catch (err) {
+    console.error("Error fetching staff by department:", err);
+    return [];
+  }
 };
 
 export const getTotalUsersCountApi = async () => {

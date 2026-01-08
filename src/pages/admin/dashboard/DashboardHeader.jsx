@@ -59,13 +59,17 @@ export default function DashboardHeader({
     return new Date().toISOString().split('T')[0]
   }
 
-  const sortedDepartments = [...(availableDepartments || [])]
-    .filter(dept => dept != null && dept !== "")
-    .sort((a, b) => (a || "").localeCompare(b || ""))
+  const sortedDepartments = Array.isArray(availableDepartments) 
+    ? [...availableDepartments]
+        .filter(dept => dept != null && dept !== "")
+        .sort((a, b) => (a || "").localeCompare(b || ""))
+    : []
   
-  const sortedStaff = [...(availableStaff || [])]
-    .filter(staff => staff != null && staff !== "")
-    .sort((a, b) => (a || "").localeCompare(b || ""))
+  const sortedStaff = Array.isArray(availableStaff)
+    ? [...availableStaff]
+        .filter(staff => staff != null && staff !== "")
+        .sort((a, b) => (a || "").localeCompare(b || ""))
+    : []
 
 
   return (

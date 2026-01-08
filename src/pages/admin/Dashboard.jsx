@@ -565,6 +565,10 @@ export default function AdminDashboard() {
         // For checklist with department filter, get staff from users table based on user_access
         try {
           uniqueStaff = await getStaffNamesByDepartmentApi(departmentFilter);
+          // Ensure it's an array
+          if (!Array.isArray(uniqueStaff)) {
+            uniqueStaff = [];
+          }
         } catch (error) {
           console.error('Error fetching staff by department:', error);
           uniqueStaff = [...new Set(data.map((task) => task.name).filter((name) => name && name.trim() !== ""))];
@@ -572,6 +576,11 @@ export default function AdminDashboard() {
       } else {
         // Default behavior - extract from task data
         uniqueStaff = [...new Set(data.map((task) => task.name).filter((name) => name && name.trim() !== ""))];
+      }
+
+      // Ensure uniqueStaff is always an array
+      if (!Array.isArray(uniqueStaff)) {
+        uniqueStaff = [];
       }
 
       // For non-admin users, always ensure current user appears in staff dropdown

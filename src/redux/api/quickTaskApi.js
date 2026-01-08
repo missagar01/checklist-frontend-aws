@@ -60,13 +60,24 @@ export const deleteDelegationTasksApi = async (taskIds) => {
 // UPDATE CHECKLIST TASK
 // =========================
 export const updateChecklistTaskApi = async (updatedTask, originalTask) => {
-  const res = await fetch(`${API_BASE}/tasks/update-checklist`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ updatedTask, originalTask }),
-  });
+  try {
+    const res = await fetch(`${API_BASE}/tasks/update-checklist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updatedTask, originalTask }),
+    });
 
-  return res.json();
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error updating checklist task:", error);
+    throw error; // Re-throw to let Redux handle it
+  }
 };
 
 // =========================

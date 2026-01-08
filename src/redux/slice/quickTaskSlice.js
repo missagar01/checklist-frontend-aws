@@ -109,10 +109,24 @@ const quickTaskSlice = createSlice({
         const { data, total, append } = action.payload;
         
         if (append) {
-          state.quickTask = [...state.quickTask, ...data];
+          // When appending, merge with existing tasks, avoiding duplicates by task_id
+          const existingTaskIds = new Set(state.quickTask.map(t => t?.task_id).filter(Boolean));
+          const newTasks = data.filter(t => t && t.task_id && !existingTaskIds.has(t.task_id));
+          state.quickTask = [...state.quickTask, ...newTasks];
           state.checklistPage += 1;
         } else {
-          state.quickTask = data;
+          // When replacing, merge backend data with any tasks that were recently updated
+          // This ensures updated tasks remain visible even if backend date filter excludes them
+          const newTaskIds = new Set(data.map(t => t?.task_id).filter(Boolean));
+          
+          // Keep tasks from current state that aren't in the new data (they might be filtered out by date)
+          // But only if they were recently updated (have task_id and are in current state)
+          const preservedTasks = state.quickTask.filter(
+            t => t && t.task_id && !newTaskIds.has(t.task_id)
+          );
+          
+          // Merge: new data from backend + preserved tasks
+          state.quickTask = [...data, ...preservedTasks];
           state.checklistPage = 1;
         }
         
@@ -197,12 +211,19 @@ const quickTaskSlice = createSlice({
         state.loading = false;
         const updatedTasks = action.payload; // Array of updated tasks
         
-        // Update all matching tasks in the state
-        if (Array.isArray(updatedTasks)) {
+        // Update all matching tasks in the state immediately
+        if (Array.isArray(updatedTasks) && updatedTasks.length > 0) {
           updatedTasks.forEach(updatedTask => {
-            const index = state.quickTask.findIndex(task => task.task_id === updatedTask.task_id);
+            if (!updatedTask || !updatedTask.task_id) return;
+            
+            const index = state.quickTask.findIndex(task => task && task.task_id === updatedTask.task_id);
             if (index !== -1) {
+              // Replace the entire task object with the updated one from backend
               state.quickTask[index] = updatedTask;
+            } else {
+              // If task not found in current list, add it (in case it was filtered out by date)
+              // This ensures updated tasks appear in search even if they're outside the current date filter
+              state.quickTask.push(updatedTask);
             }
           });
         }

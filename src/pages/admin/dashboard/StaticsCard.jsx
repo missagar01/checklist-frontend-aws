@@ -131,7 +131,7 @@ export default function StatisticsCards({
                 ) : dashboardType === "delegation" ? (
                   "Tasks not completed"
                 ) : (
-                  "Absent Day's tasks"
+                  "Not Completed tasks"
                 )}
               </p>
             </div>

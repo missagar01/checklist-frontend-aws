@@ -647,8 +647,8 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
               </div>
               <div className="p-2 rounded-full hover:bg-white/20 transition-all duration-300 cursor-pointer transform hover:scale-110">
                 <Link
-                  to={"/dashboard/data/sales"}
-                  className={` ${location.pathname === `/dashboard/data/sales`
+                  to={"/dashboard/all-task"}
+                  className={` ${location.pathname === `/dashboard/all-task`
                     ? "bg-white/20"
                     : ""
                     }`}

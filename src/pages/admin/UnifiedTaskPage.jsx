@@ -179,9 +179,9 @@ export default function UnifiedTaskPage() {
                     filters.department = accessToUse
                 }
             }
-            await dispatch(fetchHousekeepingPendingTasks({ 
-                page: housekeepingPendingPage + 1, 
-                filters 
+            await dispatch(fetchHousekeepingPendingTasks({
+                page: housekeepingPendingPage + 1,
+                filters
             })).unwrap()
         }
     }, [housekeepingPendingHasMore, housekeepingLoading, housekeepingPendingPage, dispatch])
@@ -209,29 +209,29 @@ export default function UnifiedTaskPage() {
         // Filter housekeeping tasks based on access and user_access departments
         let housekeepingFiltered = []
         let housekeepingHistoryFiltered = []
-        
+
         if (hasSystemAccess('housekeeping') || systemAccess.length === 0) {
             const allHousekeepingTasks = Array.isArray(housekeepingTasks) ? housekeepingTasks : []
             const allHousekeepingHistory = Array.isArray(housekeepingHistory) ? housekeepingHistory : []
-            
+
             // Get current role from localStorage (stable value)
             const currentRole = localStorage.getItem("role") || ""
-            
+
             // For user role, filter by user_access1 departments (for housekeeping)
             if (currentRole?.toLowerCase() === "user") {
                 // Use user_access1 for housekeeping, fallback to user_access
                 const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
                 const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
                 const accessToUse = userAccess1 || userAccess
-                
+
                 if (accessToUse) {
                     // Parse departments (comma-separated)
                     const userDepartments = accessToUse.split(',').map(d => d.trim().toLowerCase()).filter(Boolean)
-                    
+
                     // Filter tasks to only show those matching user's departments
                     // Match exact or normalized match (case-insensitive, space-normalized)
                     const normalizeDept = (dept) => dept.replace(/\s+/g, ' ').trim().toLowerCase()
-                    
+
                     housekeepingFiltered = allHousekeepingTasks.filter(task => {
                         const taskDept = normalizeDept(task.department || '')
                         if (!taskDept) return false
@@ -244,7 +244,7 @@ export default function UnifiedTaskPage() {
                             return false
                         })
                     })
-                    
+
                     housekeepingHistoryFiltered = allHousekeepingHistory.filter(task => {
                         const taskDept = normalizeDept(task.department || '')
                         if (!taskDept) return false
@@ -287,19 +287,19 @@ export default function UnifiedTaskPage() {
         // Combine all tasks (pending + history)
         // Deduplicate: if a task appears in both pending and history, prefer history version
         const taskMap = new Map()
-        
+
         // First add pending tasks
         pendingTasks.forEach(task => {
             const key = `${task.sourceSystem}-${task.id}`
             taskMap.set(key, task)
         })
-        
+
         // Then add history tasks (will overwrite pending if duplicate)
         historyTasks.forEach(task => {
             const key = `${task.sourceSystem}-${task.id}`
             taskMap.set(key, task)
         })
-        
+
         const allCombined = Array.from(taskMap.values())
 
         // Sort housekeeping tasks: confirmed first
@@ -354,7 +354,7 @@ export default function UnifiedTaskPage() {
                 imageFile,
                 doerName2
             })).unwrap()
-            
+
             // Refresh housekeeping data after confirm
             await loadHousekeepingData()
         } catch (error) {
@@ -459,10 +459,10 @@ export default function UnifiedTaskPage() {
                 ? Promise.all(
                     tasksBySource.housekeeping.map(async (t) => {
                         // Check if task is pending using originalData from submission
-                        const isPending = t.originalData?.attachment !== "confirmed" && 
-                                        t.originalData?.confirmedByHOD !== "Confirmed" && 
-                                        t.originalData?.confirmedByHOD !== "confirmed";
-                        
+                        const isPending = t.originalData?.attachment !== "confirmed" &&
+                            t.originalData?.confirmedByHOD !== "Confirmed" &&
+                            t.originalData?.confirmedByHOD !== "confirmed";
+
                         if (userRole?.toLowerCase() === 'user' && isPending) {
                             // User role: use confirmHousekeepingTask API for pending tasks
                             // Use imageFile directly (File object) for FormData, not base64
@@ -515,12 +515,13 @@ export default function UnifiedTaskPage() {
     return (
         <AdminLayout>
             <div className="space-y-3 sm:space-y-4 md:space-y-6 p-2 sm:p-4 md:p-0">
-                {/* Header */}
+                {/* Header
                 <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
                     <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-blue-700">
                         Unified Task Management
                     </h1>
                 </div>
+                 */}
 
                 {/* Error Display */}
                 {housekeepingError && (

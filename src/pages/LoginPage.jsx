@@ -121,7 +121,7 @@ const LoginPage = () => {
             alt="Company Logo"
             className="h-auto w-100 mr-3"
           />
-          <h2 className="text-2xl font-bold text-blue-700 p-2 items-center justify-center">Checklist & Delegation</h2>
+          <h2 className="text-2xl font-bold text-blue-700 p-2 items-center justify-center">Combined Checklist</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">

@@ -221,7 +221,7 @@ function StaffTasksPage() {
                             {/* Title Section */}
                             <div className="flex-1">
                                 <h1 className="text-2xl font-bold text-purple-700">Staff MIS Report</h1>
-                                <p className="text-sm text-gray-600 mt-1">Combined Checklist & Delegation Data</p>
+                                <p className="text-sm text-gray-600 mt-1">Combined Combined Checklist Data</p>
                             </div>
 
                             {/* Filters Section */}

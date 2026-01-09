@@ -67,7 +67,7 @@ export default function UnifiedTaskTable({
             const containerScrollTop = container.scrollTop;
             const containerScrollHeight = container.scrollHeight;
             const containerClientHeight = container.clientHeight;
-            
+
             // Check if near bottom of container (within 300px)
             if (containerScrollTop + containerClientHeight >= containerScrollHeight - 300) {
                 isNearBottom = true;
@@ -79,7 +79,7 @@ export default function UnifiedTaskTable({
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const windowHeight = window.innerHeight;
             const documentHeight = document.documentElement.scrollHeight;
-            
+
             // Check if near bottom of window (within 400px)
             if (scrollTop + windowHeight >= documentHeight - 400) {
                 isNearBottom = true;
@@ -97,12 +97,12 @@ export default function UnifiedTaskTable({
     // Add scroll event listeners to both window and container
     useEffect(() => {
         window.addEventListener('scroll', handleScroll, { passive: true });
-        
+
         const container = tableContainerRef.current;
         if (container) {
             container.addEventListener('scroll', handleScroll, { passive: true });
         }
-        
+
         return () => {
             window.removeEventListener('scroll', handleScroll);
             if (container) {
@@ -114,7 +114,7 @@ export default function UnifiedTaskTable({
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
         const filtered = filterTasks(tasks, filters);
-        
+
         // Deduplicate tasks by creating a unique key for each task
         const seen = new Set();
         const deduplicated = filtered.filter(task => {
@@ -125,7 +125,7 @@ export default function UnifiedTaskTable({
             seen.add(uniqueKey);
             return true;
         });
-        
+
         // If showing housekeeping only, use special sorting (confirmed first)
         if (filters.sourceSystem === 'housekeeping') {
             return sortHousekeepingTasks(deduplicated);
@@ -151,7 +151,7 @@ export default function UnifiedTaskTable({
     // Check if all visible items are selected
     // For housekeeping tasks: Admin selects confirmed, User selects pending
     const isUserRole = userRole?.toLowerCase() === 'user';
-    
+
     const selectableTasks = displayTasks.filter(task => {
         if (task.sourceSystem === 'housekeeping') {
             const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
@@ -197,7 +197,7 @@ export default function UnifiedTaskTable({
 
     const handleSelectAll = useCallback((e) => {
         const isUserRole = userRole?.toLowerCase() === 'user';
-        
+
         if (e.target.checked) {
             // Select all visible tasks
             // For housekeeping: Admin selects confirmed, User selects pending
@@ -246,7 +246,7 @@ export default function UnifiedTaskTable({
                     [field]: value
                 }
             };
-            
+
             // If HOD confirm is selected, immediately call confirm API
             if (field === "hodConfirm" && value === "Confirmed") {
                 const task = filteredTasks.find(t => t.id === taskId);
@@ -270,7 +270,7 @@ export default function UnifiedTaskTable({
                     });
                 }
             }
-            
+
             return updated;
         });
     }, [filteredTasks, uploadedImages, onHODConfirm]);
@@ -320,28 +320,28 @@ export default function UnifiedTaskTable({
         // For admin role: status is required (submitHousekeepingTasks)
         const userRole = localStorage.getItem("role") || "";
         const isUserRole = userRole?.toLowerCase() === 'user';
-        
+
         if (isUserRole) {
             // User role: validate remarks for pending housekeeping tasks
             const housekeepingTasks = selectedItemsArray.filter(id => {
                 const task = filteredTasks.find(t => t.id === id);
-                return task?.sourceSystem === 'housekeeping' && 
-                       task?.originalData?.attachment !== "confirmed" &&
-                       task?.confirmedByHOD !== "Confirmed" &&
-                       task?.confirmedByHOD !== "confirmed";
+                return task?.sourceSystem === 'housekeeping' &&
+                    task?.originalData?.attachment !== "confirmed" &&
+                    task?.confirmedByHOD !== "Confirmed" &&
+                    task?.confirmedByHOD !== "confirmed";
             });
-            
+
             const missingRemarks = housekeepingTasks.filter(id => {
                 const remark = rowData[id]?.remarks;
                 return !remark || remark.trim() === "";
             });
-            
+
             if (missingRemarks.length > 0) {
                 setErrorMessage("⚠️ Please enter remarks for all selected pending tasks");
                 setTimeout(() => setErrorMessage(""), 3000);
                 return;
             }
-            
+
             const checklistNoTasks = selectedItemsArray.filter(id => {
                 const task = filteredTasks.find(t => t.id === id);
                 const status = rowData[id]?.status;
@@ -471,16 +471,16 @@ export default function UnifiedTaskTable({
             {/* Table Card */}
             <div className="w-full rounded-lg border border-blue-200 shadow-md bg-white overflow-hidden">
                 {/* Table Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100 px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100 px-2 sm:px-4 py-2 sm:py-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-blue-700 font-medium text-xs sm:text-sm md:text-base truncate">
+                            {/* <h2 className="text-blue-700 font-medium text-xs sm:text-sm md:text-base truncate">
                                 📋 All Tasks (Checklist + Maintenance + Housekeeping)
-                            </h2>
-                            <p className="text-blue-600 text-xs mt-1">
+                            </h2> */}
+                            <p className="text-blue-600 text-s mt-1">
                                 Showing {displayTasks.length} of {displayTasks.length} tasks
-                                {displayTasks.length !== tasks.length && ` (${tasks.length} total)`}
-                                {hasMore && <span className="text-blue-500"> • Loading more...</span>}
+                                {displayTasks.length !== tasks.length}
+                                {/* {hasMore && <span className="text-blue-500"> • Loading more...</span>} */}
                             </p>
                         </div>
 
@@ -501,7 +501,7 @@ export default function UnifiedTaskTable({
                 <div
                     ref={tableContainerRef}
                     className="w-full overflow-x-auto overflow-y-auto"
-                    style={{ maxHeight: 'calc(100vh - 400px)' }}
+                    style={{ maxHeight: 'calc(100vh - 150px)' }}
                 >
                     {loading && displayTasks.length === 0 ? (
                         <div className="text-center py-8 sm:py-12">

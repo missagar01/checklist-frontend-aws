@@ -51,20 +51,20 @@ export default function TaskFilterBar({
             // Admin role: show all departments
             return housekeepingDepartments;
         }
-        
+
         // User role: filter by user_access1
         const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || "";
         if (!userAccess1) {
             return [];
         }
-        
+
         // Parse comma-separated departments
         const userDepartments = userAccess1.split(',').map(dept => dept.trim()).filter(dept => dept);
-        
+
         // Filter housekeepingDepartments to only include user's accessible departments
-        return housekeepingDepartments.filter(dept => 
-            userDepartments.some(userDept => 
-                dept.toLowerCase().includes(userDept.toLowerCase()) || 
+        return housekeepingDepartments.filter(dept =>
+            userDepartments.some(userDept =>
+                dept.toLowerCase().includes(userDept.toLowerCase()) ||
                 userDept.toLowerCase().includes(dept.toLowerCase())
             )
         );
@@ -111,7 +111,7 @@ export default function TaskFilterBar({
             </div>
 
             {/* Simple Search Box */}
-            <div className="relative">
+            {/* <div className="relative">
                 <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
                 <input
                     type="text"
@@ -120,11 +120,11 @@ export default function TaskFilterBar({
                     onChange={(e) => handleChange("searchTerm", e.target.value)}
                     className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm sm:text-base"
                 />
-            </div>
+            </div> */}
 
             {/* Task Type Filter - Big colorful buttons */}
             <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">📋 Show Tasks From:</p>
+                {/* <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">📋 Show Tasks From:</p> */}
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     <button
                         onClick={() => handleChange("sourceSystem", "")}
@@ -171,31 +171,31 @@ export default function TaskFilterBar({
 
             {/* Department Filter - Show only when housekeeping is selected and user is admin */}
             {/* Hide completely for user role */}
-            {sourceSystem === "housekeeping" && 
-             currentUserRole?.toLowerCase() !== 'user' && 
-             filteredDepartments.length > 0 && (
-                <div>
-                    <label htmlFor="department-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
-                        📁 Filter by Department:
-                    </label>
-                    <select
-                        id="department-filter"
-                        value={department}
-                        onChange={(e) => handleChange("department", e.target.value)}
-                        className="w-full sm:w-auto text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
-                    >
-                        <option value="">All Departments</option>
-                        {filteredDepartments.map((dept, idx) => (
-                            <option key={idx} value={dept}>
-                                {dept}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            )}
+            {sourceSystem === "housekeeping" &&
+                currentUserRole?.toLowerCase() !== 'user' &&
+                filteredDepartments.length > 0 && (
+                    <div>
+                        <label htmlFor="department-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
+                            📁 Filter by Department:
+                        </label>
+                        <select
+                            id="department-filter"
+                            value={department}
+                            onChange={(e) => handleChange("department", e.target.value)}
+                            className="w-full sm:w-auto text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                        >
+                            <option value="">All Departments</option>
+                            {filteredDepartments.map((dept, idx) => (
+                                <option key={idx} value={dept}>
+                                    {dept}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
             {/* Clear Button - Only show when filters are active */}
-            {hasActiveFilters && (
+            {/* {hasActiveFilters && (
                 <button
                     onClick={clearFilters}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium text-xs sm:text-sm"
@@ -204,7 +204,7 @@ export default function TaskFilterBar({
                     <span className="hidden sm:inline">Clear All Filters</span>
                     <span className="sm:hidden">Clear Filters</span>
                 </button>
-            )}
+            )} */}
         </div>
     );
 }

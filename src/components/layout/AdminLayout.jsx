@@ -156,7 +156,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
 
     // Remove any quotes from the string before splitting
     const cleanPageAccess = pageAccess.replace(/"/g, '').trim();
-    const accessiblePages = cleanPageAccess 
+    const accessiblePages = cleanPageAccess
       ? cleanPageAccess.split(',').map(page => page.trim()).filter(page => page !== '')
       : [];
 
@@ -274,7 +274,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
             className="flex items-center gap-2 font-semibold text-blue-700"
           >
             <ClipboardList className="h-5 w-5 text-blue-600" />
-            <span>Checklist & Delegation </span>
+            <span>Combined Checklist </span>
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
@@ -453,7 +453,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <ClipboardList className="h-5 w-5 text-blue-600" />
-                <span>Checklist & Delegation</span>
+                <span>Combined Checklist</span>
               </Link>
             </div>
             <nav className="flex-1 overflow-y-auto p-2 bg-white">
@@ -614,7 +614,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
         <header className="flex h-14 items-center justify-between border-b border-blue-200 bg-white px-4 md:px-6">
           <div className="flex md:hidden w-8"></div>
           <h1 className="text-lg font-semibold text-blue-700">
-            Checklist & Delegation
+            Combined Checklist
           </h1>
           <div className="flex items-center">
             <img
@@ -625,7 +625,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
           </div>
         </header>
         <main
-          className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-blue-50 to-purple-50"
+          className="flex-1 overflow-y-auto p-2 md:p-2 bg-gradient-to-br from-blue-50 to-purple-50"
           onScroll={onScroll}
         >
 

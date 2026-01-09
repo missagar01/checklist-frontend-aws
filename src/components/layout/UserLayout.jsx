@@ -15,7 +15,7 @@ const UserLayout = ({ children }) => {
   // Check authentication on component mount
   useEffect(() => {
     const storedUsername = localStorage.getItem('user-name')
-    
+
     if (!storedUsername) {
       // Redirect to login if no username found
       navigate('/login')
@@ -33,18 +33,18 @@ const UserLayout = ({ children }) => {
     window.location.href = "/login"
   }
 
-  const routes = isAdmin 
+  const routes = isAdmin
     ? [
-        { href: "/admin/dashboard", label: "Dashboard", icon: "home" },
-        { href: "/admin/assign-task", label: "Assign Task", icon: "check-square" },
-        { href: "/admin/tasks", label: "All Tasks", icon: "clipboard-list" },
-      ]
+      { href: "/admin/dashboard", label: "Dashboard", icon: "home" },
+      { href: "/admin/assign-task", label: "Assign Task", icon: "check-square" },
+      { href: "/admin/tasks", label: "All Tasks", icon: "clipboard-list" },
+    ]
     : [
-        { href: "/user/dashboard", label: "Dashboard", icon: "home" },
-        { href: "/user/tasks", label: "My Tasks", icon: "clipboard-list" },
-        { href: "/user/completed-tasks", label: "Completed Tasks", icon: "check-square" },
-        { href: "/user/profile", label: "Profile", icon: "user" },
-      ]
+      { href: "/user/dashboard", label: "Dashboard", icon: "home" },
+      { href: "/user/tasks", label: "My Tasks", icon: "clipboard-list" },
+      { href: "/user/completed-tasks", label: "Completed Tasks", icon: "check-square" },
+      { href: "/user/profile", label: "Profile", icon: "user" },
+    ]
 
   const getIcon = (iconName) => {
     switch (iconName) {
@@ -73,7 +73,7 @@ const UserLayout = ({ children }) => {
             className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-300"
           >
             <i className="fas fa-clipboard-list h-5 w-5 text-green-600 dark:text-green-400"></i>
-            <span>Checklist & Delegation</span>
+            <span>Combined Checklist</span>
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
@@ -82,11 +82,10 @@ const UserLayout = ({ children }) => {
               <li key={route.href}>
                 <Link
                   to={route.href}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    location.pathname === route.href
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${location.pathname === route.href
                       ? "bg-gradient-to-r from-green-100 to-teal-100 text-green-700 dark:from-green-900 dark:to-teal-900 dark:text-green-300"
                       : "text-gray-700 hover:bg-green-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                  }`}
+                    }`}
                 >
                   {getIcon(route.icon)}
                   {route.label}
@@ -130,7 +129,7 @@ const UserLayout = ({ children }) => {
       ></div>
 
       {/* Mobile sidebar */}
-      
+
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-950 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-200 ease-in-out md:hidden`}
       >
@@ -141,7 +140,7 @@ const UserLayout = ({ children }) => {
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <i className="fas fa-clipboard-list h-5 w-5 text-green-600 dark:text-green-400"></i>
-            <span>Checklist & Delegation</span>
+            <span>Combined Checklist</span>
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto p-2 bg-white dark:bg-gray-950">
@@ -150,11 +149,10 @@ const UserLayout = ({ children }) => {
               <li key={route.href}>
                 <Link
                   to={route.href}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    location.pathname === route.href
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${location.pathname === route.href
                       ? "bg-gradient-to-r from-green-100 to-teal-100 text-green-700 dark:from-green-900 dark:to-teal-900 dark:text-green-300"
                       : "text-gray-700 hover:bg-green-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                  }`}
+                    }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {getIcon(route.icon)}
@@ -195,8 +193,8 @@ const UserLayout = ({ children }) => {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center justify-between border-b border-green-200 dark:border-teal-800 bg-white dark:bg-gray-950 px-4 md:px-6">
-          <button 
-            className="md:hidden text-green-700 dark:text-green-300" 
+          <button
+            className="md:hidden text-green-700 dark:text-green-300"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <i className="fas fa-bars h-5 w-5"></i>

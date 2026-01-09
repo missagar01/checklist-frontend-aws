@@ -321,6 +321,22 @@ export default function UnifiedTaskTable({
         const userRole = localStorage.getItem("role") || "";
         const isUserRole = userRole?.toLowerCase() === 'user';
 
+        // ✅ CHECKLIST → STATUS REQUIRED FOR BOTH USER & ADMIN
+        const checklistMissingStatus = selectedItemsArray.filter(id => {
+            const task = filteredTasks.find(t => t.id === id);
+            if (task?.sourceSystem !== "checklist") return false;
+
+            const status = rowData[id]?.status;
+            return !status || status === "";
+        });
+
+        if (checklistMissingStatus.length > 0) {
+            setErrorMessage("⚠️ Please select status (Yes/No) for all selected checklist tasks");
+            setTimeout(() => setErrorMessage(""), 3000);
+            return;
+        }
+
+
         if (isUserRole) {
             // User role: validate remarks for pending housekeeping tasks
             const housekeepingTasks = selectedItemsArray.filter(id => {

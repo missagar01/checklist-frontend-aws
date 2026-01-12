@@ -936,7 +936,7 @@ const Setting = () => {
                                 </button>
                             </div>
 
-                            <button
+                            {/* <button
                                 onClick={fetchDeviceLogsAndUpdateStatus}
                                 disabled={isRefreshing}
                                 className="w-full sm:w-auto rounded-md bg-green-600 py-2 px-3 sm:px-4 text-white hover:bg-green-700 text-xs sm:text-sm"
@@ -951,7 +951,7 @@ const Setting = () => {
                                     </span>
                                     <span className="sm:hidden">Refresh</span>
                                 </div>
-                            </button>
+                            </button> */}
 
                             {/* Add button - hide for leave tab */}
                             {activeTab !== "leave" && (
@@ -1266,6 +1266,12 @@ const Setting = () => {
                                             scope="col"
                                             className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                         >
+                                            Emp ID
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        >
                                             Username
                                         </th>
                                         <th
@@ -1286,12 +1292,7 @@ const Setting = () => {
                                         >
                                             Phone
                                         </th>
-                                        <th
-                                            scope="col"
-                                            className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                        >
-                                            Emp ID
-                                        </th>
+
                                         <th
                                             scope="col"
                                             className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -1346,6 +1347,11 @@ const Setting = () => {
                                                     className="hover:bg-gray-50"
                                                 >
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-xs sm:text-sm text-gray-900">
+                                                            {user?.employee_id || "N/A"}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                                                         <div className="text-xs sm:text-sm font-medium text-gray-900">
                                                             {user?.user_name}
                                                         </div>
@@ -1396,11 +1402,7 @@ const Setting = () => {
                                                             {user?.number}
                                                         </div>
                                                     </td>
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-xs sm:text-sm text-gray-900">
-                                                            {user?.employee_id || "N/A"}
-                                                        </div>
-                                                    </td>
+
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                                                         <div className="text-xs sm:text-sm text-gray-900 truncate max-w-[100px] sm:max-w-none">
                                                             {user?.user_access || "N/A"}

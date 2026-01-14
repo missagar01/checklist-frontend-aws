@@ -7,7 +7,6 @@ export default function StaffTasksTable({
   dashboardType,
   dashboardStaffFilter,
   departmentFilter,
-  parseTaskStartDate
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [staffMembers, setStaffMembers] = useState([])

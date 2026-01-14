@@ -72,11 +72,11 @@ export const getDashboardDataCount = async (dashboardType, staffFilter = "all", 
 
     const url = `${BASE_URL}/count?${params.toString()}`;
     const res = await fetch(url);
-    
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
-    
+
     return await res.json();
 
   } catch (err) {
@@ -136,6 +136,8 @@ export const countOverDueORExtendedTaskApi = async (dashboardType, staffFilter =
   return res.json();
 };
 
+
+
 // ---------------------------------------------------------------------
 // 4️⃣ SUMMARY COMBINED API
 // ---------------------------------------------------------------------
@@ -181,7 +183,7 @@ export const fetchStaffTasksDataApi = async (
     page,
     limit
   });
-  
+
   // Add monthYear if provided
   if (monthYear) {
     params.append('monthYear', monthYear);
@@ -213,11 +215,11 @@ export const getStaffTaskSummaryApi = async (dashboardType, departmentFilter = "
 
     const url = `${BASE_URL}/staff-summary?${params.toString()}`;
     const res = await fetch(url);
-    
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
-    
+
     return await res.json();
 
   } catch (err) {
@@ -235,25 +237,25 @@ export const getUniqueDepartmentsApi = async () => {
 export const getStaffNamesByDepartmentApi = async (department) => {
   try {
     const res = await fetch(`${BASE_URL}/staff?department=${department}`);
-    
+
     if (!res.ok) {
       console.error(`Staff API Error: ${res.status} ${res.statusText}`);
       return [];
     }
-    
+
     const data = await res.json();
-    
+
     // Ensure we return an array
     if (Array.isArray(data)) {
       return data;
     }
-    
+
     // If it's an error object, return empty array
     if (data.error) {
       console.error("Staff API Error:", data.error);
       return [];
     }
-    
+
     return [];
   } catch (err) {
     console.error("Error fetching staff by department:", err);
@@ -308,11 +310,11 @@ export const getChecklistDateRangeCountApi = async (
 
     const url = `${BASE_URL}/checklist/date-range/count?${params.toString()}`;
     const res = await fetch(url);
-    
+
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
-    
+
     return await res.json();
 
   } catch (err) {
@@ -336,13 +338,25 @@ export const getChecklistDateRangeStatsApi = async (
 };
 
 
+export const countUpcomingTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
+  staffFilter = getFinalStaffFilter(staffFilter);
+
+  const role = localStorage.getItem("role");
+  const username = localStorage.getItem("user-name");
+
+  const url = `${BASE_URL}/upcoming?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
+
+  const res = await fetch(url);
+  return res.json();
+};
+
 export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
   const role = localStorage.getItem("role");
   const username = localStorage.getItem("user-name");
 
-  const url = `${BASE_URL}/not-done?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
+  const url = `${BASE_URL}/notdone?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
   const res = await fetch(url);
   return res.json();

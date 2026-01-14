@@ -20,6 +20,7 @@ import {
   overdueTaskInTable,
   pendingTaskInTable,
   totalTaskInTable,
+  upcomingTaskInTable,
   notDoneTaskInTable
 } from "../../redux/slice/dashboardSlice.js"
 import {
@@ -42,16 +43,16 @@ export default function AdminDashboard() {
   const userRole = localStorage.getItem("role")
   const username = localStorage.getItem("user-name")
   const [dashboardView, setDashboardView] = useState("checklist") // New state for dashboard 
-  
+
   // Get system_access and role to check if user has housekeeping access
   // Allow users to see housekeeping if they have user_access1 (departments) or system_access includes housekeeping
   const systemAccess = (localStorage.getItem("system_access") || "").split(',').map(item => item.trim().toLowerCase())
   const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
   const hasUserDepartments = userRole?.toLowerCase() === "user" && userAccess1.trim() !== ""
-  
+
   // For admin: show if system_access is empty or includes 'housekeeping'
   // For user: show if they have user_access1 (departments) OR if system_access includes 'housekeeping'
-  const hasHousekeepingAccess = userRole?.toLowerCase() === "user" 
+  const hasHousekeepingAccess = userRole?.toLowerCase() === "user"
     ? (hasUserDepartments || systemAccess.includes('housekeeping'))
     : (systemAccess.length === 0 || systemAccess.includes('housekeeping'))
 
@@ -73,6 +74,8 @@ export default function AdminDashboard() {
     completedTasks: 0,
     pendingTasks: 0,
     overdueTasks: 0,
+    upcomingTasks: 0,
+    notDoneTasks: 0,
     completionRate: 0,
     barChartData: [],
     pieChartData: [],
@@ -94,10 +97,11 @@ export default function AdminDashboard() {
     completedTasks: 0,
     pendingTasks: 0,
     overdueTasks: 0,
+    upcomingTasks: 0,
     completionRate: 0,
   })
 
-  const { dashboard, totalTask, completeTask, pendingTask, overdueTask } = useSelector((state) => state.dashBoard)
+  const { dashboard, totalTask, completeTask, pendingTask, overdueTask, notDoneTask, upcomingTask } = useSelector((state) => state.dashBoard)
   const dispatch = useDispatch()
 
   useEffect(() => {
@@ -189,6 +193,7 @@ export default function AdminDashboard() {
     let completedTasks = 0;
     let pendingTasks = 0;
     let overdueTasks = 0;
+    let upcomingTasks = 0;
 
     const monthlyData = {
       Jan: { completed: 0, pending: 0 },
@@ -239,6 +244,14 @@ export default function AdminDashboard() {
             if (taskStartDate && taskStartDate < today && task.status !== 'Yes') {
               overdueTasks++;
             }
+            if (
+              taskStartDate &&
+              taskStartDate > today &&
+              !task.submission_date &&
+              task.status !== "Yes"
+            ) {
+              upcomingTasks++;
+            }
           } else {
             // For delegation: Use submission_date
             if (task.submission_date) {
@@ -248,6 +261,14 @@ export default function AdminDashboard() {
               if (taskStartDate && taskStartDate < today) {
                 overdueTasks++;
               }
+            }
+            if (
+              taskStartDate &&
+              taskStartDate > today &&
+              !task.submission_date &&
+              (!task.status || task.status !== "completed")
+            ) {
+              upcomingTasks++;
             }
           }
         }
@@ -291,12 +312,13 @@ export default function AdminDashboard() {
     ];
 
     // Use stats from API if available, otherwise use our calculations
-    const finalStats = stats || {
-      totalTasks,
-      completedTasks,
-      pendingTasks,
-      overdueTasks,
-      completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0
+    const finalStats = {
+      totalTasks: stats?.totalTasks ?? totalTasks,
+      completedTasks: stats?.completedTasks ?? completedTasks,
+      pendingTasks: stats?.pendingTasks ?? pendingTasks,
+      overdueTasks: stats?.overdueTasks ?? overdueTasks,
+      upcomingTasks: stats?.upcomingTasks ?? upcomingTasks,
+      completionRate: stats?.completionRate ?? (totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0)
     };
 
     // Update department data with filtered results
@@ -307,6 +329,7 @@ export default function AdminDashboard() {
       completedTasks: finalStats.completedTasks,
       pendingTasks: finalStats.pendingTasks,
       overdueTasks: finalStats.overdueTasks,
+      upcomingTasks: finalStats.upcomingTasks,
       completionRate: finalStats.completionRate,
       barChartData,
       pieChartData,
@@ -318,6 +341,7 @@ export default function AdminDashboard() {
       completedTasks: finalStats.completedTasks,
       pendingTasks: finalStats.pendingTasks,
       overdueTasks: finalStats.overdueTasks,
+      upcomingTasks: finalStats.upcomingTasks,
       completionRate: finalStats.completionRate,
     });
   };
@@ -839,6 +863,13 @@ export default function AdminDashboard() {
       }),
     )
     dispatch(
+      upcomingTaskInTable({
+        dashboardType,
+        staffFilter: dashboardStaffFilter,
+        departmentFilter,
+      })
+    )
+    dispatch(
       notDoneTaskInTable({
         dashboardType,
         staffFilter: dashboardStaffFilter,
@@ -998,53 +1029,39 @@ export default function AdminDashboard() {
     completedTasks: filteredDateStats.completedTasks || 0,
     pendingTasks: filteredDateStats.pendingTasks || 0,
     overdueTasks: filteredDateStats.overdueTasks || 0,
+    upcomingTasks: filteredDateStats.upcomingTasks || 0,
+    notDoneTasks: filteredDateStats.notDoneTasks || 0,
   } : {
     totalTasks: totalTask || 0,
     completedTasks: completeTask || 0,
     pendingTasks: pendingTask || 0,
     overdueTasks: overdueTask || 0,
+    upcomingTasks: upcomingTask || 0,
+    notDoneTasks: notDoneTask || 0,
   };
 
   // const notDoneTask = (displayStats.totalTasks || 0) - (displayStats.completedTasks || 0);
-  const notDoneTask = useSelector((state) => state.dashBoard.notDoneTask);
+
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Navigation Buttons for Checklist, Housekeeping, Maintenance */}
+        {/* Navigation Buttons for Checklist, Housekeeping, Maintenance - HIDDEN
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setDashboardView("checklist")}
               className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${dashboardView === "checklist"
-                  ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
+                ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
+                : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
             >
               Checklist
             </button>
-            <button
-              onClick={() => setDashboardView("maintenance")}
-              className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${dashboardView === "maintenance"
-                  ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
-                }`}
-            >
-              Maintenance
-            </button>
-            {hasHousekeepingAccess && (
-              <button
-                onClick={() => setDashboardView("housekeeping")}
-                className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${dashboardView === "housekeeping"
-                    ? "bg-indigo-600 text-white border-b-2 border-indigo-600"
-                    : "bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-              >
-                Housekeeping
-              </button>
-            )}
+            ...
           </div>
         </div>
+        */}
 
         {/* Render the selected dashboard view */}
         {dashboardView === "checklist" && (
@@ -1069,7 +1086,8 @@ export default function AdminDashboard() {
               completeTask={displayStats.completedTasks}
               pendingTask={displayStats.pendingTasks}
               overdueTask={displayStats.overdueTasks}
-              notDoneTask={notDoneTask}
+              upcomingTasks={displayStats.upcomingTasks}
+              notDoneTasks={displayStats.notDoneTasks}
               dashboardType={dashboardType}
               dateRange={dateRange.filtered ? dateRange : null}
             />

@@ -55,6 +55,20 @@ const TaskRow = memo(function TaskRow({
   const shouldShowChecklistRemarkInput =
     isUserRole && task.sourceSystem === "checklist" && !isCompleted;
 
+  const rawStartDate =
+    task.task_start_date ??
+    task.taskStartDate ??
+    task.dueDate ??
+    task.originalData?.task_start_date ??
+    task.originalData?.Task_Start_Date ??
+    "";
+  const formattedStartDate =
+    rawStartDate && rawStartDate !== "—" ? formatDateTime(rawStartDate) : null;
+  const startDateDisplay =
+    formattedStartDate && formattedStartDate !== "—"
+      ? formattedStartDate
+      : task.dueDateFormatted || "—";
+
   const handleCheckboxClick = (e) => {
     e.stopPropagation();
     onSelect?.(task.id, e.target.checked);
@@ -147,9 +161,8 @@ const TaskRow = memo(function TaskRow({
   if (isHousekeepingOnly && task.sourceSystem === "housekeeping") {
     return (
       <tr
-        className={`${
-          isSelected ? "bg-blue-50" : isCompleted ? "bg-green-50/30" : ""
-        } hover:bg-gray-50 border-b border-gray-100`}
+        className={`${isSelected ? "bg-blue-50" : isCompleted ? "bg-green-50/30" : ""
+          } hover:bg-gray-50 border-b border-gray-100`}
       >
         {/* Checkbox - Admin: select confirmed tasks, User: select pending tasks */}
         <td className="px-2 sm:px-3 py-2 sm:py-4 w-12">
@@ -158,29 +171,28 @@ const TaskRow = memo(function TaskRow({
           ) : (
             <input
               type="checkbox"
-              className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${
-                (
-                  userRole?.toLowerCase() === "user"
-                    ? task.originalData?.attachment === "confirmed" ||
-                      task.confirmedByHOD === "Confirmed" ||
-                      task.confirmedByHOD === "confirmed"
-                    : task.originalData?.attachment !== "confirmed" &&
-                      task.confirmedByHOD !== "Confirmed" &&
-                      task.confirmedByHOD !== "confirmed"
-                )
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
+              className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(
+                userRole?.toLowerCase() === "user"
+                  ? task.originalData?.attachment === "confirmed" ||
+                  task.confirmedByHOD === "Confirmed" ||
+                  task.confirmedByHOD === "confirmed"
+                  : task.originalData?.attachment !== "confirmed" &&
+                  task.confirmedByHOD !== "Confirmed" &&
+                  task.confirmedByHOD !== "confirmed"
+              )
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+                }`}
               checked={isSelected}
               onChange={handleCheckboxClick}
               disabled={
                 userRole?.toLowerCase() === "user"
                   ? task.originalData?.attachment === "confirmed" ||
-                    task.confirmedByHOD === "Confirmed" ||
-                    task.confirmedByHOD === "confirmed"
+                  task.confirmedByHOD === "Confirmed" ||
+                  task.confirmedByHOD === "confirmed"
                   : task.originalData?.attachment !== "confirmed" &&
-                    task.confirmedByHOD !== "Confirmed" &&
-                    task.confirmedByHOD !== "confirmed"
+                  task.confirmedByHOD !== "Confirmed" &&
+                  task.confirmedByHOD !== "confirmed"
               }
             />
           )}
@@ -230,9 +242,9 @@ const TaskRow = memo(function TaskRow({
         </td>
 
         {/* Task Description */}
-        <td className="px-2 sm:px-3 py-2 sm:py-4 max-w-[200px]">
+        <td className="px-2 sm:px-3 py-2 sm:py-4">
           <div
-            className="text-xs sm:text-sm text-gray-900 line-clamp-2"
+            className="text-xs sm:text-sm text-gray-900"
             title={task.title}
           >
             {task.title || "—"}
@@ -241,11 +253,7 @@ const TaskRow = memo(function TaskRow({
 
         {/* Task Start Date */}
         <td className="px-2 sm:px-3 py-2 sm:py-4 whitespace-nowrap">
-          <div className="text-xs sm:text-sm text-gray-900">
-            {task.taskStartDate
-              ? formatDateTime(task.taskStartDate)
-              : task.dueDateFormatted || "—"}
-          </div>
+          <div className="text-xs sm:text-sm text-gray-900">{startDateDisplay}</div>
         </td>
 
         {/* Freq */}
@@ -259,8 +267,8 @@ const TaskRow = memo(function TaskRow({
         <td className="px-2 sm:px-3 py-2 sm:py-4">
           <div className="text-xs sm:text-sm text-gray-900">
             {task.originalData?.attachment === "confirmed" ||
-            task.confirmedByHOD === "Confirmed" ||
-            task.confirmedByHOD === "confirmed" ? (
+              task.confirmedByHOD === "Confirmed" ||
+              task.confirmedByHOD === "confirmed" ? (
               <span className="text-green-600 font-medium">Confirmed</span>
             ) : (
               task.confirmedByHOD || task.originalData?.attachment || "—"
@@ -293,11 +301,11 @@ const TaskRow = memo(function TaskRow({
         {/* Remarks - User role: input field for pending tasks, Admin: show data only */}
         <td className="px-2 sm:px-3 py-2 sm:py-4">
           {userRole?.toLowerCase() === "user" &&
-          task.sourceSystem === "housekeeping" &&
-          !isCompleted &&
-          task.originalData?.attachment !== "confirmed" &&
-          task.confirmedByHOD !== "Confirmed" &&
-          task.confirmedByHOD !== "confirmed" ? (
+            task.sourceSystem === "housekeeping" &&
+            !isCompleted &&
+            task.originalData?.attachment !== "confirmed" &&
+            task.confirmedByHOD !== "Confirmed" &&
+            task.confirmedByHOD !== "confirmed" ? (
             <input
               type="text"
               placeholder="Enter remark"
@@ -331,9 +339,8 @@ const TaskRow = memo(function TaskRow({
             ) : (
               <>
                 <label
-                  className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${
-                    !isSelected ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                 >
                   <Upload className="h-4 w-4 mr-1" />
                   <span>Upload</span>
@@ -378,9 +385,8 @@ const TaskRow = memo(function TaskRow({
   // Default unified row for mixed tasks
   return (
     <tr
-      className={`${
-        isSelected ? "bg-blue-50" : isCompleted ? "bg-green-50/30" : ""
-      } hover:bg-gray-50 border-b border-gray-100`}
+      className={`${isSelected ? "bg-blue-50" : isCompleted ? "bg-green-50/30" : ""
+        } hover:bg-gray-50 border-b border-gray-100`}
     >
       {/* Checkbox - Admin: select confirmed tasks, User: select pending tasks */}
       <td className="px-2 sm:px-3 py-2 sm:py-4 w-12">
@@ -389,29 +395,28 @@ const TaskRow = memo(function TaskRow({
         ) : (
           <input
             type="checkbox"
-            className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${
-              task.sourceSystem === "housekeeping" &&
+            className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${task.sourceSystem === "housekeeping" &&
               (userRole?.toLowerCase() === "user"
                 ? task.originalData?.attachment === "confirmed" ||
-                  task.confirmedByHOD === "Confirmed" ||
-                  task.confirmedByHOD === "confirmed"
+                task.confirmedByHOD === "Confirmed" ||
+                task.confirmedByHOD === "confirmed"
                 : task.originalData?.attachment !== "confirmed" &&
-                  task.confirmedByHOD !== "Confirmed" &&
-                  task.confirmedByHOD !== "confirmed")
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
+                task.confirmedByHOD !== "Confirmed" &&
+                task.confirmedByHOD !== "confirmed")
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+              }`}
             checked={isSelected}
             onChange={handleCheckboxClick}
             disabled={
               task.sourceSystem === "housekeeping" &&
               (userRole?.toLowerCase() === "user"
                 ? task.originalData?.attachment === "confirmed" ||
-                  task.confirmedByHOD === "Confirmed" ||
-                  task.confirmedByHOD === "confirmed"
+                task.confirmedByHOD === "Confirmed" ||
+                task.confirmedByHOD === "confirmed"
                 : task.originalData?.attachment !== "confirmed" &&
-                  task.confirmedByHOD !== "Confirmed" &&
-                  task.confirmedByHOD !== "confirmed")
+                task.confirmedByHOD !== "Confirmed" &&
+                task.confirmedByHOD !== "confirmed")
             }
           />
         )}
@@ -447,9 +452,9 @@ const TaskRow = memo(function TaskRow({
       </td>
 
       {/* Task Description */}
-      <td className="px-2 sm:px-3 py-2 sm:py-4 max-w-[200px]">
+      <td className="px-2 sm:px-3 py-2 sm:py-4">
         <div
-          className="text-xs sm:text-sm text-gray-900 line-clamp-2"
+          className="text-xs sm:text-sm text-gray-900"
           title={task.title}
         >
           {task.title}
@@ -543,7 +548,7 @@ const TaskRow = memo(function TaskRow({
       {/* Remarks - User role: input field for pending housekeeping/checklist tasks, Admin: show data only */}
       <td className="px-2 sm:px-3 py-2 sm:py-4">
         {(isHousekeepingPendingEditable || shouldShowChecklistRemarkInput) &&
-        !isCompleted ? (
+          !isCompleted ? (
           <input
             type="text"
             placeholder="Enter remark"
@@ -576,9 +581,8 @@ const TaskRow = memo(function TaskRow({
         ) : (
           <>
             <label
-              className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${
-                !isSelected ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""
+                }`}
             >
               <Upload className="h-4 w-4 mr-1" />
               <span>Upload</span>

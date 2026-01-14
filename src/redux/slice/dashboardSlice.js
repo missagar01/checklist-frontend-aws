@@ -5,6 +5,7 @@ import {
   countPendingOrDelayTaskApi,
   countTotalTaskApi,
   fetchDashboardDataApi,
+  countUpcomingTaskApi,
   countNotDoneTaskApi
 } from "../api/dashboardApi";
 
@@ -30,18 +31,18 @@ export const totalTaskInTable = createAsyncThunk(
   }
 )
 
-export const notDoneTaskInTable = createAsyncThunk(
-  "dashboard/notDoneTaskInTable",
+export const upcomingTaskInTable = createAsyncThunk(
+  "dashboard/upcomingTaskInTable",
   async ({ dashboardType, staffFilter, departmentFilter }) => {
     try {
-      const response = await countNotDoneTaskApi(
+      const response = await countUpcomingTaskApi(
         dashboardType,
         staffFilter,
         departmentFilter
       );
       return response;
     } catch (error) {
-      console.error("Error fetching NOT DONE tasks:", error);
+      console.error("Error fetching UPCOMING tasks:", error);
       throw error;
     }
   }
@@ -111,13 +112,27 @@ export const overdueTaskInTable = createAsyncThunk(
     }
   }
 )
+
+export const notDoneTaskInTable = createAsyncThunk(
+  "dashboard/notDoneTaskInTable",
+  async ({ dashboardType, staffFilter, departmentFilter }) => {
+    try {
+      const response = await countNotDoneTaskApi(dashboardType, staffFilter, departmentFilter)
+      return response
+    } catch (error) {
+      console.error("Error fetching Not Done tasks:", error)
+      throw error
+    }
+  }
+)
 const dashboardSlice = createSlice({
   name: 'dashBoard',
   initialState: {
     dashboard: [],
     totalTask: 0,
     completeTask: 0,
-    notDoneTask: 0,   // <-- ADD THIS
+    upcomingTask: 0,
+    notDoneTask: 0,
     pendingTask: 0,
     overdueTask: 0,
     error: null,
@@ -129,6 +144,7 @@ const dashboardSlice = createSlice({
       state.dashboard = [];
       state.totalTask = 0;
       state.completeTask = 0;
+      state.notDoneTask = 0;
       state.pendingTask = 0;
       state.overdueTask = 0;
       state.error = null;
@@ -164,20 +180,20 @@ const dashboardSlice = createSlice({
         state.loading = false;
         state.totalTask = action.payload || 0;
       })
-      // NOT DONE Task cases
-.addCase(notDoneTaskInTable.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-})
-.addCase(notDoneTaskInTable.fulfilled, (state, action) => {
-  state.loading = false;
-  // state.notDoneTask = action.payload || 0;
-  state.notDoneTask = typeof action.payload === "number" ? action.payload : 0;
-})
-.addCase(notDoneTaskInTable.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.error?.message || "Failed to fetch NOT DONE tasks";
-})
+      // UPCOMING Task cases
+      .addCase(upcomingTaskInTable.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(upcomingTaskInTable.fulfilled, (state, action) => {
+        state.loading = false;
+        state.upcomingTask = typeof action.payload === "number" ? action.payload : 0;
+      })
+      .addCase(upcomingTaskInTable.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || "Failed to fetch UPCOMING tasks";
+      })
+
       .addCase(totalTaskInTable.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error?.message || 'Failed to fetch total tasks';
@@ -223,6 +239,20 @@ const dashboardSlice = createSlice({
       .addCase(overdueTaskInTable.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error?.message || 'Failed to fetch overdue tasks';
+      })
+
+      // Not Done Task cases
+      .addCase(notDoneTaskInTable.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(notDoneTaskInTable.fulfilled, (state, action) => {
+        state.loading = false;
+        state.notDoneTask = action.payload || 0;
+      })
+      .addCase(notDoneTaskInTable.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || 'Failed to fetch Not Done tasks';
       });
   },
 });

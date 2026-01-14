@@ -6,17 +6,18 @@ export default function StatisticsCards({
   completeTask,
   pendingTask,
   overdueTask,
-  notDoneTask,     // <-- take from props (REAL backend value)
+  upcomingTasks,
+  notDoneTasks,
   dateRange = null
 }) {
 
   const completionRate = totalTask > 0 ? (completeTask / totalTask) * 100 : 0;
 
   // DO NOT calculate notDone here!
-  // const notDoneTask = totalTask - completeTask - pendingTask - overdueTask;
+  // const upcomingTasks = totalTask - completeTask - pendingTask - overdueTask;
 
   const pendingRate = totalTask > 0 ? (pendingTask / totalTask) * 100 : 0;
-  const notDoneRate = totalTask > 0 ? (notDoneTask / totalTask) * 100 : 0;
+  const upcomingTasksRate = totalTask > 0 ? (upcomingTasks / totalTask) * 100 : 0;
   const overdueRate = totalTask > 0 ? (overdueTask / totalTask) * 100 : 0;
 
 
@@ -24,17 +25,10 @@ export default function StatisticsCards({
   const circumference = 251.3; // 2 * π * 40
   const completedDash = completionRate * circumference / 100;
   const pendingDash = pendingRate * circumference / 100;
-  const notDoneDash = notDoneRate * circumference / 100;
+  const upcomingTasksDash = upcomingTasksRate * circumference / 100;
   const overdueDash = overdueRate * circumference / 100;
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
@@ -117,6 +111,24 @@ export default function StatisticsCards({
             </div>
           </div>
 
+          {/* Upcoming Tasks */}
+          <div className="rounded-lg border border-l-4 border-l-purple-500 shadow-md hover:shadow-lg transition-all bg-white">
+            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-tr-lg p-3 sm:p-4">
+              <h3 className="text-xs sm:text-sm font-medium text-purple-700">Upcoming Tasks</h3>
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
+            </div>
+            <div className="p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-700">{upcomingTasks}</div>
+              <p className="text-xs text-purple-600">
+                {dateRange ? (
+                  <>Upcoming in period</>
+                ) : (
+                  "Tomorrow's tasks"
+                )}
+              </p>
+            </div>
+          </div>
+
           {/* Not Done Tasks */}
           <div className="rounded-lg border border-l-4 border-l-gray-500 shadow-md hover:shadow-lg transition-all bg-white">
             <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-tr-lg p-3 sm:p-4">
@@ -124,14 +136,14 @@ export default function StatisticsCards({
               <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
             </div>
             <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-700">{notDoneTask}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-700">{notDoneTasks}</div>
               <p className="text-xs text-gray-600">
                 {dateRange ? (
                   <>Not done in period</>
                 ) : dashboardType === "delegation" ? (
-                  "Tasks not completed"
+                  "N/A"
                 ) : (
-                  "Not Completed tasks"
+                  "Status 'No'"
                 )}
               </p>
             </div>
@@ -210,7 +222,7 @@ export default function StatisticsCards({
                     strokeWidth="8"
                     fill="none"
                     strokeLinecap="line"
-                    strokeDasharray={`${notDoneDash} ${circumference}`}
+                    strokeDasharray={`${upcomingTasksDash} ${circumference}`}
                     strokeDashoffset={-overdueDash}
                   />
                   {/* Pending segment - amber/yellow */}
@@ -223,7 +235,7 @@ export default function StatisticsCards({
                     fill="none"
                     strokeLinecap="line"
                     strokeDasharray={`${pendingDash} ${circumference}`}
-                    strokeDashoffset={-(overdueDash + notDoneDash)}
+                    strokeDashoffset={-(overdueDash + upcomingTasksDash)}
                   />
                   {/* Completed segment - green */}
                   <circle
@@ -235,7 +247,7 @@ export default function StatisticsCards({
                     fill="none"
                     strokeLinecap="line"
                     strokeDasharray={`${completedDash} ${circumference}`}
-                    strokeDashoffset={-(overdueDash + notDoneDash + pendingDash)}
+                    strokeDashoffset={-(overdueDash + upcomingTasksDash + pendingDash)}
                   />
                 </svg>
                 {/* Percentage text in center */}
@@ -265,8 +277,8 @@ export default function StatisticsCards({
                 </div>
                 <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-gray-500 flex-shrink-0"></div>
-                  <span className="font-medium">Not Done:</span>
-                  <span className="text-gray-700">{notDoneRate.toFixed(1)}%</span>
+                  <span className="font-medium">Upcoming:</span>
+                  <span className="text-gray-700">{upcomingTasksRate.toFixed(1)}%</span>
                 </div>
                 <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 flex-shrink-0"></div>

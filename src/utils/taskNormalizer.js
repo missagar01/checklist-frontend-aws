@@ -47,11 +47,38 @@ const normalizePriority = (priority) => {
 // =============================================================================
 // DATE FORMATTING
 // =============================================================================
+const parseDate = (dateString) => {
+    if (!dateString) return null;
+
+    // Try standard parsing first
+    let date = new Date(dateString);
+    if (!isNaN(date.getTime())) return date;
+
+    // Handle DD/MM/YYYY or DD-MM-YYYY format
+    // Matches 14/01/2026 or 14-01-2026, optionally with time 05:30:00
+    const parts = dateString.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+
+    if (parts) {
+        // parts[1] is day, parts[2] is month, parts[3] is year
+        // parts[4] is hour, parts[5] is minute, parts[6] is second
+        return new Date(
+            parseInt(parts[3]),
+            parseInt(parts[2]) - 1, // Month is 0-indexed
+            parseInt(parts[1]),
+            parts[4] ? parseInt(parts[4]) : 0,
+            parts[5] ? parseInt(parts[5]) : 0,
+            parts[6] ? parseInt(parts[6]) : 0
+        );
+    }
+
+    return null;
+};
+
 export const formatDate = (dateString) => {
     if (!dateString) return '—';
     try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return '—';
+        const date = parseDate(dateString);
+        if (!date || isNaN(date.getTime())) return '—';
         return date.toLocaleDateString('en-GB', {
             day: '2-digit',
             month: '2-digit',
@@ -65,9 +92,9 @@ export const formatDate = (dateString) => {
 export const formatDateTime = (dateString) => {
     if (!dateString) return '—';
     try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return '—';
-        return date.toLocaleDateString('en-GB', {
+        const date = parseDate(dateString);
+        if (!date || isNaN(date.getTime())) return '—';
+        return date.toLocaleString('en-GB', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -239,8 +266,8 @@ export const normalizeHousekeepingTask = (task) => {
         location: '—',
         assignedTo: task.name || task.assigned_to || '—',
         assignedToSecondary: task.doer_name2 || '—',
-        dueDate: task.task_start_date,
-        dueDateFormatted: formatDate(task.task_start_date),
+        dueDate: task.task_start_date || task.task_date || task.date || task.scheduled_date,
+        // dueDateFormatted: formatDate(task.task_start_date || task.task_date || task.date || task.scheduled_date),
         status: getUnifiedStatus(task.status),
         originalStatus: task.status || 'Pending',
         priority: normalizePriority(task.priority),
@@ -249,7 +276,7 @@ export const normalizeHousekeepingTask = (task) => {
         frequency: task.frequency || '—',
         reminderEnabled: false,
         plannedDate: '—',
-        taskStartDate: task.task_start_date || '—',
+        // taskStartDate: task.task_start_date,
         submissionDate: task.submission_date || '—',
         delay: '—',
 
@@ -326,15 +353,15 @@ export const sortHousekeepingTasks = (tasks) => {
             const dateB = new Date(b.dueDate || 0);
             return dateA - dateB;
         }
-        
+
         // Check if tasks are confirmed (attachment === 'confirmed' or confirmedByHOD === 'Confirmed')
         const aConfirmed = a.originalData?.attachment === 'confirmed' || a.confirmedByHOD === 'Confirmed';
         const bConfirmed = b.originalData?.attachment === 'confirmed' || b.confirmedByHOD === 'Confirmed';
-        
+
         // Confirmed tasks first
         if (aConfirmed && !bConfirmed) return -1;
         if (!aConfirmed && bConfirmed) return 1;
-        
+
         // If both confirmed or both not confirmed, sort by date
         const dateA = new Date(a.dueDate || 0);
         const dateB = new Date(b.dueDate || 0);

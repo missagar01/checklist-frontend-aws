@@ -1,14 +1,14 @@
 import axios from "axios";
 
 const envApiBase = (import.meta.env.VITE_API_BASE_URL || "").trim();
-const FALLBACK_BASE = "https://housekeeping-backend.sagartmt.com/api";
+// const FALLBACK_BASE = "https://housekeeping-backend.sagartmt.com/api";
 
 // Resolve API base; prefer env, else fallback to production HTTPS backend.
 const resolveApiBase = () => {
   const isBrowser = typeof window !== "undefined";
   const isHttpsPage = isBrowser && window.location?.protocol === "https:";
 
-  let base = envApiBase || FALLBACK_BASE;
+  let base = envApiBase;
   base = base.replace(/\/+$/, "");
 
   // Auto-upgrade to https if somehow an http URL is provided while on https page.

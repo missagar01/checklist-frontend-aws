@@ -176,6 +176,7 @@ export const normalizeChecklistTask = (task, isHistory = false) => {
 
         // Remarks
         remarks: task.remark || task.remarks || '—',
+        userStatusChecklist: task.user_status_checklist || task.userStatusChecklist || '—',
 
         // Timestamps
         createdAt: task.created_at || '—',

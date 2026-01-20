@@ -5,6 +5,8 @@ export default function TaskFilterBar({
     filters = {},
     onFiltersChange,
     housekeepingDepartments = [],
+    departmentOptions = [],
+    assignedToOptions = [],
     userRole = "admin",
 }) {
     const {
@@ -12,13 +14,15 @@ export default function TaskFilterBar({
         sourceSystem = "",
         status = "",  // Default to empty to show all
         department = "",
+        assignedTo = "",
     } = filters;
 
     const handleChange = (key, value) => {
         const newFilters = { ...filters, [key]: value };
-        // Clear department filter when switching away from housekeeping
-        if (key === "sourceSystem" && value !== "housekeeping") {
+        // Clear department and assignedTo filter when switching sourceSystem
+        if (key === "sourceSystem") {
             newFilters.department = "";
+            newFilters.assignedTo = "";
         }
         onFiltersChange(newFilters);
     };
@@ -169,30 +173,58 @@ export default function TaskFilterBar({
                 </div>
             </div>
 
-            {/* Department Filter - Show only when housekeeping is selected and user is admin */}
-            {/* Hide completely for user role */}
-            {sourceSystem === "housekeeping" &&
-                currentUserRole?.toLowerCase() !== 'user' &&
-                filteredDepartments.length > 0 && (
-                    <div>
-                        <label htmlFor="department-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
-                            📁 Filter by Department:
-                        </label>
-                        <select
-                            id="department-filter"
-                            value={department}
-                            onChange={(e) => handleChange("department", e.target.value)}
-                            className="w-full sm:w-auto text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
-                        >
-                            <option value="">All Departments</option>
-                            {filteredDepartments.map((dept, idx) => (
-                                <option key={idx} value={dept}>
-                                    {dept}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
+            {/* Filters Row: Department & Doer Name - FOR CHECKLIST & MAINTENANCE */}
+            {(sourceSystem === "checklist" || sourceSystem === "maintenance" || sourceSystem === "housekeeping") && (departmentOptions.length > 0 || assignedToOptions.length > 0) && (
+                <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+                    {/* Department Filter - Unified
+                        Hide for User role in Checklist, Maintenance, and Housekeeping
+                    */}
+                    {departmentOptions.length > 0 && (currentUserRole?.toLowerCase() !== 'user' || (sourceSystem !== 'checklist' && sourceSystem !== 'maintenance' && sourceSystem !== 'housekeeping')) && (
+                        <div className="w-full sm:w-64">
+                            <label htmlFor="department-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
+                                📁 Department:
+                            </label>
+                            <select
+                                id="department-filter"
+                                value={department}
+                                onChange={(e) => handleChange("department", e.target.value)}
+                                className="w-full text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                            >
+                                <option value="">All Departments</option>
+                                {departmentOptions.map((dept, idx) => (
+                                    <option key={idx} value={dept}>
+                                        {dept}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Doer Name (Assigned To) Filter
+                        Hide for User role in Checklist and Maintenance
+                    */}
+                    {assignedToOptions.length > 0 && (currentUserRole?.toLowerCase() !== 'user' || (sourceSystem !== 'checklist' && sourceSystem !== 'maintenance')) && (
+                        <div className="w-full sm:w-64">
+                            <label htmlFor="assigned-filter" className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 block">
+                                👤 Doer Name:
+                            </label>
+                            <select
+                                id="assigned-filter"
+                                value={assignedTo}
+                                onChange={(e) => handleChange("assignedTo", e.target.value)}
+                                className="w-full text-xs sm:text-sm border border-gray-200 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                            >
+                                <option value="">All Doers</option>
+                                {assignedToOptions.map((name, idx) => (
+                                    <option key={idx} value={name}>
+                                        {name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Clear Button - Only show when filters are active */}
             {/* {hasActiveFilters && (

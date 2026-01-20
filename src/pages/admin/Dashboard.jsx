@@ -1107,6 +1107,7 @@ export default function AdminDashboard() {
               getFrequencyColor={getFrequencyColor}
               isLoadingMore={isLoadingMore}
               hasMoreData={hasMoreData}
+              stats={displayStats}
             />
 
             {activeTab === "overview" && (

@@ -187,7 +187,7 @@ const dashboardSlice = createSlice({
       })
       .addCase(upcomingTaskInTable.fulfilled, (state, action) => {
         state.loading = false;
-        state.upcomingTask = typeof action.payload === "number" ? action.payload : 0;
+        state.upcomingTask = action.payload || 0;
       })
       .addCase(upcomingTaskInTable.rejected, (state, action) => {
         state.loading = false;

@@ -29,12 +29,20 @@ export default function UnifiedTaskTable({
     onLoadMore,  // Callback for scroll-based loading
     hasMore = false,  // Whether more data is available
     housekeepingDepartments = [],  // Departments from assign_task table
+
+    // New: Specific lists for context-aware filtering
+    checklistDepartments = [],
+    checklistDoers = [],
+    maintenanceDepartments = [],
+    maintenanceDoers = [],
+
+    onRefresh, // New: Callback to refresh data when system changes
 }) {
     // State
     const [selectedItems, setSelectedItems] = useState(new Set());
     const [filters, setFilters] = useState({
         searchTerm: "",
-        sourceSystem: "",
+        sourceSystem: "checklist",
         status: "Pending",  // Default to Pending - only show pending tasks
         priority: "",
         assignedTo: "",
@@ -42,6 +50,33 @@ export default function UnifiedTaskTable({
         startDate: "",
         endDate: "",
     });
+
+    // Compute active options based on selected source system
+    const { departmentOptions, assignedToOptions } = useMemo(() => {
+        if (filters.sourceSystem === 'checklist') {
+            return {
+                departmentOptions: checklistDepartments,
+                assignedToOptions: checklistDoers
+            };
+        }
+        if (filters.sourceSystem === 'maintenance') {
+            return {
+                departmentOptions: maintenanceDepartments,
+                assignedToOptions: maintenanceDoers
+            };
+        }
+        if (filters.sourceSystem === 'housekeeping') {
+            return {
+                departmentOptions: housekeepingDepartments,
+                assignedToOptions: [] // No doer filter for housekeeping yet
+            };
+        }
+
+        return {
+            departmentOptions: [],
+            assignedToOptions: []
+        };
+    }, [filters.sourceSystem, checklistDepartments, checklistDoers, maintenanceDepartments, maintenanceDoers, housekeepingDepartments]);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [successMessage, setSuccessMessage] = useState("");
@@ -54,6 +89,13 @@ export default function UnifiedTaskTable({
     const [uploadedImages, setUploadedImages] = useState({});  // { taskId: { file, previewUrl } }
 
     const tableContainerRef = useRef(null);
+
+    // Auto-refresh when source system changes
+    useEffect(() => {
+        if (onRefresh && filters.sourceSystem) {
+            onRefresh(filters.sourceSystem);
+        }
+    }, [filters.sourceSystem, onRefresh]);
 
     // Handle scroll for infinite loading - improved detection
     const handleScroll = useCallback(() => {
@@ -134,6 +176,7 @@ export default function UnifiedTaskTable({
     }, [tasks, filters]);
 
     // Check if showing only housekeeping tasks
+    const normalizedRole = userRole?.toLowerCase();
     const isHousekeepingOnly = useMemo(() => {
         if (filters.sourceSystem === 'housekeeping') {
             return true;
@@ -145,12 +188,25 @@ export default function UnifiedTaskTable({
         return false;
     }, [filters.sourceSystem, filteredTasks]);
 
+    // Check if showing only maintenance tasks
+    const isMaintenanceOnly = useMemo(() => {
+        if (filters.sourceSystem === 'maintenance') {
+            return true;
+        }
+        // If no source filter and all tasks are maintenance
+        if (!filters.sourceSystem && filteredTasks.length > 0) {
+            return filteredTasks.every(task => task.sourceSystem === 'maintenance');
+        }
+        return false;
+    }, [filters.sourceSystem, filteredTasks]);
+
     // Use all filtered tasks for infinite scroll (no client-side pagination)
     const displayTasks = filteredTasks;
 
     // Check if all visible items are selected
     // For housekeeping tasks: Admin selects confirmed, User selects pending
-    const isUserRole = userRole?.toLowerCase() === 'user';
+    const isUserRole = normalizedRole === 'user';
+    const isAdminRole = normalizedRole === 'admin';
 
     const selectableTasks = displayTasks.filter(task => {
         if (task.sourceSystem === 'housekeeping') {
@@ -205,6 +261,10 @@ export default function UnifiedTaskTable({
                 if (task.sourceSystem === 'housekeeping') {
                     const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
                     return isUserRole ? !isConfirmed : isConfirmed;
+                }
+                // For checklist: Admin cannot select/update them here
+                if (task.sourceSystem === 'checklist' && !isUserRole) {
+                    return false;
                 }
                 return true; // Select all other tasks
             });
@@ -388,6 +448,26 @@ export default function UnifiedTaskTable({
             }
         }
 
+        // ✅ MAINTENANCE → STATUS REQUIRED (Specific check for maintenance items)
+        const maintenanceItems = selectedItemsArray.filter(id => {
+            const task = filteredTasks.find(t => t.id === id);
+            return task?.sourceSystem === 'maintenance';
+        });
+
+        if (maintenanceItems.length > 0) {
+            // Check Task Status
+            const missingMaintStatus = maintenanceItems.filter(id => {
+                const status = rowData[id]?.status;
+                return !status || status === "";
+            });
+
+            if (missingMaintStatus.length > 0) {
+                setErrorMessage("⚠️ Please select Task Status for all selected maintenance tasks");
+                setTimeout(() => setErrorMessage(""), 3000);
+                return;
+            }
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -455,6 +535,8 @@ export default function UnifiedTaskTable({
                 filters={filters}
                 onFiltersChange={setFilters}
                 housekeepingDepartments={housekeepingDepartments}
+                departmentOptions={departmentOptions}
+                assignedToOptions={assignedToOptions}
                 userRole={userRole}
             />
 
@@ -533,6 +615,7 @@ export default function UnifiedTaskTable({
                                     isIndeterminate={isIndeterminate}
                                     isHistoryMode={filters.status === "Completed"}
                                     isHousekeepingOnly={isHousekeepingOnly}
+                                    isMaintenanceOnly={isMaintenanceOnly}
                                     userRole={userRole}
                                 />
                                 <tbody className="bg-white divide-y divide-gray-100">
@@ -550,12 +633,16 @@ export default function UnifiedTaskTable({
                                                 onImageUpload={handleImageUpload}
                                                 isHistoryMode={filters.status === "Completed"}
                                                 isHousekeepingOnly={isHousekeepingOnly}
+                                                isMaintenanceOnly={isMaintenanceOnly}
                                                 seqNo={index + 1}
                                                 userRole={userRole}
                                             />
                                         ))
                                     ) : (
-                                        <TaskTableEmpty hasFilters={hasFilters} />
+                                        <TaskTableEmpty
+                                            hasFilters={hasFilters}
+                                            colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isUserRole ? 14 : 16)}
+                                        />
                                     )}
                                 </tbody>
                             </table>

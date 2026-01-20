@@ -41,6 +41,7 @@ const PAGE_ACCESS_OPTIONS = [
     { value: "assign-task", label: "Assign Task" },
     { value: "delegation", label: "Delegation" },
     { value: "all-task", label: "All Task" },
+    { value: "hrmanager", label: "Task Verification" },
     { value: "mis-report", label: "MIS Report" },
     { value: "setting", label: "Setting" },
 ];

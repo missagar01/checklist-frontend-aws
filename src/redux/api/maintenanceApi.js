@@ -51,14 +51,14 @@ export const getCompletedMaintenanceTasksAPI = (page = 1, filters = {}) => {
 
 export const updateMaintenanceTaskAPI = (taskId, updateData) => {
   const formData = new FormData();
-  
+
   // Add all update data to formData
   Object.keys(updateData).forEach(key => {
     if (updateData[key] !== undefined && updateData[key] !== null) {
       formData.append(key, updateData[key]);
     }
   });
-  
+
   return maintenanceApi.put(`maintenance/tasks/${taskId}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data"
@@ -74,12 +74,22 @@ export const getUniqueMachineNamesAPI = () => {
   return maintenanceApi.get("maintenance/machines/unique");
 };
 
+export const getUniqueMaintenanceDepartmentsAPI = () => {
+  return maintenanceApi.get("maintenance/departments/unique");
+};
+
+
+
+export const getMaintenanceStatisticsAPI = () => {
+  return maintenanceApi.get("maintenance/statistics");
+};
+
 export const getUniqueAssignedPersonnelAPI = () => {
   return maintenanceApi.get("maintenance/personnel/unique");
 };
 
-export const getMaintenanceStatisticsAPI = () => {
-  return maintenanceApi.get("maintenance/statistics");
+export const getUniqueMaintenanceDoerNameAPI = () => {
+  return maintenanceApi.get("maintenance/doers/unique");
 };
 
 export default maintenanceApi;

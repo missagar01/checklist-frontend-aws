@@ -15,7 +15,8 @@ export default function TaskNavigationTabs({
   departmentData,
   getFrequencyColor,
   dashboardStaffFilter,
-  departmentFilter // Add this prop
+  departmentFilter, // Add this prop
+  stats // Add this prop
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [displayedTasks, setDisplayedTasks] = useState([])
@@ -23,7 +24,10 @@ export default function TaskNavigationTabs({
   const [hasMoreData, setHasMoreData] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false) // Add this state
-  const itemsPerPage = 50
+  const [itemsPerPage] = useState(50) // Fix: use state or constant correctly
+
+  const getCount = (val) => (val && typeof val === 'object' ? Number(val.count || 0) : Number(val || 0));
+
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -53,7 +57,7 @@ export default function TaskNavigationTabs({
       // Get total count for this view (only on first load)
       if (page === 1) {
         const count = await getDashboardDataCount(dashboardType, dashboardStaffFilter, taskView, departmentFilter)
-        setTotalCount(count)
+        setTotalCount(typeof count === 'object' ? count.count : count)
       }
 
       if (!data || data.length === 0) {
@@ -229,21 +233,21 @@ export default function TaskNavigationTabs({
             }`}
           onClick={() => setTaskView("recent")}
         >
-          {dashboardType === "delegation" ? "Today Tasks" : "Recent Tasks"}
+          {dashboardType === "delegation" ? "Today Tasks" : `Recent Tasks (${getCount(stats?.pendingTasks)})`}
         </button>
         <button
           className={`py-3 text-center font-medium transition-colors ${taskView === "upcoming" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           onClick={() => setTaskView("upcoming")}
         >
-          {dashboardType === "delegation" ? "Future Tasks" : "Upcoming Tasks"}
+          {dashboardType === "delegation" ? "Future Tasks" : `Upcoming Tasks (${getCount(stats?.upcomingTasks)})`}
         </button>
         <button
           className={`py-3 text-center font-medium transition-colors ${taskView === "overdue" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           onClick={() => setTaskView("overdue")}
         >
-          Overdue Tasks
+          Overdue Tasks ({getCount(stats?.overdueTasks)})
         </button>
       </div>
 

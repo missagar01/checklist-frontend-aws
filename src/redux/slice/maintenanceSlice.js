@@ -7,7 +7,9 @@ import {
   updateMultipleMaintenanceTasksAPI,
   getUniqueMachineNamesAPI,
   getUniqueAssignedPersonnelAPI,
-  getMaintenanceStatisticsAPI
+  getMaintenanceStatisticsAPI,
+  getUniqueMaintenanceDepartmentsAPI,
+  getUniqueMaintenanceDoerNameAPI,
 } from "../api/maintenanceApi";
 
 const initialState = {
@@ -15,6 +17,8 @@ const initialState = {
   history: [],
   machineNames: [],
   assignedPersonnel: [],
+  departments: [], // New for filter
+  doers: [],       // New for filter
   statistics: null,
   loading: false,
   error: null,
@@ -97,6 +101,34 @@ export const fetchUniqueMachineNames = createAsyncThunk(
   }
 );
 
+
+
+// New Thunk for Departments
+export const fetchMaintenanceDepartments = createAsyncThunk(
+  "maintenance/fetchDepartments",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getUniqueMaintenanceDepartmentsAPI();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
+// New Thunk for Doers (reuse personnel API)
+export const fetchMaintenanceDoers = createAsyncThunk(
+  "maintenance/fetchDoers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getUniqueMaintenanceDoerNameAPI();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 export const fetchUniqueAssignedPersonnel = createAsyncThunk(
   "maintenance/fetchAssignedPersonnel",
   async (_, { rejectWithValue }) => {
@@ -166,7 +198,7 @@ const maintenanceSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch pending tasks
       .addCase(fetchPendingMaintenanceTasks.pending, (state) => {
         state.loading = true;
@@ -182,7 +214,7 @@ const maintenanceSlice = createSlice({
         state.currentPage = action.meta.arg.page;
         state.hasMore = action.payload.hasMore;
       })
-      
+
       // Fetch completed tasks
       .addCase(fetchCompletedMaintenanceTasks.pending, (state) => {
         state.loading = true;
@@ -198,43 +230,53 @@ const maintenanceSlice = createSlice({
         state.currentPageHistory = action.meta.arg.page;
         state.hasMoreHistory = action.payload.hasMore;
       })
-      
+
       // Update task
       .addCase(updateMaintenanceTask.fulfilled, (state, action) => {
         // Update the task in the tasks array
         const updatedTask = action.payload.data;
-        state.tasks = state.tasks.map(task => 
+        state.tasks = state.tasks.map(task =>
           task.task_id === updatedTask.task_id ? updatedTask : task
         );
         // Also update in history if exists
-        state.history = state.history.map(task => 
+        state.history = state.history.map(task =>
           task.task_id === updatedTask.task_id ? updatedTask : task
         );
       })
-      
+
       // Update multiple tasks
       .addCase(updateMultipleMaintenanceTasks.fulfilled, (state, action) => {
         const updatedTasks = action.payload.data;
         updatedTasks.forEach(updatedTask => {
-          state.tasks = state.tasks.map(task => 
+          state.tasks = state.tasks.map(task =>
             task.task_id === updatedTask.task_id ? updatedTask : task
           );
-          state.history = state.history.map(task => 
+          state.history = state.history.map(task =>
             task.task_id === updatedTask.task_id ? updatedTask : task
           );
         });
       })
-      
+
       // Fetch machine names
       .addCase(fetchUniqueMachineNames.fulfilled, (state, action) => {
         state.machineNames = action.payload.data;
       })
-      
+
       // Fetch assigned personnel
       .addCase(fetchUniqueAssignedPersonnel.fulfilled, (state, action) => {
         state.assignedPersonnel = action.payload.data;
       })
-      
+
+      // Fetch Departments (New)
+      .addCase(fetchMaintenanceDepartments.fulfilled, (state, action) => {
+        state.departments = action.payload.data;
+      })
+
+      // Fetch Doers (New)
+      .addCase(fetchMaintenanceDoers.fulfilled, (state, action) => {
+        state.doers = action.payload.data;
+      })
+
       // Fetch statistics
       .addCase(fetchMaintenanceStatistics.fulfilled, (state, action) => {
         state.statistics = action.payload.data;
@@ -251,3 +293,4 @@ export const {
 } = maintenanceSlice.actions;
 
 export default maintenanceSlice.reducer;
+

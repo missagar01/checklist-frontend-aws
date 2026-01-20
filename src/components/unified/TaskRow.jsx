@@ -34,6 +34,7 @@ const TaskRow = memo(function TaskRow({
   onImageUpload,
   isHistoryMode = false, // New prop to detect history/completed mode
   isHousekeepingOnly = false, // New prop to detect if showing only housekeeping tasks
+  isMaintenanceOnly = false,
   seqNo = 0, // Sequence number for housekeeping table
   userRole = "admin", // User role to show DOER2 select box for user role
 }) {
@@ -44,7 +45,9 @@ const TaskRow = memo(function TaskRow({
     task.originalStatus === "Completed" ||
     isHistoryMode;
 
-  const isUserRole = userRole?.toLowerCase() === "user";
+  const normalizedRole = userRole?.toLowerCase();
+  const isUserRole = normalizedRole === "user";
+  const isAdminRole = normalizedRole === "admin";
   const isHousekeepingPendingEditable =
     isUserRole &&
     task.sourceSystem === "housekeeping" &&
@@ -395,28 +398,30 @@ const TaskRow = memo(function TaskRow({
         ) : (
           <input
             type="checkbox"
-            className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${task.sourceSystem === "housekeeping" &&
+            className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(task.sourceSystem === "housekeeping" &&
               (userRole?.toLowerCase() === "user"
                 ? task.originalData?.attachment === "confirmed" ||
                 task.confirmedByHOD === "Confirmed" ||
                 task.confirmedByHOD === "confirmed"
                 : task.originalData?.attachment !== "confirmed" &&
                 task.confirmedByHOD !== "Confirmed" &&
-                task.confirmedByHOD !== "confirmed")
+                task.confirmedByHOD !== "confirmed")) ||
+              (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user")
               ? "opacity-50 cursor-not-allowed"
               : ""
               }`}
             checked={isSelected}
             onChange={handleCheckboxClick}
             disabled={
-              task.sourceSystem === "housekeeping" &&
-              (userRole?.toLowerCase() === "user"
-                ? task.originalData?.attachment === "confirmed" ||
-                task.confirmedByHOD === "Confirmed" ||
-                task.confirmedByHOD === "confirmed"
-                : task.originalData?.attachment !== "confirmed" &&
-                task.confirmedByHOD !== "Confirmed" &&
-                task.confirmedByHOD !== "confirmed")
+              (task.sourceSystem === "housekeeping" &&
+                (userRole?.toLowerCase() === "user"
+                  ? task.originalData?.attachment === "confirmed" ||
+                  task.confirmedByHOD === "Confirmed" ||
+                  task.confirmedByHOD === "confirmed"
+                  : task.originalData?.attachment !== "confirmed" &&
+                  task.confirmedByHOD !== "Confirmed" &&
+                  task.confirmedByHOD !== "confirmed")) ||
+              (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user")
             }
           />
         )}
@@ -525,25 +530,65 @@ const TaskRow = memo(function TaskRow({
         </td>
       )}
 
-      {/* Update Status - For completed: show status, for pending: show dropdown */}
-      <td className="px-2 sm:px-3 py-2 sm:py-4">
-        {isCompleted ? (
-          <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-            ✅ {task.originalStatus || "Yes"}
+      {(!isUserRole || task.sourceSystem === 'maintenance') && (
+        <td className="px-2 sm:px-3 py-2 sm:py-4">
+          {isCompleted ? (
+            <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+              ✅ {task.originalStatus || "Yes"}
+            </span>
+          ) : task.sourceSystem === "checklist" ? (
+            <span className="text-xs text-gray-700">
+              {task.status || "—"}
+            </span>
+          ) : (
+            <select
+              disabled={!isSelected}
+              value={rowData.status || ""}
+              onChange={(e) => handleDataChange("status", e.target.value)}
+              className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option value="">Select Status</option>
+              <option value="yes"> Yes / हाँ</option>
+              <option value="no">NO / नहीं</option>
+            </select>
+          )}
+        </td>
+      )}
+
+      {/* User Status Checklist column */}
+      {!isMaintenanceOnly && (
+        <td className="px-2 sm:px-3 py-2 sm:py-4">
+          {isCompleted ? (
+            <span className="text-xs text-gray-700">
+              {task.status || task.originalStatus || "—"}
+            </span>
+          ) : isUserRole ? (
+            <select
+              disabled={!isSelected || task.userStatusChecklist === 'Yes' || task.userStatusChecklist === 'No'}
+              value={rowData.status || ""}
+              onChange={(e) => handleDataChange("status", e.target.value)}
+              className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option value="">Select Status / स्थिति चुनें</option>
+              <option value="Yes">Yes / हाँ</option>
+              <option value="No">No / नहीं</option>
+            </select>
+          ) : (
+            <span className="text-xs text-gray-700">
+              {task.status || task.originalStatus || "—"}
+            </span>
+          )}
+        </td>
+      )}
+
+      {/* Admin Done column */}
+      {isAdminRole && (
+        <td className="px-2 sm:px-3 py-2 sm:py-4">
+          <span className="text-xs text-gray-700">
+            {task.adminDone || task.originalData?.admin_done || "—"}
           </span>
-        ) : (
-          <select
-            disabled={!isSelected}
-            value={rowData.status || ""}
-            onChange={(e) => handleDataChange("status", e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            <option value="">Select Status</option>
-            <option value="Yes"> Yes / हाँ</option>
-            <option value="No">NO / नहीं</option>
-          </select>
-        )}
-      </td>
+        </td>
+      )}
 
       {/* Remarks - User role: input field for pending housekeeping/checklist tasks, Admin: show data only */}
       <td className="px-2 sm:px-3 py-2 sm:py-4">
@@ -633,8 +678,13 @@ export function TaskTableHeader({
   isIndeterminate,
   isHistoryMode = false,
   isHousekeepingOnly = false,
+  isMaintenanceOnly = false,
   userRole = "admin", // User role to conditionally hide columns
 }) {
+  const normalizedRole = userRole?.toLowerCase();
+  const isUserRole = normalizedRole === "user";
+  const isAdminRole = normalizedRole === "admin";
+
   // If showing only housekeeping tasks, use housekeeping-specific headers
   if (isHousekeepingOnly) {
     return (
@@ -751,9 +801,21 @@ export function TaskTableHeader({
         <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           Temperature
         </th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          {isHistoryMode ? "Status" : "Update Status"}
-        </th>
+        {(!isUserRole || isMaintenanceOnly) && (
+          <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {isHistoryMode ? "Status" : "Task Status"}
+          </th>
+        )}
+        {!isMaintenanceOnly && (
+          <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            user_status-checklist
+          </th>
+        )}
+        {isAdminRole && (
+          <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Admin Done
+          </th>
+        )}
         <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           Remarks
         </th>
@@ -771,10 +833,10 @@ export function TaskTableHeader({
 /**
  * TaskTableEmpty - Empty state component
  */
-export function TaskTableEmpty({ hasFilters = false }) {
+export function TaskTableEmpty({ hasFilters = false, colSpan = 14 }) {
   return (
     <tr>
-      <td colSpan={14} className="px-4 py-12 text-center">
+      <td colSpan={colSpan} className="px-4 py-12 text-center">
         <div className="flex flex-col items-center">
           <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
             <span className="text-2xl">📋</span>

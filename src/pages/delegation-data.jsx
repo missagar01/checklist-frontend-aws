@@ -4,16 +4,6 @@ import { CheckCircle2, Trash2, X } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { deleteDelegationTask, uniqueDelegationTaskData } from "../redux/slice/quickTaskSlice"
 
-const CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzXzqnKmbeXw3i6kySQcBOwxHQA7y8WBFfEe69MPbCR-jux0Zte7-TeSKi8P4CIFkhE/exec",
-  DRIVE_FOLDER_ID: "1LPsmRqzqvp6b7aY9FS1NfiiK0LV03v03",
-  SOURCE_SHEET_NAME: "Delegation",
-  TARGET_SHEET_NAME: "Delegation Done",
-  PAGE_CONFIG: {
-    title: "Pending Delegation Tasks",
-    description: "Showing all pending tasks",
-  },
-}
 
 
 

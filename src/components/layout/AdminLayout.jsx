@@ -65,82 +65,10 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
   // Filter dataCategories based on user role
   const dataCategories = [
     { id: "main", name: "All Task", link: "/dashboard/data/main" },
-    // { id: "sales", name: "Checklist", link: "/dashboard/data/sales" },
-    // { id: "maintenance-task", name: "Maintenance_Task", link: "/dashboard/data/maintenance-task" },
-    // { id: "housekeeping-task", name: "Housekeeping_Task", link: "/dashboard/data/housekepping-task" },
   ];
 
   // Update the routes array based on user role and super admin status
-  const routes = [
-    {
-      href: "/dashboard/admin",
-      label: "Dashboard",
-      icon: Database,
-      active: location.pathname === "/dashboard/admin",
-      showFor: ["admin", "user"],
-    },
-    {
-      href: "/dashboard/quick-task",
-      label: "Quick Task",
-      icon: Zap,
-      active: location.pathname === "/dashboard/quick-task",
-      // Only show for super admin (username = 'admin')
-      showFor: isSuperAdmin ? ["admin"] : [],
-    },
-    {
-      href: "/dashboard/machines",
-      label: "Machine",
-      icon: Settings,   // You can replace with any icon
-      active: location.pathname === "/dashboard/machines",
-      showFor: ["admin"],    // Only admin can see it
-    },
-
-    {
-      href: "/dashboard/assign-task",
-      label: "Assign Task",
-      icon: CheckSquare,
-      active: location.pathname === "/dashboard/assign-task",
-      showFor: ["admin", "user"],
-    },
-    {
-      href: "/dashboard/delegation",
-      label: "Delegation",
-      icon: ClipboardList,
-      active: location.pathname === "/dashboard/delegation",
-      showFor: ["admin", "user"],
-    },
-    {
-      href: "/dashboard/all-task",
-      label: "All Task",
-      icon: ClipboardList,
-      active: location.pathname === "/dashboard/all-task",
-      showFor: ["admin", "user"],
-    },
-    // {
-    //   href: "#",
-    //   label: "Data",
-    //   icon: Database,
-    //   active: location.pathname.includes("/dashboard/data"),
-    //   submenu: true,
-    //   showFor: ["admin", "user"],
-    // },
-    {
-      href: "/dashboard/mis-report",
-      label: "MIS Report",
-      icon: CheckSquare,
-      active: location.pathname.includes("/dashboard/mis-report"),
-      // Only show for super admin (username = 'admin')
-      showFor: isSuperAdmin ? ["admin"] : [],
-    },
-    {
-      href: "/dashboard/setting",
-      label: "Settings",
-      icon: Settings,
-      active: location.pathname.includes("/dashboard/setting"),
-      // Only show for super admin (username = 'admin')
-      showFor: isSuperAdmin ? ["admin"] : [],
-    },
-  ];
+ 
 
   const getAccessibleDepartments = () => {
     const userRole = localStorage.getItem("role") || "user";
@@ -157,8 +85,12 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
     // Remove any quotes from the string before splitting
     const cleanPageAccess = pageAccess.replace(/"/g, '').trim();
     const accessiblePages = cleanPageAccess
-      ? cleanPageAccess.split(',').map(page => page.trim()).filter(page => page !== '')
+      ? cleanPageAccess
+          .split(',')
+          .map((page) => page.trim().toLowerCase())
+          .filter((page) => page !== '')
       : [];
+    const accessiblePagesSet = new Set(accessiblePages);
 
     // Define routes with pageKey properties
     const allRoutes = [
@@ -211,6 +143,16 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
         showFor: ["admin", "user"],
       },
       {
+        href: "/dashboard/hrmanager",
+        label: "Task Verifition",
+        icon: UserRound,
+        active: location.pathname === "/dashboard/hrmanager",
+        pageKey: "hrmanager",
+        showFor: ["admin", "user"],
+        requiresPageAccess: true,
+        pageKeyAliases: ["task-verification"],
+      },
+      {
         href: "/dashboard/mis-report",
         label: "MIS Report",
         icon: CheckSquare,
@@ -230,18 +172,20 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
 
     // Filter routes based on user role and page_access
     const filteredRoutes = allRoutes.filter((route) => {
-      // Check if user has role permission
       const hasRolePermission = route.showFor.includes(userRole);
-
-      // If page_access is set and not empty, ALL users (including admin) must respect it
-      if (accessiblePages.length > 0) {
-        // Check if this route's pageKey is in the accessible pages list
-        const hasPageAccess = accessiblePages.includes(route.pageKey);
-        return hasRolePermission && hasPageAccess;
+      if (!hasRolePermission) {
+        return false;
       }
 
-      // If page_access is empty/not set, show based on role permissions only
-      return hasRolePermission;
+      if (!route.requiresPageAccess) {
+        return true;
+      }
+
+      const routeKeys = [route.pageKey, ...(route.pageKeyAliases || [])].map((key) =>
+        key.toLowerCase()
+      );
+
+      return routeKeys.some((key) => accessiblePagesSet.has(key));
     });
 
     return filteredRoutes;

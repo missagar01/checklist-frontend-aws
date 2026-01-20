@@ -2,23 +2,31 @@ import { ListTodo, CheckCircle2, Clock, AlertTriangle, BarChart3, XCircle, Calen
 
 export default function StatisticsCards({
   dashboardType,
-  totalTask,
-  completeTask,
-  pendingTask,
-  overdueTask,
-  upcomingTasks,
-  notDoneTasks,
+  totalTask = 0,
+  completeTask = 0,
+  pendingTask = 0,
+  overdueTask = 0,
+  upcomingTasks = 0,
+  notDoneTasks = 0,
   dateRange = null
 }) {
+  // Helper to safely get count from number or object
+  const getCount = (val) => {
+    if (val && typeof val === 'object') return Number(val.count || 0);
+    return typeof val === 'number' ? val : 0;
+  };
 
-  const completionRate = totalTask > 0 ? (completeTask / totalTask) * 100 : 0;
+  const tCount = getCount(totalTask);
+  const cCount = getCount(completeTask);
+  const pCount = getCount(pendingTask);
+  const oCount = getCount(overdueTask);
+  const uCount = getCount(upcomingTasks);
+  const nCount = getCount(notDoneTasks);
 
-  // DO NOT calculate notDone here!
-  // const upcomingTasks = totalTask - completeTask - pendingTask - overdueTask;
-
-  const pendingRate = totalTask > 0 ? (pendingTask / totalTask) * 100 : 0;
-  const upcomingTasksRate = totalTask > 0 ? (upcomingTasks / totalTask) * 100 : 0;
-  const overdueRate = totalTask > 0 ? (overdueTask / totalTask) * 100 : 0;
+  const completionRate = tCount > 0 ? (cCount / tCount) * 100 : 0;
+  const pendingRate = tCount > 0 ? (pCount / tCount) * 100 : 0;
+  const upcomingTasksRate = tCount > 0 ? (uCount / tCount) * 100 : 0;
+  const overdueRate = tCount > 0 ? (oCount / tCount) * 100 : 0;
 
 
   // Calculate stroke dash arrays for each segment
@@ -27,6 +35,18 @@ export default function StatisticsCards({
   const pendingDash = pendingRate * circumference / 100;
   const upcomingTasksDash = upcomingTasksRate * circumference / 100;
   const overdueDash = overdueRate * circumference / 100;
+
+  const renderBreakdown = (data) => {
+    if (!data || typeof data !== 'object' || !data.breakdown) return null;
+    const { checklist = 0, housekeeping = 0, maintenance = 0 } = data.breakdown;
+    return (
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] sm:text-xs font-semibold tracking-wide">
+        <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">CHK: {checklist}</span>
+        <span className="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">HK: {housekeeping}</span>
+        <span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">MNT: {maintenance}</span>
+      </div>
+    );
+  };
 
 
 
@@ -43,7 +63,7 @@ export default function StatisticsCards({
               <ListTodo className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
             </div>
             <div className="hidden sm:block p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700">{totalTask}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700">{tCount}</div>
               <p className="text-xs text-blue-600">
                 {dateRange ? (
                   <>Tasks in selected period</>
@@ -53,13 +73,15 @@ export default function StatisticsCards({
                   "Total tasks in checklist"
                 )}
               </p>
+              {renderBreakdown(totalTask)}
             </div>
 
             <div className="sm:hidden p-3 sm:p-4 mt-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700">{totalTask}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700">{tCount}</div>
               <p className="text-xs text-blue-600">
                 {dateRange ? "Selected period" : "Total tasks"}
               </p>
+              {renderBreakdown(totalTask)}
             </div>
           </div>
 
@@ -72,7 +94,7 @@ export default function StatisticsCards({
               <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
             </div>
             <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-700">{completeTask}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-700">{cCount}</div>
               <p className="text-xs text-green-600">
                 {dateRange ? (
                   <>Completed in period</>
@@ -82,6 +104,7 @@ export default function StatisticsCards({
                   "Total completed"
                 )}
               </p>
+              {renderBreakdown(completeTask)}
             </div>
           </div>
 
@@ -98,7 +121,7 @@ export default function StatisticsCards({
               )}
             </div>
             <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-amber-700">{pendingTask}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-amber-700">{pCount}</div>
               <p className="text-xs text-amber-600">
                 {dateRange ? (
                   <>Pending in period</>
@@ -108,6 +131,7 @@ export default function StatisticsCards({
                   "Including today"
                 )}
               </p>
+              {renderBreakdown(pendingTask)}
             </div>
           </div>
 
@@ -118,7 +142,7 @@ export default function StatisticsCards({
               <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
             </div>
             <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-700">{upcomingTasks}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-700">{uCount}</div>
               <p className="text-xs text-purple-600">
                 {dateRange ? (
                   <>Upcoming in period</>
@@ -126,6 +150,7 @@ export default function StatisticsCards({
                   "Tomorrow's tasks"
                 )}
               </p>
+              {renderBreakdown(upcomingTasks)}
             </div>
           </div>
 
@@ -136,7 +161,7 @@ export default function StatisticsCards({
               <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
             </div>
             <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-700">{notDoneTasks}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-700">{nCount}</div>
               <p className="text-xs text-gray-600">
                 {dateRange ? (
                   <>Not done in period</>
@@ -146,6 +171,7 @@ export default function StatisticsCards({
                   "Status 'No'"
                 )}
               </p>
+              {renderBreakdown(notDoneTasks)}
             </div>
           </div>
 
@@ -162,7 +188,7 @@ export default function StatisticsCards({
               )}
             </div>
             <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-700">{overdueTask}</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-700">{oCount}</div>
               <p className="text-xs text-red-600">
                 {dateRange ? (
                   <>Overdue in period</>
@@ -172,6 +198,7 @@ export default function StatisticsCards({
                   "Past due"
                 )}
               </p>
+              {renderBreakdown(overdueTask)}
             </div>
           </div>
 
@@ -292,7 +319,7 @@ export default function StatisticsCards({
             {dateRange && (
               <div className="mt-4 pt-3 border-t border-gray-200">
                 <div className="text-xs text-gray-600 text-center">
-                  Analysis based on {totalTask} tasks from selected date range
+                  Analysis based on {tCount} tasks from selected date range
                 </div>
               </div>
             )}

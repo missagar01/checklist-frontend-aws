@@ -17,14 +17,14 @@ housekeepingApi.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Add user_access1, user_access, and role from localStorage (for non-JWT auth)
     // These headers are used by backend to filter data by user's departments
     // IMPORTANT: Encode header values to handle non-ASCII characters (Hindi/Unicode)
     const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || "";
     const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
     const role = localStorage.getItem("role") || "";
-    
+
     if (userAccess1) {
       // URL encode to handle non-ASCII characters (Hindi/Unicode) in department names
       config.headers["x-user-access1"] = encodeURIComponent(userAccess1);
@@ -36,7 +36,7 @@ housekeepingApi.interceptors.request.use(
     if (role) {
       config.headers["x-user-role"] = role; // Role is usually ASCII, but encode for safety
     }
-    
+
     return config;
   },
   (error) => {
@@ -86,11 +86,11 @@ export const getHousekeepingHistoryTasksAPI = (page = 1, filters = {}) => {
 // Confirm Task (single)
 export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null, doerName2 = "") => {
   const formData = new FormData();
-  
+
   if (remark) formData.append("remark", remark);
   if (doerName2) formData.append("doer_name2", doerName2);
   formData.append("attachment", "confirmed");
-  
+
   if (imageFile instanceof File) {
     formData.append("image", imageFile);
   } else if (typeof imageFile === "string" && imageFile) {
@@ -110,22 +110,22 @@ export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null
 export const submitHousekeepingTasksAPI = async (tasks = []) => {
   const updatePromises = tasks.map((task) => {
     const formData = new FormData();
-    
+
     if (task.status) formData.append("status", task.status);
     if (task.remark) formData.append("remark", task.remark);
     if (task.attachment) formData.append("attachment", task.attachment);
     if (task.doer_name2) formData.append("doer_name2", task.doer_name2);
-    
+
     if (task.status === "Yes") {
       formData.append("submission_date", new Date().toISOString());
     }
-    
+
     if (task.image_file instanceof File) {
       formData.append("image", task.image_file);
     } else if (task.image_url) {
       formData.append("image", task.image_url);
     }
-    
+
     return housekeepingApi.patch(
       `/housekeeping-dashboard/assigntask/generate/${task.task_id}`,
       formData,
@@ -134,24 +134,24 @@ export const submitHousekeepingTasksAPI = async (tasks = []) => {
       }
     ).then(response => response.data);
   });
-  
+
   const results = await Promise.allSettled(updatePromises);
-  
+
   const successful = results
     .filter((result) => result.status === "fulfilled")
     .map((result) => result.value);
-  
+
   const failed = results
     .filter((result) => result.status === "rejected")
     .map((result) => result.reason);
-  
+
   return { successful, failed };
 };
 
 // Update Task
 export const updateHousekeepingTaskAPI = (taskId, updateData) => {
   const formData = new FormData();
-  
+
   Object.keys(updateData).forEach(key => {
     if (updateData[key] !== undefined && updateData[key] !== null && updateData[key] !== "") {
       formData.append(key, updateData[key]);
@@ -259,7 +259,7 @@ export const getHousekeepingTasksWithFiltersAPI = (taskType, page = 1, limit = 5
   if (taskType === "overdue") endpoint = "/housekeeping-dashboard/assigntask/generate/overdue";
   else if (taskType === "recent") endpoint = "/housekeeping-dashboard/assigntask/generate/today";
   else if (taskType === "upcoming" || taskType === "not-done") endpoint = "/housekeeping-dashboard/assigntask/generate/tomorrow";
-  
+
   return housekeepingApi.get(endpoint, {
     params: {
       page,

@@ -16,7 +16,7 @@ import MisReport from "./pages/MisReport"
 import Machines from "./pages/admin/maintenance/machines"
 import NewMachine from "./pages/admin/maintenance/newMachine"
 import UnifiedTaskPage from "./pages/admin/UnifiedTaskPage"
-
+import HrManager from "./pages/admin/HrManager"
 
 // Auth wrapper component to protect routes
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -133,6 +133,15 @@ function App() {
           }
         />
 
+            <Route
+          path="/dashboard/hrmanager"
+          element={
+            <ProtectedRoute>
+              <HrManager />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/dashboard/setting"
           element={
@@ -173,6 +182,7 @@ function App() {
 
         {/* Backward compatibility redirects */}
         <Route path="/admin/*" element={<Navigate to="/dashboard/admin" replace />} />
+        <Route path="/admin/*" element={<Navigate to="/dashboard/admin" replace />} />
         <Route path="/admin/dashboard" element={<Navigate to="/dashboard/admin" replace />} />
         <Route path="/admin/quick" element={<Navigate to="/dashboard/quick-task" replace />} />
         <Route path="/admin/machines" element={<Navigate to="/dashboard/machines" replace />} />
@@ -182,6 +192,7 @@ function App() {
         <Route path="/admin/mis-report" element={<Navigate to="/dashboard/mis-report" replace />} />
         <Route path="/admin/data/:category" element={<Navigate to="/dashboard/data/:category" replace />} />
         <Route path="/user/*" element={<Navigate to="/dashboard/admin" replace />} />
+   
       </Routes>
     </Router>
   )

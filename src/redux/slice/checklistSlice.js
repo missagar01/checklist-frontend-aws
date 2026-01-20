@@ -2,8 +2,14 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   fetchChechListDataForHistory,
   fetchChechListDataSortByDate,
+  fetchChecklistForHrApproval,
   postChecklistAdminDoneAPI,
-  updateChecklistData
+  updateChecklistData,
+  updateHrManagerChecklistData,
+  postChecklistUserStatusData,
+  patchChecklistAdminStatus,
+  fetchChecklistDepartmentsAPI,
+  fetchChecklistDoersAPI
 } from "../api/checkListApi";
 
 
@@ -42,6 +48,42 @@ export const updateChecklist = createAsyncThunk(
   }
 );
 
+export const submitChecklistUserStatus = createAsyncThunk(
+  "update/checklist/user-status",
+  async (items) => {
+    const response = await postChecklistUserStatusData(items);
+    return response;
+  }
+);
+
+export const patchChecklistAdminStatusAction = createAsyncThunk(
+  "update/checklist/admin-status",
+  async (items) => {
+    const response = await patchChecklistAdminStatus(items);
+    return response;
+  }
+);
+
+export const updateHrManagerChecklist = createAsyncThunk(
+  "update/checklist/hr-manager",
+  async (items) => {
+    const response = await updateHrManagerChecklistData(items);
+    return response;
+  }
+);
+
+export const fetchHrChecklistData = createAsyncThunk(
+  "fetch/hr-checklist",
+  async (page = 1) => {
+    const { data, totalCount, page: responsePage } = await fetchChecklistForHrApproval(page);
+    return {
+      data,
+      totalCount,
+      page: responsePage ?? page,
+    };
+  }
+);
+
 
 // ============================================================
 // 4️⃣ ADMIN DONE
@@ -56,6 +98,26 @@ export const checklistAdminDone = createAsyncThunk(
 
 
 // ============================================================
+// 6️⃣ FETCH DEPARTMENTS & DOERS
+// ============================================================
+export const fetchChecklistDepartments = createAsyncThunk(
+  "fetch/checklist-departments",
+  async () => {
+    const response = await fetchChecklistDepartmentsAPI();
+    return response;
+  }
+);
+
+export const fetchChecklistDoers = createAsyncThunk(
+  "fetch/checklist-doers",
+  async () => {
+    const response = await fetchChecklistDoersAPI();
+    return response;
+  }
+);
+
+
+// ============================================================
 // 5️⃣ SLICE
 // ============================================================
 const checkListSlice = createSlice({
@@ -63,10 +125,17 @@ const checkListSlice = createSlice({
   initialState: {
     checklist: [],
     history: [],
+    hrChecklist: [],
+    departments: [], // Store unique departments
+    doers: [],       // Store unique doers
+
     loading: false,
+    hrLoading: false,
     error: null,
     hasMore: true,
     currentPage: 1,
+    hrHasMore: true,
+    hrCurrentPage: 1,
   },
 
   reducers: {},
@@ -144,6 +213,77 @@ const checkListSlice = createSlice({
         state.error = action.error?.message || "Failed updating checklist";
       })
 
+      // -----------------------------
+      // SUBMIT REMARK / USER STATUS
+      // -----------------------------
+      .addCase(submitChecklistUserStatus.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(submitChecklistUserStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+
+      .addCase(submitChecklistUserStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || "Failed submitting user status";
+      })
+
+      // -----------------------------
+      // ADMIN STATUS (PATCH)
+      // -----------------------------
+      .addCase(patchChecklistAdminStatusAction.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(patchChecklistAdminStatusAction.fulfilled, (state) => {
+        state.loading = false;
+      })
+
+      .addCase(patchChecklistAdminStatusAction.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.error?.message || "Failed updating admin checklist status";
+      })
+
+      // -----------------------------
+      // HR MANAGER CONFIRM
+      // -----------------------------
+      .addCase(updateHrManagerChecklist.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(updateHrManagerChecklist.fulfilled, (state) => {
+        state.loading = false;
+      })
+
+      .addCase(updateHrManagerChecklist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || "Failed updating HR roles";
+      })
+
+      // -----------------------------
+      // FETCH HR CHECKLIST
+      // -----------------------------
+      .addCase(fetchHrChecklistData.pending, (state) => {
+        state.hrLoading = true;
+      })
+
+      .addCase(fetchHrChecklistData.fulfilled, (state, action) => {
+        state.hrLoading = false;
+        if (action.payload.page === 1) {
+          state.hrChecklist = action.payload.data;
+        } else {
+          state.hrChecklist = [...state.hrChecklist, ...action.payload.data];
+        }
+        state.hrCurrentPage = action.payload.page;
+        state.hrHasMore = state.hrChecklist.length < action.payload.totalCount;
+      })
+
+      .addCase(fetchHrChecklistData.rejected, (state, action) => {
+        state.hrLoading = false;
+        state.error = action.error?.message || "Failed fetching HR checklist";
+      })
 
 
       // -----------------------------
@@ -160,6 +300,20 @@ const checkListSlice = createSlice({
       .addCase(checklistAdminDone.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error?.message || "Admin update failed";
+      })
+
+      // -----------------------------
+      // FETCH DEPARTMENTS
+      // -----------------------------
+      .addCase(fetchChecklistDepartments.fulfilled, (state, action) => {
+        state.departments = action.payload;
+      })
+
+      // -----------------------------
+      // FETCH DOERS
+      // -----------------------------
+      .addCase(fetchChecklistDoers.fulfilled, (state, action) => {
+        state.doers = action.payload;
       });
   },
 });

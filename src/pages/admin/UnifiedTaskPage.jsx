@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import AdminLayout from "../../components/layout/AdminLayout"
 import UnifiedTaskTable from "../../components/unified/UnifiedTaskTable"
 import { useDispatch, useSelector } from "react-redux"
-import { checklistData, checklistHistoryData, updateChecklist } from "../../redux/slice/checklistSlice"
+import { checklistData, checklistHistoryData, submitChecklistUserStatus, fetchChecklistDepartments, fetchChecklistDoers } from "../../redux/slice/checklistSlice"
 import {
     fetchPendingMaintenanceTasks,
     fetchCompletedMaintenanceTasks,
     fetchUniqueMachineNames,
-    fetchUniqueAssignedPersonnel
+    fetchUniqueAssignedPersonnel,
+    fetchMaintenanceDepartments,
+    fetchMaintenanceDoers
 } from "../../redux/slice/maintenanceSlice"
 import { normalizeAllTasks, sortHousekeepingTasks } from "../../utils/taskNormalizer"
 import { updateMultipleMaintenanceTasks } from "../../redux/slice/maintenanceSlice"
@@ -19,6 +21,7 @@ import {
     confirmHousekeepingTask,
     fetchHousekeepingDepartments,
 } from "../../redux/slice/housekeepingSlice"
+
 
 /**
  * UnifiedTaskPage - Main page component for unified task management
@@ -47,13 +50,17 @@ export default function UnifiedTaskPage() {
         loading: checklistLoading,
         hasMore: checklistHasMore = false,
         currentPage: checklistCurrentPage = 1,
+        departments: checklistDepartments = [],
+        doers: checklistDoers = [],
     } = checklistState || {}
 
     const {
         tasks: maintenanceTasks = [],
         history: maintenanceHistory = [],
         loading: maintenanceLoading,
-        assignedPersonnel = []
+        assignedPersonnel = [],
+        departments: maintenanceDepartments = [], // New
+        doers: maintenanceDoers = []              // New
     } = maintenanceState || {}
 
     const {
@@ -70,11 +77,14 @@ export default function UnifiedTaskPage() {
     useEffect(() => {
         const role = localStorage.getItem("role")
         const user = localStorage.getItem("user-name")
-        const access = localStorage.getItem("system_access") || ""
+        const access = (localStorage.getItem("system_access") || "")
+            .split(',')
+            .map(item => item.trim().toLowerCase())
+            .filter(Boolean)
 
         setUserRole(role || "")
         setUsername(user || "")
-        setSystemAccess(access.split(',').map(item => item.trim().toLowerCase()))
+        setSystemAccess(access)
     }, [])
 
     // Function to check if user has access to a system
@@ -138,6 +148,8 @@ export default function UnifiedTaskPage() {
         if (hasSystemAccess('checklist') || systemAccess.length === 0) {
             dispatch(checklistData(1))
             dispatch(checklistHistoryData(1))
+            dispatch(fetchChecklistDepartments())
+            dispatch(fetchChecklistDoers())
         }
 
         // Load maintenance data only if user has access
@@ -149,6 +161,8 @@ export default function UnifiedTaskPage() {
             dispatch(fetchCompletedMaintenanceTasks({ page: 1, filters: {} }))
             dispatch(fetchUniqueMachineNames())
             dispatch(fetchUniqueAssignedPersonnel())
+            dispatch(fetchMaintenanceDepartments()) // New
+            dispatch(fetchMaintenanceDoers())       // New
         }
 
         // Load housekeeping data only if user has access
@@ -198,6 +212,7 @@ export default function UnifiedTaskPage() {
             : []
 
         // Filter maintenance tasks based on access
+        // Also filter out tasks that already have an actual_date (as per user request for pending screen)
         const maintenanceFiltered = hasSystemAccess('maintenance') || systemAccess.length === 0
             ? (Array.isArray(maintenanceTasks) ? maintenanceTasks : [])
             : []
@@ -321,6 +336,10 @@ export default function UnifiedTaskPage() {
 
         // From maintenance
         assignedPersonnel.forEach(p => assigneesSet.add(p))
+        maintenanceDoers.forEach(d => assigneesSet.add(d)) // New
+
+        // From checklist (fetched from API)
+        checklistDoers.forEach(d => assigneesSet.add(d))
 
         // From all tasks
         allTasks.forEach(task => {
@@ -330,11 +349,17 @@ export default function UnifiedTaskPage() {
         })
 
         return Array.from(assigneesSet).filter(Boolean).sort()
-    }, [allTasks, assignedPersonnel])
+    }, [allTasks, assignedPersonnel, checklistDoers, maintenanceDoers])
 
     // Get unique departments from all sources
     const allDepartments = useMemo(() => {
         const departmentsSet = new Set()
+
+        // From checklist (fetched from API)
+        checklistDepartments.forEach(d => departmentsSet.add(d))
+
+        // From maintenance (fetched from API)
+        maintenanceDepartments.forEach(d => departmentsSet.add(d)) // New
 
         allTasks.forEach(task => {
             if (task.department && task.department !== '—') {
@@ -343,7 +368,7 @@ export default function UnifiedTaskPage() {
         })
 
         return Array.from(departmentsSet).filter(Boolean).sort()
-    }, [allTasks])
+    }, [allTasks, checklistDepartments, maintenanceDepartments])
 
     // Handle HOD confirm for housekeeping tasks
     const handleHODConfirm = useCallback(async (taskId, { remark = "", imageFile = null, doerName2 = "" }) => {
@@ -368,15 +393,18 @@ export default function UnifiedTaskPage() {
         const { taskId, sourceSystem, status, remarks, image, originalData } = updateData
 
         switch (sourceSystem) {
-            case 'checklist':
-                await dispatch(updateChecklist([{
-                    taskId,
-                    status,
-                    remarks,
-                    image: image ? await fileToBase64(image) : null,
-                }])).unwrap()
-                dispatch(checklistData(1))
+            case 'checklist': {
+                const normalizedRole = userRole?.toLowerCase();
+                if (normalizedRole === 'user') {
+                    await dispatch(submitChecklistUserStatus([{
+                        taskId,
+                        remark: remarks || '',
+                        userStatusChecklist: status,
+                    }])).unwrap();
+                    dispatch(checklistData(1))
+                }
                 break
+            }
 
             case 'maintenance':
                 await dispatch(updateMultipleMaintenanceTasks([{
@@ -422,18 +450,28 @@ export default function UnifiedTaskPage() {
             tasksBySource[task.sourceSystem]?.push(task)
         })
 
+        const checklistPromise = (() => {
+            if (tasksBySource.checklist.length === 0) {
+                return Promise.resolve();
+            }
+
+            const normalizedRole = userRole?.toLowerCase();
+            const isChecklistUser = normalizedRole === "user";
+
+            if (isChecklistUser) {
+                const payload = tasksBySource.checklist.map((t) => ({
+                    taskId: t.taskId,
+                    remark: t.remarks || "",
+                    userStatusChecklist: t.status,
+                }));
+                return dispatch(submitChecklistUserStatus(payload)).unwrap();
+            }
+
+            return Promise.resolve();
+        })();
+
         const results = await Promise.allSettled([
-            // Update checklist tasks
-            tasksBySource.checklist.length > 0
-                ? dispatch(updateChecklist(
-                    tasksBySource.checklist.map(t => ({
-                        taskId: t.taskId,
-                        status: t.status,
-                        remarks: t.remarks || '',
-                        image: t.image,
-                    }))
-                )).unwrap()
-                : Promise.resolve(),
+            checklistPromise,
 
             // Update maintenance tasks - with all fields
             tasksBySource.maintenance.length > 0
@@ -512,6 +550,43 @@ export default function UnifiedTaskPage() {
         })
     }
 
+    // Handle refresh based on system
+    const handleRefresh = useCallback((system) => {
+        const role = localStorage.getItem("role")
+        const user = localStorage.getItem("user-name")
+
+        switch (system) {
+            case 'checklist':
+                if (hasSystemAccess('checklist') || systemAccess.length === 0) {
+                    dispatch(checklistData(1))
+                    dispatch(fetchChecklistDepartments())
+                    dispatch(fetchChecklistDoers())
+                }
+                break;
+            case 'maintenance':
+                if (hasSystemAccess('maintenance') || systemAccess.length === 0) {
+                    dispatch(fetchPendingMaintenanceTasks({
+                        page: 1,
+                        userId: role === "user" ? user : null
+                    }))
+                    // Also refresh filtered lists if needed, but primary task list is key
+                    dispatch(fetchMaintenanceDepartments())
+                    dispatch(fetchMaintenanceDoers())
+                }
+                break;
+            case 'housekeeping':
+                if (hasSystemAccess('housekeeping') || systemAccess.length === 0) {
+                    loadHousekeepingData()
+                    dispatch(fetchHousekeepingDepartments())
+                }
+                break;
+            default:
+                // If 'all' or empty, maybe refresh all?
+                // For now, do nothing or refresh all
+                break;
+        }
+    }, [dispatch, hasSystemAccess, systemAccess, loadHousekeepingData, username])
+
     return (
         <AdminLayout>
             <div className="space-y-3 sm:space-y-4 md:space-y-6 p-2 sm:p-4 md:p-0">
@@ -537,8 +612,13 @@ export default function UnifiedTaskPage() {
                     onUpdateTask={handleUpdateTask}
                     onBulkSubmit={handleBulkSubmit}
                     onHODConfirm={handleHODConfirm}
-                    assignedToOptions={allAssignees}
-                    departmentOptions={allDepartments}
+
+                    // Pass specific lists instead of merged ones
+                    checklistDepartments={checklistDepartments}
+                    checklistDoers={checklistDoers}
+                    maintenanceDepartments={maintenanceDepartments}
+                    maintenanceDoers={maintenanceDoers}
+
                     housekeepingDepartments={housekeepingDepartments}
                     userRole={userRole}
                     onLoadMore={() => {
@@ -547,6 +627,7 @@ export default function UnifiedTaskPage() {
                         loadMoreHousekeepingData()
                     }}
                     hasMore={checklistHasMore || housekeepingPendingHasMore}
+                    onRefresh={handleRefresh}
                 />
             </div>
         </AdminLayout>

@@ -6,6 +6,7 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import {
   fetchHrChecklistData,
   updateHrManagerChecklist,
+  fetchChecklistDoers,
 } from "../../redux/slice/checklistSlice";
 
 export default function HrManager() {
@@ -15,31 +16,19 @@ export default function HrManager() {
     hrChecklist = [],
     hrLoading = false,
     error,
-    hrHasMore = false,
-    hrCurrentPage = 1,
+    doers = [],
   } = useSelector((state) => state.checkList || {});
 
   const [selectedItems, setSelectedItems] = useState(() => new Set());
+  const [selectedDoer, setSelectedDoer] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const [rowStatuses, setRowStatuses] = useState({});
 
-  const handleStatusChange = useCallback((id, newStatus) => {
-    setRowStatuses((prev) => ({
-      ...prev,
-      [id]: newStatus,
-    }));
-    // Auto-select the row when status is changed
-    setSelectedItems((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-  }, []);
 
   useEffect(() => {
-    dispatch(fetchHrChecklistData(1));
+    dispatch(fetchHrChecklistData());
+    dispatch(fetchChecklistDoers());
   }, [dispatch]);
 
   const rows = useMemo(() => {
@@ -53,7 +42,8 @@ export default function HrManager() {
         taskId,
         description: task?.task_description ?? "-",
         department: task?.department ?? "-",
-        assignedTo: task?.name ?? task?.assigned_to ?? "-",
+        assignedTo: task?.assigned_to ?? "-",
+        doerName: task?.name ?? "-",
         status: task?.status ?? "-",
         userStatus:
           task?.["user_status-checklist"] ??
@@ -61,19 +51,24 @@ export default function HrManager() {
           task?.user_status_checklist ??
           "-",
         date:
-          task?.task_start_date ??
-          task?.planned_date ??
-          task?.created_at ??
-          task?.due_date ??
-          "-",
+          (task?.task_start_date ??
+            task?.planned_date ??
+            task?.created_at ??
+            task?.due_date ??
+            "-").split("T")[0],
         remarks: task?.remark ?? task?.remarks ?? "-",
       };
     });
   }, [hrChecklist]);
 
+  const filteredRows = useMemo(() => {
+    if (!selectedDoer) return rows;
+    return rows.filter((row) => row.doerName === selectedDoer);
+  }, [rows, selectedDoer]);
+
   const selectableRowIds = useMemo(() => {
-    return rows.filter((r) => r.taskId && r.taskId !== "-").map((r) => r.id);
-  }, [rows]);
+    return filteredRows.filter((r) => r.taskId && r.taskId !== "-").map((r) => r.id);
+  }, [filteredRows]);
 
   const areAllSelectableSelected = useMemo(() => {
     return (
@@ -104,25 +99,6 @@ export default function HrManager() {
 
   const containerRef = useRef(null);
 
-  const loadMoreHrChecklist = useCallback(() => {
-    if (!hrHasMore || hrLoading) return;
-    dispatch(fetchHrChecklistData(hrCurrentPage + 1));
-  }, [dispatch, hrCurrentPage, hrHasMore, hrLoading]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      if (container.scrollHeight - container.scrollTop - container.clientHeight < 180) {
-        loadMoreHrChecklist();
-      }
-    };
-
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, [loadMoreHrChecklist]);
-
   const handleConfirmSelected = useCallback(async () => {
     if (selectedItems.size === 0) {
       setFeedback({ type: "error", text: "Select at least one task before confirming." });
@@ -136,7 +112,7 @@ export default function HrManager() {
       .map((row) => ({
         taskId: row.taskId,
         admin_done: "Confirmed",
-        status: rowStatuses[row.id] || (row.status !== "-" ? row.status : "Yes"),
+        status: "yes",
       }));
 
     if (itemsToConfirm.length === 0) {
@@ -150,14 +126,13 @@ export default function HrManager() {
       await dispatch(updateHrManagerChecklist(itemsToConfirm)).unwrap();
       setFeedback({ type: "success", text: `✅ Confirmed ${itemsToConfirm.length} task(s)` });
       setSelectedItems(new Set());
-      setRowStatuses({});
-      dispatch(fetchHrChecklistData(1));
+      dispatch(fetchHrChecklistData());
     } catch (err) {
       setFeedback({ type: "error", text: err?.message || "Failed to send confirmations." });
     } finally {
       setIsConfirming(false);
     }
-  }, [dispatch, rows, selectedItems, rowStatuses]);
+  }, [dispatch, rows, selectedItems]);
 
   return (
     <AdminLayout>
@@ -174,6 +149,19 @@ export default function HrManager() {
 
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
+              value={selectedDoer}
+              onChange={(e) => setSelectedDoer(e.target.value)}
+            >
+              <option value="">All Doers</option>
+              {doers.map((doer) => (
+                <option key={doer} value={doer}>
+                  {doer}
+                </option>
+              ))}
+            </select>
+
             <button
               onClick={handleConfirmSelected}
               disabled={selectedItems.size === 0 || isConfirming}
@@ -181,6 +169,10 @@ export default function HrManager() {
             >
               {isConfirming ? "Sending confirmation..." : "Confirm Selected"}
             </button>
+
+            <span className="text-xs text-gray-500 font-medium">
+              Total: {rows.length} |
+            </span>
 
             {selectedItems.size > 0 && (
               <span className="text-xs text-gray-500">
@@ -207,16 +199,16 @@ export default function HrManager() {
               Loading checklist responses...
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <div ref={containerRef} className="max-h-[56vh] overflow-y-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+            <div className="overflow-hidden">
+              <div ref={containerRef} className="max-h-[75vh] overflow-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm whitespace-nowrap">
                   <thead className="bg-gray-50 text-gray-600">
                     <tr>
-                      <th className="sticky top-0 px-3 py-2 text-left bg-gray-50">
+                      <th className="sticky top-0 z-10 px-3 py-2 text-left bg-gray-50">
                         <input
                           type="checkbox"
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          checked={rows.length > 0 && areAllSelectableSelected}
+                          checked={filteredRows.length > 0 && areAllSelectableSelected}
                           onChange={(e) => handleSelectAll(e.target.checked)}
                           aria-label="Select all checklist items"
                         />
@@ -237,31 +229,32 @@ export default function HrManager() {
                         Assigned To
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
-                        Status
+                        Doer Name
                       </th>
-                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+
+                      <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         User Status Checklist
                       </th>
-                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+                      <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         Date
                       </th>
-                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+                      <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         Remarks
                       </th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-gray-100 bg-white">
-                    {rows.length === 0 ? (
+                    {filteredRows.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-3 py-6 text-center text-gray-500">
+                        <td colSpan={9} className="px-3 py-6 text-center text-gray-500">
                           {hrLoading
                             ? "Looking for checklist responses..."
                             : "No checklist entries found."}
                         </td>
                       </tr>
                     ) : (
-                      rows.map((row, index) => (
+                      filteredRows.map((row, index) => (
                         <tr key={row.id} className="hover:bg-blue-50/60">
                           <td className="px-3 py-3">
                             <input
@@ -276,18 +269,8 @@ export default function HrManager() {
                           <td className="px-3 py-3 text-gray-700">{row.description}</td>
                           <td className="px-3 py-3 text-gray-600">{row.department}</td>
                           <td className="px-3 py-3 text-gray-600">{row.assignedTo}</td>
-                          <td className="px-3 py-3 text-gray-600">
-                            <select
-                              className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
-                              value={rowStatuses[row.id] || (row.status !== "-" ? row.status : "")}
-                              onChange={(e) => handleStatusChange(row.id, e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <option value="">Select</option>
-                              <option value="yes">Yes</option>
-                              <option value="no">No</option>
-                            </select>
-                          </td>
+                          <td className="px-3 py-3 text-gray-600">{row.doerName}</td>
+
                           <td className="px-3 py-3 text-gray-600">{row.userStatus}</td>
                           <td className="px-3 py-3 text-gray-600">{row.date}</td>
                           <td className="px-3 py-3 text-gray-600">{row.remarks}</td>

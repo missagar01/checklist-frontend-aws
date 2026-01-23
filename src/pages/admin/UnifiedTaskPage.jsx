@@ -393,13 +393,14 @@ export default function UnifiedTaskPage() {
         const { taskId, sourceSystem, status, remarks, image, originalData } = updateData
 
         switch (sourceSystem) {
+
             case 'checklist': {
                 const normalizedRole = userRole?.toLowerCase();
                 if (normalizedRole === 'user') {
                     await dispatch(submitChecklistUserStatus([{
                         taskId,
-                        remark: remarks || '',
-                        userStatusChecklist: status,
+                        remark: remarks || '',   // ✅ only remark
+                        status: status, 
                     }])).unwrap();
                     dispatch(checklistData(1))
                 }
@@ -461,11 +462,12 @@ export default function UnifiedTaskPage() {
             if (isChecklistUser) {
                 const payload = tasksBySource.checklist.map((t) => ({
                     taskId: t.taskId,
-                    remark: t.remarks || "",
-                    userStatusChecklist: t.status,
+                    remark: t.remarks || "",   // ✅ only remark
+                    status: t.status,
                 }));
                 return dispatch(submitChecklistUserStatus(payload)).unwrap();
             }
+
 
             return Promise.resolve();
         })();

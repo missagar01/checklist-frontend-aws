@@ -44,6 +44,7 @@ export default function HrManager() {
         department: task?.department ?? "-",
         assignedTo: task?.assigned_to ?? "-",
         doerName: task?.name ?? "-",
+        verify_access: task?.verify_access ?? null,
         status: task?.status ?? "-",
         userStatus:
           task?.["user_status-checklist"] ??
@@ -61,9 +62,39 @@ export default function HrManager() {
     });
   }, [hrChecklist]);
 
+  console.table(rows.map(r => ({
+    name: r.doerName,
+    verify_access: r.verify_access
+  })));
+
+
   const filteredRows = useMemo(() => {
-    if (!selectedDoer) return rows;
-    return rows.filter((row) => row.doerName === selectedDoer);
+    let data = rows;
+
+    const verifyAccess = localStorage.getItem("verify_access");
+    const loggedUser = localStorage.getItem("user-name");
+
+    // ❌ Never show own tasks
+    if (loggedUser) {
+      data = data.filter(row => row.doerName !== loggedUser);
+    }
+
+    // 🧑‍💼 HOD → ONLY manager tasks
+    if (verifyAccess === "hod") {
+      data = data.filter(row => row.verify_access === "manager");
+    }
+
+    // 👨‍💼 Manager → block HOD tasks ONLY
+    if (verifyAccess === "manager") {
+      data = data.filter(row => row.verify_access !== "hod");
+    }
+
+    // Existing doer filter (unchanged)
+    if (selectedDoer) {
+      data = data.filter(row => row.doerName === selectedDoer);
+    }
+
+    return data;
   }, [rows, selectedDoer]);
 
   const selectableRowIds = useMemo(() => {
@@ -107,12 +138,11 @@ export default function HrManager() {
 
     setFeedback(null);
 
+    // ✅ ONLY taskId is sent
     const itemsToConfirm = rows
-      .filter((row) => selectedItems.has(row.id) && row.taskId && row.taskId !== "-")
-      .map((row) => ({
-        taskId: row.taskId,
-        admin_done: "Confirmed",
-        status: "yes",
+      .filter(row => selectedItems.has(row.id) && row.taskId && row.taskId !== "-")
+      .map(row => ({
+        taskId: row.taskId
       }));
 
     if (itemsToConfirm.length === 0) {
@@ -124,15 +154,25 @@ export default function HrManager() {
 
     try {
       await dispatch(updateHrManagerChecklist(itemsToConfirm)).unwrap();
-      setFeedback({ type: "success", text: `✅ Confirmed ${itemsToConfirm.length} task(s)` });
+
+      setFeedback({
+        type: "success",
+        text: `✅ Confirmed ${itemsToConfirm.length} task(s)`
+      });
+
       setSelectedItems(new Set());
       dispatch(fetchHrChecklistData());
+
     } catch (err) {
-      setFeedback({ type: "error", text: err?.message || "Failed to send confirmations." });
+      setFeedback({
+        type: "error",
+        text: err?.message || "Failed to send confirmations."
+      });
     } finally {
       setIsConfirming(false);
     }
   }, [dispatch, rows, selectedItems]);
+
 
   return (
     <AdminLayout>
@@ -232,9 +272,9 @@ export default function HrManager() {
                         Doer Name
                       </th>
 
-                      <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+                      {/* <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         User Status Checklist
-                      </th>
+                      </th> */}
                       <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         Date
                       </th>
@@ -271,7 +311,7 @@ export default function HrManager() {
                           <td className="px-3 py-3 text-gray-600">{row.assignedTo}</td>
                           <td className="px-3 py-3 text-gray-600">{row.doerName}</td>
 
-                          <td className="px-3 py-3 text-gray-600">{row.userStatus}</td>
+                          {/* <td className="px-3 py-3 text-gray-600">{row.userStatus}</td> */}
                           <td className="px-3 py-3 text-gray-600">{row.date}</td>
                           <td className="px-3 py-3 text-gray-600">{row.remarks}</td>
                         </tr>

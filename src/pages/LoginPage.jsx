@@ -88,6 +88,13 @@ const LoginPage = () => {
         localStorage.removeItem('system_access');
       }
 
+      // Store verify_access
+      if (userData.verify_access) {
+        localStorage.setItem("verify_access", userData.verify_access);
+      } else {
+        localStorage.removeItem("verify_access");
+      }
+
       navigate("/dashboard/admin")
     } else if (error) {
       showToast(error, "error");

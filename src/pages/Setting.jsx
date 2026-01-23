@@ -31,7 +31,8 @@ import {
     updateUser,
     userDetails,
 } from "../redux/slice/settingSlice";
-// import supabase from '../SupabaseClient';
+import { patchVerifyAccessApi } from "../redux/api/settingApi";
+
 
 const SYSTEM_ACCESS_OPTIONS = ["CHECKLIST", "MAINTENANCE", "HOUSEKEEPING"];
 const PAGE_ACCESS_OPTIONS = [
@@ -72,6 +73,7 @@ const Setting = () => {
     const [originalSystemAccess, setOriginalSystemAccess] = useState(""); // Store original system_access from database to preserve other module values
     const [deptUpdateMessage, setDeptUpdateMessage] = useState({ type: "", text: "" }); // Department success/error message
     const [isDeptUpdating, setIsDeptUpdating] = useState(false); // Loading state for department update
+    const [verifyAccessValue, setVerifyAccessValue] = useState("");
 
     const { userData, department, departmentsOnly, givenBy, loading, error } =
         useSelector((state) => state.setting);
@@ -730,6 +732,8 @@ const Setting = () => {
             return;
         }
 
+        setVerifyAccessValue(user.verify_access || "");
+
         // Store original system_access to preserve other module values
         const originalSystemAccessValue = user.system_access || "";
         setOriginalSystemAccess(originalSystemAccessValue);
@@ -812,6 +816,7 @@ const Setting = () => {
         setIsUpdating(false); // Reset updating state when resetting form
         setUpdateMessage({ type: "", text: "" }); // Clear messages
         setOriginalSystemAccess(""); // Reset original system_access
+        setVerifyAccessValue("");
     };
 
     // Department form handlers
@@ -882,6 +887,22 @@ const Setting = () => {
                 return "bg-gray-100 text-gray-800";
         }
     };
+
+    const handleVerifyAccessChange = async (userId, value) => {
+        try {
+            await patchVerifyAccessApi({
+                id: userId,
+                verify_access: value.toLowerCase()
+            });
+
+            // refresh users
+            dispatch(userDetails());
+        } catch (error) {
+            console.error("Verify access update failed", error);
+            alert("Failed to update verify access");
+        }
+    };
+
 
     return (
         <AdminLayout>
@@ -1263,6 +1284,12 @@ const Setting = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
+                                        {/* <th
+                                            scope="col"
+                                            className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        >
+                                            Verify Access
+                                        </th> */}
                                         <th
                                             scope="col"
                                             className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -1347,6 +1374,19 @@ const Setting = () => {
                                                     key={user?.id || index}
                                                     className="hover:bg-gray-50"
                                                 >
+                                                    {/* <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                                        <select
+                                                            value={user?.verify_access || ""}
+                                                            onChange={(e) =>
+                                                                handleVerifyAccessChange(user.id, e.target.value)
+                                                            }
+                                                            className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                                        >
+                                                            <option value="">Select</option>
+                                                            <option value="hod">HOD</option>
+                                                            <option value="manager">Manager</option>
+                                                        </select>
+                                                    </td> */}
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                                                         <div className="text-xs sm:text-sm text-gray-900">
                                                             {user?.employee_id || "N/A"}
@@ -2140,6 +2180,45 @@ const Setting = () => {
                                                     ))}
                                                 </div>
                                             </div>
+
+                                            {/* Verification Access */}
+                                            <div className="sm:col-span-2 lg:col-span-1">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Verification Access
+                                                </label>
+
+                                                <select
+                                                    value={verifyAccessValue}
+                                                    onChange={async (e) => {
+                                                        const value = e.target.value;
+                                                        setVerifyAccessValue(value);
+
+                                                        try {
+                                                            await patchVerifyAccessApi({
+                                                                id: currentUserId,
+                                                                verify_access: value || null,
+                                                            });
+
+                                                            dispatch(userDetails());
+                                                        } catch (error) {
+                                                            console.error("Verify access update failed", error);
+                                                            alert("Failed to update verify access");
+                                                        }
+                                                    }}
+                                                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm
+               py-2 px-3 text-sm focus:outline-none
+               focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">Select</option>
+                                                    <option value="hod">HOD</option>
+                                                    <option value="manager">Manager</option>
+                                                </select>
+
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    This controls checklist verification visibility.
+                                                </p>
+                                            </div>
+
 
                                             <div className="sm:col-span-2 lg:col-span-1">
                                                 <label

@@ -130,7 +130,7 @@ export const postChecklistAdminDoneAPI = async (selectedItems) => {
 export const updateHrManagerChecklistData = async (items) => {
   try {
     const response = await fetch(`${BASE_URL}/admin-role`, {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(items),
     });

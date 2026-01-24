@@ -40,6 +40,9 @@ const LoginPage = () => {
   useEffect(() => {
     if (isLoggedIn && userData) {
       // Store all user data in localStorage - optimized batch operation
+
+      // console.log("✅ LOGIN userData:", userData);
+
       const dataToStore = {
         'user-name': userData.user_name || userData.username || "",
         'user_id': userData.id || userData.user_id || "",
@@ -94,6 +97,16 @@ const LoginPage = () => {
       } else {
         localStorage.removeItem("verify_access");
       }
+
+      // Store verify_access_dept
+      if (userData.verify_access_dept) {
+        localStorage.setItem("verify_access_dept", userData.verify_access_dept);
+      } else {
+        localStorage.removeItem("verify_access_dept");
+      }
+
+      console.log(userData.verify_access_dept);
+
 
       navigate("/dashboard/admin")
     } else if (error) {

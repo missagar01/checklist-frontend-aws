@@ -151,9 +151,21 @@ export const updateHrManagerChecklistData = async (items) => {
 // 8️⃣ Fetch Checklist for HR Approval
 // =======================================================
 export const fetchChecklistForHrApproval = async (page = 1) => {
+  // 🔒 Own department(s) – EXISTING LOGIC (unchanged)
   const userAccess = localStorage.getItem("user_access") || "";
   const userAccess1 = localStorage.getItem("user_access1") || "";
-  const departments = [userAccess, userAccess1].filter(Boolean).join(",");
+
+  // ➕ Additional allowed departments
+  const verifyAccessDept = localStorage.getItem("verify_access_dept") || "";
+
+  const departments = [
+    userAccess,
+    userAccess1,
+    ...verifyAccessDept.split(",")
+  ]
+    .map(d => d.trim())
+    .filter(Boolean)
+    .join(",");
 
   const response = await fetch(
     `${BASE_URL}/hr-manager?page=${page}&departments=${encodeURIComponent(departments)}`

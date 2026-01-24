@@ -31,7 +31,7 @@ import {
     updateUser,
     userDetails,
 } from "../redux/slice/settingSlice";
-import { patchVerifyAccessApi } from "../redux/api/settingApi";
+import { patchVerifyAccessApi, patchVerifyAccessDeptApi } from "../redux/api/settingApi";
 
 
 const SYSTEM_ACCESS_OPTIONS = ["CHECKLIST", "MAINTENANCE", "HOUSEKEEPING"];
@@ -74,6 +74,7 @@ const Setting = () => {
     const [deptUpdateMessage, setDeptUpdateMessage] = useState({ type: "", text: "" }); // Department success/error message
     const [isDeptUpdating, setIsDeptUpdating] = useState(false); // Loading state for department update
     const [verifyAccessValue, setVerifyAccessValue] = useState("");
+    const [verifyAccessDepts, setVerifyAccessDepts] = useState([]);
 
     const { userData, department, departmentsOnly, givenBy, loading, error } =
         useSelector((state) => state.setting);
@@ -697,6 +698,36 @@ const Setting = () => {
         });
     };
 
+    const handleAddVerifyDept = async (dept) => {
+        if (!dept || verifyAccessDepts.includes(dept)) return;
+
+        try {
+            await patchVerifyAccessDeptApi({
+                id: currentUserId,
+                verify_access_dept: dept
+            });
+
+            setVerifyAccessDepts(prev => [...prev, dept]);
+            dispatch(userDetails());
+        } catch (err) {
+            alert("Failed to add department access");
+        }
+    };
+
+    const handleRemoveVerifyDept = async (dept) => {
+        try {
+            await patchVerifyAccessDeptApi({
+                id: currentUserId,
+                verify_access_dept: dept
+            });
+
+            setVerifyAccessDepts(prev => prev.filter(d => d !== dept));
+            dispatch(userDetails());
+        } catch (err) {
+            alert("Failed to remove department access");
+        }
+    };
+
     // Get unique departments from department data
     const availableDepartments = React.useMemo(() => {
         if (department && department.length > 0) {
@@ -733,6 +764,13 @@ const Setting = () => {
         }
 
         setVerifyAccessValue(user.verify_access || "");
+
+        setVerifyAccessDepts(
+            user.verify_access_dept
+                ? user.verify_access_dept.split(",").map(d => d.trim()).filter(Boolean)
+                : []
+        );
+
 
         // Store original system_access to preserve other module values
         const originalSystemAccessValue = user.system_access || "";
@@ -2219,6 +2257,63 @@ const Setting = () => {
                                                 </p>
                                             </div>
 
+                                            {/* Verify Access Department */}
+                                            <div className="sm:col-span-2 lg:col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Verification Department Access
+                                                </label>
+
+                                                {/* Dropdown */}
+                                                <select
+                                                    onChange={(e) => {
+                                                        handleAddVerifyDept(e.target.value);
+                                                        e.target.value = "";
+                                                    }}
+                                                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm
+               py-2 px-3 text-sm focus:outline-none
+               focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">Add department access</option>
+                                                    {availableDepartments
+                                                        .filter(dept => !verifyAccessDepts.includes(dept))
+                                                        .map(dept => (
+                                                            <option key={dept} value={dept}>
+                                                                {dept}
+                                                            </option>
+                                                        ))}
+                                                </select>
+
+                                                {/* Chips */}
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                    {verifyAccessDepts.length > 0 ? (
+                                                        verifyAccessDepts.map((dept) => (
+                                                            <span
+                                                                key={dept}
+                                                                className="inline-flex items-center gap-1 px-2 py-1
+                     rounded-full text-xs font-medium
+                     bg-blue-100 text-blue-800"
+                                                            >
+                                                                {dept}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveVerifyDept(dept)}
+                                                                    className="text-blue-600 hover:text-blue-800"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-gray-500">
+                                                            No department access assigned
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    Controls department-level verification visibility
+                                                </p>
+                                            </div>
 
                                             <div className="sm:col-span-2 lg:col-span-1">
                                                 <label

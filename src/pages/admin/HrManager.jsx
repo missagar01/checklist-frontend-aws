@@ -6,7 +6,6 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import {
   fetchHrChecklistData,
   updateHrManagerChecklist,
-  fetchChecklistDoers,
 } from "../../redux/slice/checklistSlice";
 
 export default function HrManager() {
@@ -25,11 +24,23 @@ export default function HrManager() {
   const [feedback, setFeedback] = useState(null);
 
 
-
   useEffect(() => {
-    dispatch(fetchHrChecklistData());
-    dispatch(fetchChecklistDoers());
+    let page = 1;
+
+    const loadAll = async () => {
+      while (true) {
+        const res = await dispatch(fetchHrChecklistData(page)).unwrap();
+        if (!res || res.data.length === 0) break;
+        if (res.data.length + (page - 1) * res.data.length >= res.totalCount) break;
+        page++;
+      }
+    };
+
+    loadAll();
+    // dispatch(fetchChecklistDoers());
+    // dispatch(fetchChecklistDoers());
   }, [dispatch]);
+
 
   const rows = useMemo(() => {
     if (!Array.isArray(hrChecklist)) return [];
@@ -61,6 +72,18 @@ export default function HrManager() {
       };
     });
   }, [hrChecklist]);
+
+  // ✅ Derive doers directly from rows (NO API)
+  const doersFromRows = useMemo(() => {
+    return Array.from(
+      new Set(
+        rows
+          .map(r => r.doerName)
+          .filter(name => name && name !== "-")
+      )
+    );
+  }, [rows]);
+
 
   console.table(rows.map(r => ({
     name: r.doerName,
@@ -94,8 +117,30 @@ export default function HrManager() {
       data = data.filter(row => row.doerName === selectedDoer);
     }
 
+    // 🏢 ADD: Department access filter (non-breaking)
+    const loggedUserDept = localStorage.getItem("user_access");
+    const verifyAccessDept = localStorage.getItem("verify_access_dept");
+
+    if (loggedUserDept || verifyAccessDept) {
+      const allowedDepts = new Set(
+        [
+          loggedUserDept,
+          ...(verifyAccessDept
+            ? verifyAccessDept.split(",").map(d => d.trim())
+            : [])
+        ]
+          .filter(Boolean)
+          .map(d => d.toUpperCase())
+      );
+
+      data = data.filter(row =>
+        allowedDepts.has((row.department || "").toUpperCase())
+      );
+    }
+
     return data;
   }, [rows, selectedDoer]);
+
 
   const selectableRowIds = useMemo(() => {
     return filteredRows.filter((r) => r.taskId && r.taskId !== "-").map((r) => r.id);
@@ -174,6 +219,14 @@ export default function HrManager() {
   }, [dispatch, rows, selectedItems]);
 
 
+  useEffect(() => {
+    console.log("verify_access_dept:", localStorage.getItem("verify_access_dept"));
+    console.log("departments sent:", localStorage.getItem("user_access"), localStorage.getItem("user_access1"));
+    console.log("rows departments:", [...new Set(rows.map(r => r.department))]);
+  }, [rows]);
+
+  console.log("UI rows:", filteredRows.length);
+
   return (
     <AdminLayout>
       <div className="space-y-4 p-3 sm:p-4 md:p-5">
@@ -195,7 +248,7 @@ export default function HrManager() {
               onChange={(e) => setSelectedDoer(e.target.value)}
             >
               <option value="">All Doers</option>
-              {doers.map((doer) => (
+              {doersFromRows.map((doer) => (
                 <option key={doer} value={doer}>
                   {doer}
                 </option>

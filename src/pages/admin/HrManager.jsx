@@ -99,10 +99,10 @@ export default function HrManager() {
 
 
 
-  console.table(rows.map(r => ({
-    name: r.doerName,
-    verify_access: r.verify_access
-  })));
+  // console.table(rows.map(r => ({
+  //   name: r.doerName,
+  //   verify_access: r.verify_access
+  // })));
 
 
   const filteredRows = useMemo(() => {
@@ -247,13 +247,13 @@ export default function HrManager() {
   }, [dispatch, rows, selectedItems]);
 
 
-  useEffect(() => {
-    console.log("verify_access_dept:", localStorage.getItem("verify_access_dept"));
-    console.log("departments sent:", localStorage.getItem("user_access"), localStorage.getItem("user_access1"));
-    console.log("rows departments:", [...new Set(rows.map(r => r.department))]);
-  }, [rows]);
+  // useEffect(() => {
+  //   console.log("verify_access_dept:", localStorage.getItem("verify_access_dept"));
+  //   console.log("departments sent:", localStorage.getItem("user_access"), localStorage.getItem("user_access1"));
+  //   console.log("rows departments:", [...new Set(rows.map(r => r.department))]);
+  // }, [rows]);
 
-  console.log("UI rows:", filteredRows.length);
+  // console.log("UI rows:", filteredRows.length);
 
   return (
     <AdminLayout>

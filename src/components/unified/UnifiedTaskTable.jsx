@@ -355,6 +355,31 @@ export default function UnifiedTaskTable({
         setSelectedTask(null);
     }, []);
 
+    const isRowValid = useCallback((taskId) => {
+        const task = filteredTasks.find(t => t.id === taskId);
+        const data = rowData[taskId] || {};
+
+        // Status is mandatory
+        if (!data.status) return false;
+
+        // If status = No → remark mandatory
+        if (
+            String(data.status).toLowerCase() === "no" &&
+            (!data.remarks || !data.remarks.trim())
+        ) {
+            return false;
+        }
+
+        return true;
+    }, [filteredTasks, rowData]);
+
+    const areSelectedTasksValid = useMemo(() => {
+        if (selectedItems.size === 0) return false;
+
+        return Array.from(selectedItems).every(id => isRowValid(id));
+    }, [selectedItems, isRowValid]);
+
+
     // Convert file to base64
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -586,9 +611,13 @@ export default function UnifiedTaskTable({
                         {filters.status !== "Completed" && (
                             <button
                                 onClick={handleBulkSubmit}
-                                disabled={selectedItems.size === 0 || isSubmitting}
-                                className="w-full sm:w-auto rounded-md bg-green-600 py-1.5 sm:py-2 px-3 sm:px-4 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium whitespace-nowrap"
-                            >
+                                disabled={selectedItems.size === 0 || isSubmitting || !areSelectedTasksValid}
+                                className={`w-full sm:w-auto rounded-md py-1.5 sm:py-2 px-3 sm:px-4
+                                        text-white text-xs sm:text-sm font-medium whitespace-nowrap
+                                        ${selectedItems.size > 0 && areSelectedTasksValid
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-gray-300 cursor-not-allowed"
+                                    }`}                            >
                                 {isSubmitting ? "⏳ Processing..." : `✅ Update Selected (${selectedItems.size})`}
                             </button>
                         )}

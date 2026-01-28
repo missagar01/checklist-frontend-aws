@@ -9,7 +9,7 @@ const API_BASE = `${import.meta.env.VITE_API_BASE_URL}`;
 // =========================
 export const fetchChecklistData = async (page = 0, pageSize = 50, nameFilter = "") => {
   const res = await fetch(`${API_BASE}/tasks/checklist`, {
-    method: "POST",
+    method: "GET",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ page, pageSize, nameFilter }),
   });
@@ -22,7 +22,7 @@ export const fetchChecklistData = async (page = 0, pageSize = 50, nameFilter = "
 // =========================
 export const fetchDelegationData = async (page = 0, pageSize = 50, nameFilter = "") => {
   const res = await fetch(`${API_BASE}/tasks/delegation`, {
-    method: "POST",
+    method: "GET",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ page, pageSize, nameFilter }),
   });

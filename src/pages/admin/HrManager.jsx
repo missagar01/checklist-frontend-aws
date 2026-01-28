@@ -22,6 +22,8 @@ export default function HrManager() {
   const [selectedDoer, setSelectedDoer] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+
 
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function HrManager() {
     });
   }, [hrChecklist]);
 
-  // ✅ Derive doers directly from rows (NO API)
+
   const doersFromRows = useMemo(() => {
     return Array.from(
       new Set(
@@ -83,6 +85,18 @@ export default function HrManager() {
       )
     );
   }, [rows]);
+
+  const departmentsFromRows = useMemo(() => {
+    return Array.from(
+      new Set(
+        rows
+          .map(r => r.department)
+          .filter(dep => dep && dep !== "-")
+      )
+    ).sort((a, b) => a.localeCompare(b)); // ✅ sort here
+  }, [rows]);
+
+
 
 
   console.table(rows.map(r => ({
@@ -117,6 +131,14 @@ export default function HrManager() {
       data = data.filter(row => row.doerName === selectedDoer);
     }
 
+    // 🏢 Department dropdown filter
+    if (selectedDepartment) {
+      data = data.filter(
+        row => row.department === selectedDepartment
+      );
+    }
+
+
     // 🏢 ADD: Department access filter (non-breaking)
     const loggedUserDept = localStorage.getItem("user_access");
     const verifyAccessDept = localStorage.getItem("verify_access_dept");
@@ -138,8 +160,14 @@ export default function HrManager() {
       );
     }
 
+    data.sort((a, b) => {
+      const da = new Date(a.date);
+      const db = new Date(b.date);
+      return db - da; // newest first
+    });
+
     return data;
-  }, [rows, selectedDoer]);
+  }, [rows, selectedDoer, selectedDepartment]);
 
 
   const selectableRowIds = useMemo(() => {
@@ -255,6 +283,20 @@ export default function HrManager() {
               ))}
             </select>
 
+            <select
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              {departmentsFromRows.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+
+
             <button
               onClick={handleConfirmSelected}
               disabled={selectedItems.size === 0 || isConfirming}
@@ -294,7 +336,7 @@ export default function HrManager() {
           ) : (
             <div className="overflow-hidden">
               <div ref={containerRef} className="max-h-[75vh] overflow-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm whitespace-nowrap">
+                <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
                   <thead className="bg-gray-50 text-gray-600">
                     <tr>
                       <th className="sticky top-0 z-10 px-3 py-2 text-left bg-gray-50">
@@ -313,17 +355,18 @@ export default function HrManager() {
                         Task ID
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+                        Doer Name
+                      </th>
+                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50 w-[280px] max-w-[280px]">
                         Description
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         Department
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
-                        Assigned To
+                        Status
                       </th>
-                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
-                        Doer Name
-                      </th>
+
 
                       {/* <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         User Status Checklist
@@ -359,12 +402,21 @@ export default function HrManager() {
                           </td>
                           <td className="px-3 py-3 text-gray-600">{index + 1}</td>
                           <td className="px-3 py-3 font-semibold text-blue-700">{row.taskId}</td>
+                          <td className="px-3 py-3 text-gray-600">{row.doerName}</td>
                           <td className="px-3 py-3 text-gray-700">{row.description}</td>
                           <td className="px-3 py-3 text-gray-600">{row.department}</td>
-                          <td className="px-3 py-3 text-gray-600">{row.assignedTo}</td>
-                          <td className="px-3 py-3 text-gray-600">{row.doerName}</td>
-
-                          {/* <td className="px-3 py-3 text-gray-600">{row.userStatus}</td> */}
+                          <td className="px-3 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${String(row.status).toLowerCase() === "yes"
+                                ? "bg-green-100 text-green-700"
+                                : String(row.status).toLowerCase() === "no"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-gray-100 text-gray-600"
+                                }`}
+                            >
+                              {row.status}
+                            </span>
+                          </td>
                           <td className="px-3 py-3 text-gray-600">{row.date}</td>
                           <td className="px-3 py-3 text-gray-600">{row.remarks}</td>
                         </tr>

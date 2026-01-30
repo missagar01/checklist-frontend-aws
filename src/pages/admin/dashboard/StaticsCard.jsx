@@ -36,6 +36,11 @@ export default function StatisticsCards({
   const upcomingTasksDash = upcomingTasksRate * circumference / 100;
   const overdueDash = overdueRate * circumference / 100;
 
+  // const notDoneRate = Math.max(
+  //   0,
+  //   100 - completionRate - pendingRate
+  // );
+
   const renderBreakdown = (data) => {
     if (!data || typeof data !== 'object' || !data.breakdown) return null;
     const { checklist = 0, housekeeping = 0, maintenance = 0 } = data.breakdown;
@@ -240,12 +245,12 @@ export default function StatisticsCards({
                     strokeLinecap="line"
                     strokeDasharray={`${overdueDash} ${circumference}`}
                   />
-                  {/* Not Done segment - gray */}
+                  {/* Upcoming segment - gray */}
                   <circle
                     cx="50"
                     cy="50"
                     r="40"
-                    stroke="#6b7280"
+                    stroke="#8c14bb"
                     strokeWidth="8"
                     fill="none"
                     strokeLinecap="line"
@@ -303,7 +308,7 @@ export default function StatisticsCards({
                   <span className="text-gray-700">{pendingRate.toFixed(1)}%</span>
                 </div>
                 <div className="flex items-center space-x-1 xs:space-x-2">
-                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-gray-500 flex-shrink-0"></div>
+                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-purple-500 flex-shrink-0"></div>
                   <span className="font-medium">Upcoming:</span>
                   <span className="text-gray-700">{upcomingTasksRate.toFixed(1)}%</span>
                 </div>
@@ -312,6 +317,12 @@ export default function StatisticsCards({
                   <span className="font-medium">Overdue:</span>
                   <span className="text-gray-700">{overdueRate.toFixed(1)}%</span>
                 </div>
+                {/* <div className="flex items-center space-x-1 xs:space-x-2">
+                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-gray-300 flex-shrink-0"></div>
+                  <span className="font-medium">Not Done:</span>
+                  <span className="text-gray-700">{notDoneRate.toFixed(1)}%</span>
+                </div> */}
+                
               </div>
             </div>
 

@@ -359,10 +359,16 @@ export default function UnifiedTaskTable({
         const task = filteredTasks.find(t => t.id === taskId);
         const data = rowData[taskId] || {};
 
-        // Status is mandatory
+        // ✅ HOUSEKEEPING: allow update if doer is selected
+        if (task?.sourceSystem === "housekeeping") {
+            if (data.doerName2 && data.doerName2.trim()) {
+                return true;
+            }
+        }
+
+        // Default rule: status required
         if (!data.status) return false;
 
-        // If status = No → remark mandatory
         if (
             String(data.status).toLowerCase() === "no" &&
             (!data.remarks || !data.remarks.trim())
@@ -372,6 +378,7 @@ export default function UnifiedTaskTable({
 
         return true;
     }, [filteredTasks, rowData]);
+
 
     const areSelectedTasksValid = useMemo(() => {
         if (selectedItems.size === 0) return false;

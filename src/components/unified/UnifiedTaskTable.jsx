@@ -155,25 +155,42 @@ export default function UnifiedTaskTable({
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
-        const filtered = filterTasks(tasks, filters);
+        let filtered = filterTasks(tasks, filters);
 
-        // Deduplicate tasks by creating a unique key for each task
+        const normalizedRole = userRole?.toLowerCase();
+        const loggedInUser = localStorage.getItem("user-name") || "";
+
+        // 🔒 USER ROLE FILTER (ONLY checklist + maintenance)
+        if (normalizedRole === "user") {
+            filtered = filtered.filter(task => {
+              
+                if (task.sourceSystem === "housekeeping") return true;
+
+                return (
+                    task.assignedTo === loggedInUser ||
+                    task.doerName === loggedInUser ||
+                    task.doer_name === loggedInUser ||
+                    task.originalData?.assigned_to === loggedInUser
+                );
+            });
+        }
+
+        // Deduplicate
         const seen = new Set();
         const deduplicated = filtered.filter(task => {
-            const uniqueKey = `${task.sourceSystem}-${task.id}`;
-            if (seen.has(uniqueKey)) {
-                return false; // Skip duplicate
-            }
-            seen.add(uniqueKey);
+            const key = `${task.sourceSystem}-${task.id}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
             return true;
         });
 
-        // If showing housekeeping only, use special sorting (confirmed first)
-        if (filters.sourceSystem === 'housekeeping') {
+        // Sorting
+        if (filters.sourceSystem === "housekeeping") {
             return sortHousekeepingTasks(deduplicated);
         }
+
         return sortByDate(deduplicated, true);
-    }, [tasks, filters]);
+    }, [tasks, filters, userRole]);
 
     // Check if showing only housekeeping tasks
     const normalizedRole = userRole?.toLowerCase();

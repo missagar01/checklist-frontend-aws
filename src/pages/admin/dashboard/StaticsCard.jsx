@@ -36,10 +36,12 @@ export default function StatisticsCards({
   const upcomingTasksDash = upcomingTasksRate * circumference / 100;
   const overdueDash = overdueRate * circumference / 100;
 
-  // const notDoneRate = Math.max(
-  //   0,
-  //   100 - completionRate - pendingRate
-  // );
+  const notDoneRate = Math.max(
+    0,
+    100 - completionRate - pendingRate - overdueRate
+  );
+
+  const notDoneDash = notDoneRate * circumference / 100;
 
   const renderBreakdown = (data) => {
     if (!data || typeof data !== 'object' || !data.breakdown) return null;
@@ -226,15 +228,28 @@ export default function StatisticsCards({
               <div className="relative w-32 h-32 xs:w-36 xs:h-36 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-48 lg:h-48 xl:w-52 xl:h-52">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                   {/* Background circle */}
-                  <circle
+                  {/* <circle
                     cx="50"
                     cy="50"
                     r="40"
                     stroke="#e5e7eb"
                     strokeWidth="8"
                     fill="none"
-                  />
+                  /> */}
                   {/* Overdue segment - red */}
+
+                  {/* Upcoming segment - gray */}
+                  {/* <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke="#b9b1bd"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeLinecap="line"
+                    strokeDasharray={`${upcomingTasksDash} ${circumference}`}
+                    strokeDashoffset={-overdueDash}
+                  /> */}
                   <circle
                     cx="50"
                     cy="50"
@@ -242,21 +257,9 @@ export default function StatisticsCards({
                     stroke="#ef4444"
                     strokeWidth="8"
                     fill="none"
-                    strokeLinecap="line"
                     strokeDasharray={`${overdueDash} ${circumference}`}
                   />
-                  {/* Upcoming segment - gray */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#8c14bb"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeLinecap="line"
-                    strokeDasharray={`${upcomingTasksDash} ${circumference}`}
-                    strokeDashoffset={-overdueDash}
-                  />
+
                   {/* Pending segment - amber/yellow */}
                   <circle
                     cx="50"
@@ -265,9 +268,8 @@ export default function StatisticsCards({
                     stroke="#f59e0b"
                     strokeWidth="8"
                     fill="none"
-                    strokeLinecap="line"
                     strokeDasharray={`${pendingDash} ${circumference}`}
-                    strokeDashoffset={-(overdueDash + upcomingTasksDash)}
+                    strokeDashoffset={-overdueDash}
                   />
                   {/* Completed segment - green */}
                   <circle
@@ -277,16 +279,27 @@ export default function StatisticsCards({
                     stroke="#10b981"
                     strokeWidth="8"
                     fill="none"
-                    strokeLinecap="line"
                     strokeDasharray={`${completedDash} ${circumference}`}
-                    strokeDashoffset={-(overdueDash + upcomingTasksDash + pendingDash)}
+                    strokeDashoffset={-(overdueDash + pendingDash)}
+                  />
+
+                  {/* Not Done segment - Gray (to fill the gap) */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    stroke="#d1d5db" // gray-300
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray={`${notDoneDash} ${circumference}`}
+                    strokeDashoffset={-(overdueDash + pendingDash + completedDash)}
                   />
                 </svg>
                 {/* Percentage text in center */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-indigo-700">
-                      {completionRate.toFixed(1)}%
+                      {completionRate.toFixed(2)}%
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       {dateRange ? "Period" : "Overall"}
@@ -300,29 +313,29 @@ export default function StatisticsCards({
                 <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-green-500 flex-shrink-0"></div>
                   <span className="font-medium">Completed:</span>
-                  <span className="text-gray-700">{completionRate.toFixed(1)}%</span>
+                  <span className="text-gray-700">{completionRate.toFixed(2)}%</span>
                 </div>
                 <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-amber-500 flex-shrink-0"></div>
                   <span className="font-medium">Pending:</span>
-                  <span className="text-gray-700">{pendingRate.toFixed(1)}%</span>
+                  <span className="text-gray-700">{pendingRate.toFixed(2)}%</span>
                 </div>
-                <div className="flex items-center space-x-1 xs:space-x-2">
+                {/* <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-purple-500 flex-shrink-0"></div>
                   <span className="font-medium">Upcoming:</span>
                   <span className="text-gray-700">{upcomingTasksRate.toFixed(1)}%</span>
-                </div>
+                </div> */}
                 <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 flex-shrink-0"></div>
                   <span className="font-medium">Overdue:</span>
-                  <span className="text-gray-700">{overdueRate.toFixed(1)}%</span>
+                  <span className="text-gray-700">{overdueRate.toFixed(2)}%</span>
                 </div>
-                {/* <div className="flex items-center space-x-1 xs:space-x-2">
+                <div className="flex items-center space-x-1 xs:space-x-2">
                   <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-gray-300 flex-shrink-0"></div>
                   <span className="font-medium">Not Done:</span>
-                  <span className="text-gray-700">{notDoneRate.toFixed(1)}%</span>
-                </div> */}
-                
+                  <span className="text-gray-700">{notDoneRate.toFixed(2)}%</span>
+                </div>
+
               </div>
             </div>
 

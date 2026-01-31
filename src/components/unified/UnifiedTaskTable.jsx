@@ -88,6 +88,9 @@ export default function UnifiedTaskTable({
     const [rowData, setRowData] = useState({});  // { taskId: { status, soundStatus, temperature, remarks } }
     const [uploadedImages, setUploadedImages] = useState({});  // { taskId: { file, previewUrl } }
 
+    // Image Preview Modal State (for viewing uploaded images in table)
+    const [previewImage, setPreviewImage] = useState(null);
+
     const tableContainerRef = useRef(null);
 
     // Auto-refresh when source system changes
@@ -163,7 +166,7 @@ export default function UnifiedTaskTable({
         // 🔒 USER ROLE FILTER (ONLY checklist + maintenance)
         if (normalizedRole === "user") {
             filtered = filtered.filter(task => {
-              
+
                 if (task.sourceSystem === "housekeeping") return true;
 
                 return (
@@ -587,6 +590,7 @@ export default function UnifiedTaskTable({
                 departmentOptions={departmentOptions}
                 assignedToOptions={assignedToOptions}
                 userRole={userRole}
+                onTaskAdded={() => onRefresh && onRefresh('checklist')}
             />
 
             {/* Success Message */}
@@ -689,6 +693,7 @@ export default function UnifiedTaskTable({
                                                 isMaintenanceOnly={isMaintenanceOnly}
                                                 seqNo={index + 1}
                                                 userRole={userRole}
+                                                onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
                                             />
                                         ))
                                     ) : (
@@ -743,6 +748,29 @@ export default function UnifiedTaskTable({
                 onUpdate={onUpdateTask}
                 userRole={userRole}
             />
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors z-50"
+                        >
+                            <X className="h-8 w-8" />
+                        </button>
+                        <img
+                            src={previewImage}
+                            alt="Preview"
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking image
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -334,7 +334,11 @@ const TaskRow = memo(function TaskRow({
                 <img
                   src={task.imageUrl}
                   alt="Attached"
-                  className="h-8 w-8 object-cover rounded"
+                  className="h-8 w-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onImageClick?.(task.imageUrl);
+                  }}
                 />
               ) : (
                 <span className="text-xs text-gray-400">No image</span>
@@ -367,21 +371,24 @@ const TaskRow = memo(function TaskRow({
               </>
             )}
           </td>
-        )}
+        )
+        }
 
         {/* View Details Button - Hide for user role pending tasks */}
-        {!isHousekeepingPendingEditable && (
-          <td className="px-2 sm:px-3 py-2 sm:py-4">
-            <button
-              onClick={handleViewClick}
-              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
-              title="View Details"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          </td>
-        )}
-      </tr>
+        {
+          !isHousekeepingPendingEditable && (
+            <td className="px-2 sm:px-3 py-2 sm:py-4">
+              <button
+                onClick={handleViewClick}
+                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                title="View Details"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+            </td>
+          )
+        }
+      </tr >
     );
   }
 

@@ -36,10 +36,7 @@ export default function StatisticsCards({
   const upcomingTasksDash = upcomingTasksRate * circumference / 100;
   const overdueDash = overdueRate * circumference / 100;
 
-  const notDoneRate = Math.max(
-    0,
-    100 - completionRate - pendingRate - overdueRate
-  );
+  const notDoneRate = tCount > 0 ? (nCount / tCount) * 100 : 0;
 
   const notDoneDash = notDoneRate * circumference / 100;
 

@@ -264,14 +264,14 @@ export default function MaintenanceTaskNavigationTabs({
             Upcoming Tasks
           </button>
           <button
-            onClick={() => setTaskView("overdue")}
+            onClick={() => setTaskView("notdone")}
             className={`py-3 text-center font-medium transition-colors ${
-              taskView === "overdue"
+              taskView === "notdone"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            Overdue Tasks
+            Not Done Tasks
           </button>
         </div>
       </div>
@@ -303,7 +303,7 @@ export default function MaintenanceTaskNavigationTabs({
 
       {/* Task count */}
       <div className="text-sm text-gray-600 w-full">
-        Total {taskView === "recent" ? "Recent" : taskView === "upcoming" ? "Upcoming" : "Overdue"} Tasks: {totalCount} | Showing: {filteredTasks.length}
+        Total {taskView === "recent" ? "Recent" : taskView === "upcoming" ? "Upcoming" : "Not Done"} Tasks: {totalCount} | Showing: {filteredTasks.length}
       </div>
 
       {/* Task table - with infinite scroll */}

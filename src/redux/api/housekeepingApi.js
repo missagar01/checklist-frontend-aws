@@ -240,17 +240,25 @@ export const getHousekeepingOverdueCountAPI = (filters = {}) => {
   });
 };
 
+export const getHousekeepingNotDoneCountAPI = (filters = {}) => {
+  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/not-done/count", {
+    params: filters
+  });
+};
+
 export const getHousekeepingTaskCountsAPI = async (filters = {}) => {
-  const [recentData, upcomingData, overdueData] = await Promise.all([
+  const [recentData, upcomingData, overdueData, notDoneData] = await Promise.all([
     getHousekeepingTodayCountAPI(filters),
     getHousekeepingTomorrowCountAPI(filters),
     getHousekeepingOverdueCountAPI(filters),
+    getHousekeepingNotDoneCountAPI(filters),
   ]);
 
   return {
     recent: recentData.data?.count || 0,
     upcoming: upcomingData.data?.count || 0,
     overdue: overdueData.data?.count || 0,
+    notdone: notDoneData.data?.count || 0,
   };
 };
 
@@ -258,7 +266,8 @@ export const getHousekeepingTasksWithFiltersAPI = (taskType, page = 1, limit = 5
   let endpoint = "/housekeeping-dashboard/assigntask/generate";
   if (taskType === "overdue") endpoint = "/housekeeping-dashboard/assigntask/generate/overdue";
   else if (taskType === "recent") endpoint = "/housekeeping-dashboard/assigntask/generate/today";
-  else if (taskType === "upcoming" || taskType === "not-done") endpoint = "/housekeeping-dashboard/assigntask/generate/tomorrow";
+  else if (taskType === "upcoming") endpoint = "/housekeeping-dashboard/assigntask/generate/tomorrow";
+  else if (taskType === "notdone") endpoint = "/housekeeping-dashboard/assigntask/generate/not-done";
 
   return housekeepingApi.get(endpoint, {
     params: {

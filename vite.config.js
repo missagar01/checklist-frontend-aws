@@ -15,7 +15,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://cmh-backend.sagartmt.com",
+        target: "https://checklist-houskeeping.sagartmt.com",
         changeOrigin: true,
         secure: true,
       },

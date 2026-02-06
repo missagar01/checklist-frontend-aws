@@ -195,3 +195,58 @@ export const fetchGivenByDataApi = async () => {
     return [];
   }
 };
+
+// =======================================================
+// 8️⃣ PATCH VERIFY ACCESS
+// =======================================================
+export const patchVerifyAccessApi = async ({ id, verify_access }) => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/users/${id}/verify-access`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verify_access }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Server error: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error patching verify_access", error);
+    throw error;
+  }
+};
+
+
+// =======================================================
+// 9️⃣ PATCH VERIFY ACCESS DEPT
+// =======================================================
+export const patchVerifyAccessDeptApi = async ({ id, verify_access_dept }) => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/users/${id}/verify-access-dept`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verify_access_dept }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Server error: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error patching verify_access_dept", error);
+    throw error;
+  }
+};

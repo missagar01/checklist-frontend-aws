@@ -3,17 +3,18 @@
 // import { createDepartmentApi, createUserApi, deleteUserByIdApi, fetchDepartmentDataApi, fetchUserDetailsApi, updateDepartmentDataApi, updateUserDataApi } from '../api/settingApi';
 // loginSlice.js - Fix the imports
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { 
-  createDepartmentApi, 
-  createUserApi, 
-  deleteUserByIdApi, 
-  fetchDepartmentDataApi, 
-  fetchUserDetailsApi, 
-  updateDepartmentDataApi, 
+import {
+  createDepartmentApi,
+  createUserApi,
+  deleteUserByIdApi,
+  fetchDepartmentDataApi,
+  fetchUserDetailsApi,
+  updateDepartmentDataApi,
   updateUserDataApi,
   deleteDepartmentDataApi,
   fetchDepartmentsOnlyApi,  // Add this import
-  fetchGivenByDataApi       // Add this import
+  fetchGivenByDataApi,   // Add this import
+  patchVerifyAccessDeptApi
 } from '../api/settingApi';
 
 
@@ -21,7 +22,7 @@ export const userDetails = createAsyncThunk(
   'fetch/user',
   async () => {
     const user = await fetchUserDetailsApi();
-   
+
     return user;
   }
 );
@@ -46,7 +47,7 @@ export const departmentDetails = createAsyncThunk(
   'fetch/department',
   async () => {
     const department = await fetchDepartmentDataApi();
-   
+
     return department;
   }
 );
@@ -55,35 +56,35 @@ export const createUser = createAsyncThunk(
   'post/users',
   async (newUser) => {
     const user = await createUserApi(newUser);
-   
+
     return user;
   }
 );
 
-export const updateUser = createAsyncThunk( 'update/users', async ({ id,updatedUser}) => {
-    const user = await updateUserDataApi({ id,updatedUser });
-   
-    return user;
-  }
+export const updateUser = createAsyncThunk('update/users', async ({ id, updatedUser }) => {
+  const user = await updateUserDataApi({ id, updatedUser });
+
+  return user;
+}
 );
 
 export const createDepartment = createAsyncThunk(
   'post/department',
   async (newDept) => {
     const department = await createDepartmentApi(newDept);
-   
+
     return department;
   }
 );
 
-export const updateDepartment = createAsyncThunk( 'update/department', async ({ id, updatedDept }) => {
+export const updateDepartment = createAsyncThunk('update/department', async ({ id, updatedDept }) => {
   console.log(updatedDept);
-  
-    const department = await updateDepartmentDataApi({ id, updatedDept });
-  
-   
-    return department;
-  }
+
+  const department = await updateDepartmentDataApi({ id, updatedDept });
+
+
+  return department;
+}
 );
 
 export const deleteUser = createAsyncThunk(
@@ -102,13 +103,22 @@ export const deleteDepartment = createAsyncThunk(
   }
 );
 
+export const patchVerifyAccessDept = createAsyncThunk(
+  'patch/verify-access-dept',
+  async ({ id, verify_access_dept }) => {
+    const user = await patchVerifyAccessDeptApi({ id, verify_access_dept });
+    return user;
+  }
+);
+
+
 
 
 const settingsSlice = createSlice({
   name: 'settings',
   initialState: {
     userData: [],
-    department:[],
+    department: [],
     departmentsOnly: [], // Add this for departments tab
     givenBy: [], // Add this for given by tab
     error: null,
@@ -125,7 +135,7 @@ const settingsSlice = createSlice({
       .addCase(userDetails.fulfilled, (state, action) => {
         state.loading = false;
         state.userData = action.payload;
-       
+
       })
       .addCase(userDetails.rejected, (state, action) => {
         state.loading = false;
@@ -138,46 +148,46 @@ const settingsSlice = createSlice({
       .addCase(departmentDetails.fulfilled, (state, action) => {
         state.loading = false;
         state.department = action.payload;
-       
+
       })
       .addCase(departmentDetails.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-  
+
       })
-       .addCase(createUser.pending, (state) => {
+      .addCase(createUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(createUser.fulfilled, (state, action) => {
         state.loading = false;
         state.userData.push(action.payload);
-       
+
       })
       .addCase(departmentOnlyDetails.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-})
-.addCase(departmentOnlyDetails.fulfilled, (state, action) => {
-  state.loading = false;
-  state.departmentsOnly = action.payload;
-})
-.addCase(departmentOnlyDetails.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.payload;
-})
-.addCase(givenByDetails.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-})
-.addCase(givenByDetails.fulfilled, (state, action) => {
-  state.loading = false;
-  state.givenBy = action.payload;
-})
-.addCase(givenByDetails.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.payload;
-})
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(departmentOnlyDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.departmentsOnly = action.payload;
+      })
+      .addCase(departmentOnlyDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(givenByDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(givenByDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.givenBy = action.payload;
+      })
+      .addCase(givenByDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(createUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -205,33 +215,33 @@ const settingsSlice = createSlice({
         state.error = action.error?.message || "Failed to update user";
         console.error("❌ Update user rejected:", action.error);
       })
-       .addCase(createDepartment.pending, (state) => {
+      .addCase(createDepartment.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(createDepartment.fulfilled, (state, action) => {
         state.loading = false;
         state.department.push(action.payload);
-       
+
       })
       .addCase(createDepartment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-  
+
       })
-       .addCase(updateDepartment.pending, (state) => {
+      .addCase(updateDepartment.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateDepartment.fulfilled, (state, action) => {
         state.loading = false;
-        state.department=action.payload;
-       
+        state.department = action.payload;
+
       })
       .addCase(updateDepartment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-  
+
       })
       .addCase(deleteDepartment.pending, (state) => {
         state.loading = true;
@@ -246,17 +256,40 @@ const settingsSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(deleteUser.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-})
-.addCase(deleteUser.fulfilled, (state, action) => {
-  state.loading = false;
-  state.userData = state.userData.filter((user) => user.id !== action.payload);
-})
-.addCase(deleteUser.rejected, (state, action) => {
-  state.loading = false;
-  state.error = action.payload;
-});
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userData = state.userData.filter((user) => user.id !== action.payload);
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(patchVerifyAccessDept.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(patchVerifyAccessDept.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+
+        if (action.payload && Array.isArray(state.userData)) {
+          const index = state.userData.findIndex(
+            user => user.id === action.payload.id
+          );
+
+          if (index !== -1) {
+            state.userData[index] = action.payload;
+          }
+        }
+      })
+      .addCase(patchVerifyAccessDept.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || "Failed to patch verify_access_dept";
+      });
+
 
   },
 });

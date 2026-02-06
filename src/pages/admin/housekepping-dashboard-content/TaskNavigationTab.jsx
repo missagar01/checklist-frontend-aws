@@ -15,11 +15,10 @@ export default function TaskNavigationTabs({
   getFrequencyColor,
   dashboardStaffFilter,
   departmentFilter
-}) 
-{
+}) {
   const dispatch = useDispatch()
   const { loadingDashboardTasks, taskCounts } = useSelector((state) => state.housekeeping)
-  
+
   const [currentPage, setCurrentPage] = useState(1)
   const [displayedTasks, setDisplayedTasks] = useState([])
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -57,13 +56,13 @@ export default function TaskNavigationTabs({
       // For admin, pass department filter if selected
       const role = localStorage.getItem("role") || ""
       let departmentFilters = {}
-      
+
       if (role.toLowerCase() !== "user" && departmentFilter && departmentFilter !== "all") {
         // For admin, use selected department filter
         departmentFilters.department = departmentFilter
       }
       // For user role, backend handles filtering from token - no need to pass department
-      
+
       await dispatch(fetchHousekeepingTaskCounts(departmentFilters)).unwrap();
     } catch {
       // Error handled by Redux
@@ -76,7 +75,7 @@ export default function TaskNavigationTabs({
     if (isLoadingMore || loadingDashboardTasks) {
       return;
     }
-    
+
     // Prevent loading if no more data
     if (append && !hasMoreData) {
       return;
@@ -87,12 +86,12 @@ export default function TaskNavigationTabs({
 
       let totalCountFromApi = 0;
       let allApiData = [];
-      
+
       // Backend automatically filters by user_access from JWT token for user role
       // For admin, pass department filter if selected
       const role = localStorage.getItem("role") || ""
       let departmentFilters = {}
-      
+
       if (role.toLowerCase() !== "user" && departmentFilter && departmentFilter !== "all") {
         // For admin, use selected department filter
         departmentFilters.department = departmentFilter
@@ -101,7 +100,8 @@ export default function TaskNavigationTabs({
 
       // Map taskView to API taskType
       let taskType = "recent";
-      if (taskView === "overdue") taskType = "overdue";
+      if (taskView === "notdone") taskType = "notdone";
+      else if (taskView === "overdue") taskType = "overdue";
       else if (taskView === "upcoming") taskType = "upcoming";
       else if (taskView === "recent") taskType = "recent";
 
@@ -121,7 +121,7 @@ export default function TaskNavigationTabs({
             filters: departmentFilters
           })).unwrap()
         ]);
-        
+
         allApiData = [...(page1Result.items || []), ...(page2Result.items || [])];
         totalCountFromApi = page1Result.total || 0;
         setCurrentPage(2); // Set to page 2 since we loaded 2 pages
@@ -133,7 +133,7 @@ export default function TaskNavigationTabs({
           limit: itemsPerPage,
           filters: departmentFilters
         })).unwrap();
-        
+
         allApiData = result.items || [];
         totalCountFromApi = result.total || 0;
       }
@@ -148,6 +148,8 @@ export default function TaskNavigationTabs({
           countFromRedux = taskCounts?.upcoming || 0;
         } else if (taskView === "overdue") {
           countFromRedux = taskCounts?.overdue || 0;
+        } else if (taskView === "notdone") {
+          countFromRedux = taskCounts?.notdone || 0;
         }
         // Use Redux count if available, otherwise use API total
         setTotalCount(countFromRedux > 0 ? countFromRedux : totalCountFromApi);
@@ -240,8 +242,8 @@ export default function TaskNavigationTabs({
       setTotalCount(taskCounts?.recent || 0);
     } else if (taskView === "upcoming") {
       setTotalCount(taskCounts?.upcoming || 0);
-    } else if (taskView === "overdue") {
-      setTotalCount(taskCounts?.overdue || 0);
+    } else if (taskView === "notdone") { // Changed from "overdue"
+      setTotalCount(taskCounts?.notdone || 0); // Changed from "overdue"
     }
   }, [taskView, taskCounts])
 
@@ -289,7 +291,7 @@ export default function TaskNavigationTabs({
     if (!container) return;
 
     container.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
@@ -354,7 +356,7 @@ export default function TaskNavigationTabs({
           onClick={() => setTaskView("recent")}
         >
           {dashboardType === "delegation" ? "Today Tasks" : "Today's Tasks"}
-        
+
         </button>
         <button
           className={`py-3 text-center font-medium transition-colors relative ${taskView === "upcoming" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -362,15 +364,15 @@ export default function TaskNavigationTabs({
           onClick={() => setTaskView("upcoming")}
         >
           {dashboardType === "delegation" ? "Future Tasks" : "Upcoming Tasks"}
-        
+
         </button>
         <button
-          className={`py-3 text-center font-medium transition-colors relative ${taskView === "overdue" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          className={`py-3 text-center font-medium transition-colors relative ${taskView === "notdone" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
-          onClick={() => setTaskView("overdue")}
+          onClick={() => setTaskView("notdone")}
         >
-          Overdue Tasks
-         
+          Not Done Tasks
+
         </button>
       </div>
 
@@ -381,13 +383,15 @@ export default function TaskNavigationTabs({
             <span className="text-sm font-medium text-gray-700">
               Total Tasks:
               <span className="ml-2 text-blue-600 font-bold">
-                {taskView === "recent" 
+                {taskView === "recent"
                   ? (taskCounts?.recent || 0)
                   : taskView === "upcoming"
-                  ? (taskCounts?.upcoming || 0)
-                  : taskView === "overdue"
-                  ? (taskCounts?.overdue || 0)
-                  : 0}
+                    ? (taskCounts?.upcoming || 0)
+                    : taskView === "overdue"
+                      ? (taskCounts?.overdue || 0)
+                      : taskView === "notdone"
+                        ? (taskCounts?.notdone || 0)
+                        : 0}
               </span>
             </span>
             <div className="text-xs text-gray-500">

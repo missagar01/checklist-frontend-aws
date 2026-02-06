@@ -85,6 +85,27 @@ export default function TaskDrawer({
         }
     }, [task, selectedStatus, remarks, uploadedImage, onUpdate, onClose]);
 
+
+    // Image Preview Modal State
+    const [previewImage, setPreviewImage] = useState(null);
+
+    // Format interval object to string (e.g. { hours: 1, minutes: 30 } -> "1h 30m")
+    const formatInterval = (interval) => {
+        if (!interval) return '—';
+        if (typeof interval === 'string') return interval;
+        if (typeof interval === 'object') {
+            const parts = [];
+            if (interval.years) parts.push(`${interval.years}y`);
+            if (interval.months) parts.push(`${interval.months}mo`);
+            if (interval.days) parts.push(`${interval.days}d`);
+            if (interval.hours) parts.push(`${interval.hours}h`);
+            if (interval.minutes) parts.push(`${interval.minutes}m`);
+            if (interval.seconds) parts.push(`${interval.seconds}s`);
+            return parts.join(' ') || '0s';
+        }
+        return '—';
+    };
+
     if (!isOpen || !task) return null;
 
     const existingImageUrl = task.imageUrl || task.image;
@@ -158,7 +179,7 @@ export default function TaskDrawer({
 
                         <FieldGrid columns={2} className="mt-3">
                             <Field label="Submission Date" value={formatDateTime(task.submissionDate)} />
-                            <Field label="Delay" value={task.delay} />
+                            <Field label="Delay" value={formatInterval(task.delay)} />
                         </FieldGrid>
                     </TaskSection>
 
@@ -213,12 +234,20 @@ export default function TaskDrawer({
                                     <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                                         Existing Attachment
                                     </dt>
-                                    <img
-                                        src={existingImageUrl}
-                                        alt="Task attachment"
-                                        className="h-32 w-auto object-cover rounded-md border border-gray-200"
-                                        crossOrigin="anonymous"
-                                    />
+                                    <div
+                                        className="relative group cursor-pointer"
+                                        onClick={() => setPreviewImage(existingImageUrl)}
+                                    >
+                                        <img
+                                            src={existingImageUrl}
+                                            alt="Task attachment"
+                                            className="h-32 w-auto object-cover rounded-md border border-gray-200 transition-opacity hover:opacity-90"
+                                            crossOrigin="anonymous"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-md">
+                                            <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">Click to View</span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -341,6 +370,29 @@ export default function TaskDrawer({
                     </div>
                 )}
             </div>
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors z-50"
+                        >
+                            <X className="h-8 w-8" />
+                        </button>
+                        <img
+                            src={previewImage}
+                            alt="Preview"
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking image
+                        />
+                    </div>
+                </div>
+            )}
         </>
     );
 }

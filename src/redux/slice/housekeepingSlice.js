@@ -41,7 +41,8 @@ const initialState = {
   taskCounts: {
     recent: 0,
     upcoming: 0,
-    overdue: 0
+    overdue: 0,
+    notdone: 0
   },
   
   // Loading states

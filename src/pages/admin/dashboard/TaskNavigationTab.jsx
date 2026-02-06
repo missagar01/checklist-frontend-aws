@@ -243,11 +243,11 @@ export default function TaskNavigationTabs({
           {dashboardType === "delegation" ? "Future Tasks" : `Upcoming Tasks (${getCount(stats?.upcomingTasks)})`}
         </button>
         <button
-          className={`py-3 text-center font-medium transition-colors ${taskView === "overdue" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          className={`py-3 text-center font-medium transition-colors ${taskView === "notdone" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
-          onClick={() => setTaskView("overdue")}
+          onClick={() => setTaskView("notdone")}
         >
-          Overdue Tasks ({getCount(stats?.overdueTasks)})
+          Not Done Tasks ({getCount(stats?.notDoneTasks)})
         </button>
       </div>
 

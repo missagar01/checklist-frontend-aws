@@ -6,7 +6,6 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import {
   fetchHrChecklistData,
   updateHrManagerChecklist,
-  fetchChecklistDoers,
 } from "../../redux/slice/checklistSlice";
 
 export default function HrManager() {
@@ -23,13 +22,27 @@ export default function HrManager() {
   const [selectedDoer, setSelectedDoer] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
 
 
   useEffect(() => {
-    dispatch(fetchHrChecklistData());
-    dispatch(fetchChecklistDoers());
+    let page = 1;
+
+    const loadAll = async () => {
+      while (true) {
+        const res = await dispatch(fetchHrChecklistData(page)).unwrap();
+        if (!res || res.data.length === 0) break;
+        if (res.data.length + (page - 1) * res.data.length >= res.totalCount) break;
+        page++;
+      }
+    };
+
+    loadAll();
+    // dispatch(fetchChecklistDoers());
+    // dispatch(fetchChecklistDoers());
   }, [dispatch]);
+
 
   const rows = useMemo(() => {
     if (!Array.isArray(hrChecklist)) return [];
@@ -44,6 +57,7 @@ export default function HrManager() {
         department: task?.department ?? "-",
         assignedTo: task?.assigned_to ?? "-",
         doerName: task?.name ?? "-",
+        verify_access: task?.verify_access ?? null,
         status: task?.status ?? "-",
         userStatus:
           task?.["user_status-checklist"] ??
@@ -61,10 +75,100 @@ export default function HrManager() {
     });
   }, [hrChecklist]);
 
+
+  const doersFromRows = useMemo(() => {
+    return Array.from(
+      new Set(
+        rows
+          .map(r => r.doerName)
+          .filter(name => name && name !== "-")
+      )
+    );
+  }, [rows]);
+
+  const departmentsFromRows = useMemo(() => {
+    return Array.from(
+      new Set(
+        rows
+          .map(r => r.department)
+          .filter(dep => dep && dep !== "-")
+      )
+    ).sort((a, b) => a.localeCompare(b)); // ✅ sort here
+  }, [rows]);
+
+
+
+
+  // console.table(rows.map(r => ({
+  //   name: r.doerName,
+  //   verify_access: r.verify_access
+  // })));
+
+
   const filteredRows = useMemo(() => {
-    if (!selectedDoer) return rows;
-    return rows.filter((row) => row.doerName === selectedDoer);
-  }, [rows, selectedDoer]);
+    let data = rows;
+
+    const verifyAccess = localStorage.getItem("verify_access");
+    const loggedUser = localStorage.getItem("user-name");
+
+    // ❌ Never show own tasks
+    if (loggedUser) {
+      data = data.filter(row => row.doerName !== loggedUser);
+    }
+
+    // 🧑‍💼 HOD → ONLY manager tasks
+    if (verifyAccess === "hod") {
+      data = data.filter(row => row.verify_access === "manager");
+    }
+
+    // 👨‍💼 Manager → block HOD tasks ONLY
+    if (verifyAccess === "manager") {
+      data = data.filter(row => row.verify_access !== "hod");
+    }
+
+    // Existing doer filter (unchanged)
+    if (selectedDoer) {
+      data = data.filter(row => row.doerName === selectedDoer);
+    }
+
+    // 🏢 Department dropdown filter
+    if (selectedDepartment) {
+      data = data.filter(
+        row => row.department === selectedDepartment
+      );
+    }
+
+
+    // 🏢 ADD: Department access filter (non-breaking)
+    const loggedUserDept = localStorage.getItem("user_access");
+    const verifyAccessDept = localStorage.getItem("verify_access_dept");
+
+    if (loggedUserDept || verifyAccessDept) {
+      const allowedDepts = new Set(
+        [
+          loggedUserDept,
+          ...(verifyAccessDept
+            ? verifyAccessDept.split(",").map(d => d.trim())
+            : [])
+        ]
+          .filter(Boolean)
+          .map(d => d.toUpperCase())
+      );
+
+      data = data.filter(row =>
+        allowedDepts.has((row.department || "").toUpperCase())
+      );
+    }
+
+    data.sort((a, b) => {
+      const da = new Date(a.date);
+      const db = new Date(b.date);
+      return db - da; // newest first
+    });
+
+    return data;
+  }, [rows, selectedDoer, selectedDepartment]);
+
 
   const selectableRowIds = useMemo(() => {
     return filteredRows.filter((r) => r.taskId && r.taskId !== "-").map((r) => r.id);
@@ -107,12 +211,11 @@ export default function HrManager() {
 
     setFeedback(null);
 
+    // ✅ ONLY taskId is sent
     const itemsToConfirm = rows
-      .filter((row) => selectedItems.has(row.id) && row.taskId && row.taskId !== "-")
-      .map((row) => ({
-        taskId: row.taskId,
-        admin_done: "Confirmed",
-        status: "yes",
+      .filter(row => selectedItems.has(row.id) && row.taskId && row.taskId !== "-")
+      .map(row => ({
+        taskId: row.taskId
       }));
 
     if (itemsToConfirm.length === 0) {
@@ -124,15 +227,33 @@ export default function HrManager() {
 
     try {
       await dispatch(updateHrManagerChecklist(itemsToConfirm)).unwrap();
-      setFeedback({ type: "success", text: `✅ Confirmed ${itemsToConfirm.length} task(s)` });
+
+      setFeedback({
+        type: "success",
+        text: `✅ Confirmed ${itemsToConfirm.length} task(s)`
+      });
+
       setSelectedItems(new Set());
       dispatch(fetchHrChecklistData());
+
     } catch (err) {
-      setFeedback({ type: "error", text: err?.message || "Failed to send confirmations." });
+      setFeedback({
+        type: "error",
+        text: err?.message || "Failed to send confirmations."
+      });
     } finally {
       setIsConfirming(false);
     }
   }, [dispatch, rows, selectedItems]);
+
+
+  // useEffect(() => {
+  //   console.log("verify_access_dept:", localStorage.getItem("verify_access_dept"));
+  //   console.log("departments sent:", localStorage.getItem("user_access"), localStorage.getItem("user_access1"));
+  //   console.log("rows departments:", [...new Set(rows.map(r => r.department))]);
+  // }, [rows]);
+
+  // console.log("UI rows:", filteredRows.length);
 
   return (
     <AdminLayout>
@@ -155,12 +276,26 @@ export default function HrManager() {
               onChange={(e) => setSelectedDoer(e.target.value)}
             >
               <option value="">All Doers</option>
-              {doers.map((doer) => (
+              {doersFromRows.map((doer) => (
                 <option key={doer} value={doer}>
                   {doer}
                 </option>
               ))}
             </select>
+
+            <select
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:border-blue-500 focus:outline-none"
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              {departmentsFromRows.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+
 
             <button
               onClick={handleConfirmSelected}
@@ -201,7 +336,7 @@ export default function HrManager() {
           ) : (
             <div className="overflow-hidden">
               <div ref={containerRef} className="max-h-[75vh] overflow-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm whitespace-nowrap">
+                <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
                   <thead className="bg-gray-50 text-gray-600">
                     <tr>
                       <th className="sticky top-0 z-10 px-3 py-2 text-left bg-gray-50">
@@ -220,21 +355,22 @@ export default function HrManager() {
                         Task ID
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+                        Doer Name
+                      </th>
+                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50 w-[280px] max-w-[280px]">
                         Description
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         Department
                       </th>
                       <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
-                        Assigned To
-                      </th>
-                      <th className="sticky top-0 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
-                        Doer Name
+                        Status
                       </th>
 
-                      <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
+
+                      {/* <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         User Status Checklist
-                      </th>
+                      </th> */}
                       <th className="sticky top-0 z-10 px-3 py-2 text-left font-medium tracking-wide text-blue-600 bg-gray-50">
                         Date
                       </th>
@@ -266,12 +402,21 @@ export default function HrManager() {
                           </td>
                           <td className="px-3 py-3 text-gray-600">{index + 1}</td>
                           <td className="px-3 py-3 font-semibold text-blue-700">{row.taskId}</td>
+                          <td className="px-3 py-3 text-gray-600">{row.doerName}</td>
                           <td className="px-3 py-3 text-gray-700">{row.description}</td>
                           <td className="px-3 py-3 text-gray-600">{row.department}</td>
-                          <td className="px-3 py-3 text-gray-600">{row.assignedTo}</td>
-                          <td className="px-3 py-3 text-gray-600">{row.doerName}</td>
-
-                          <td className="px-3 py-3 text-gray-600">{row.userStatus}</td>
+                          <td className="px-3 py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${String(row.status).toLowerCase() === "yes"
+                                ? "bg-green-100 text-green-700"
+                                : String(row.status).toLowerCase() === "no"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-gray-100 text-gray-600"
+                                }`}
+                            >
+                              {row.status}
+                            </span>
+                          </td>
                           <td className="px-3 py-3 text-gray-600">{row.date}</td>
                           <td className="px-3 py-3 text-gray-600">{row.remarks}</td>
                         </tr>

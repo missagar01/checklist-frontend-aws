@@ -196,7 +196,7 @@ useEffect(()=>{
             <div>
               <h2 className="text-purple-700 font-medium">Delegation Tasks</h2>
               <p className="text-purple-600 text-sm">
-                {CONFIG.PAGE_CONFIG.description} ({filteredTasks.length} tasks)
+                ({filteredTasks.length} tasks)
               </p>
             </div>
             

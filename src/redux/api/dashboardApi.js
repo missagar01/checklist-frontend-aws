@@ -205,6 +205,11 @@ export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all") 
   return res.json();
 };
 
+export const getTotalUsersCountApi = async () => {
+  const res = await fetch(`${BASE_URL1}/users-count`);
+  return res.json();
+};
+
 // dashboardApi.js - Add this function
 export const getStaffTaskSummaryApi = async (dashboardType, departmentFilter = "all") => {
   try {
@@ -263,10 +268,7 @@ export const getStaffNamesByDepartmentApi = async (department) => {
   }
 };
 
-export const getTotalUsersCountApi = async () => {
-  const res = await fetch(`${BASE_URL1}/users-count`);
-  return res.json();
-};
+
 
 // ---------------------------------------------------------------------
 // 6️⃣ DATE RANGE FILTERED APIS

@@ -88,6 +88,9 @@ export default function UnifiedTaskTable({
     const [rowData, setRowData] = useState({});  // { taskId: { status, soundStatus, temperature, remarks } }
     const [uploadedImages, setUploadedImages] = useState({});  // { taskId: { file, previewUrl } }
 
+    // Image Preview Modal State (for viewing uploaded images in table)
+    const [previewImage, setPreviewImage] = useState(null);
+
     const tableContainerRef = useRef(null);
 
     // Auto-refresh when source system changes
@@ -155,25 +158,42 @@ export default function UnifiedTaskTable({
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
-        const filtered = filterTasks(tasks, filters);
+        let filtered = filterTasks(tasks, filters);
 
-        // Deduplicate tasks by creating a unique key for each task
+        const normalizedRole = userRole?.toLowerCase();
+        const loggedInUser = localStorage.getItem("user-name") || "";
+
+        // 🔒 USER ROLE FILTER (ONLY checklist + maintenance)
+        if (normalizedRole === "user") {
+            filtered = filtered.filter(task => {
+
+                if (task.sourceSystem === "housekeeping") return true;
+
+                return (
+                    task.assignedTo === loggedInUser ||
+                    task.doerName === loggedInUser ||
+                    task.doer_name === loggedInUser ||
+                    task.originalData?.assigned_to === loggedInUser
+                );
+            });
+        }
+
+        // Deduplicate
         const seen = new Set();
         const deduplicated = filtered.filter(task => {
-            const uniqueKey = `${task.sourceSystem}-${task.id}`;
-            if (seen.has(uniqueKey)) {
-                return false; // Skip duplicate
-            }
-            seen.add(uniqueKey);
+            const key = `${task.sourceSystem}-${task.id}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
             return true;
         });
 
-        // If showing housekeeping only, use special sorting (confirmed first)
-        if (filters.sourceSystem === 'housekeeping') {
+        // Sorting
+        if (filters.sourceSystem === "housekeeping") {
             return sortHousekeepingTasks(deduplicated);
         }
+
         return sortByDate(deduplicated, true);
-    }, [tasks, filters]);
+    }, [tasks, filters, userRole]);
 
     // Check if showing only housekeeping tasks
     const normalizedRole = userRole?.toLowerCase();
@@ -354,6 +374,38 @@ export default function UnifiedTaskTable({
         setDrawerOpen(false);
         setSelectedTask(null);
     }, []);
+
+    const isRowValid = useCallback((taskId) => {
+        const task = filteredTasks.find(t => t.id === taskId);
+        const data = rowData[taskId] || {};
+
+        // ✅ HOUSEKEEPING: allow update if doer is selected
+        if (task?.sourceSystem === "housekeeping") {
+            if (data.doerName2 && data.doerName2.trim()) {
+                return true;
+            }
+        }
+
+        // Default rule: status required
+        if (!data.status) return false;
+
+        if (
+            String(data.status).toLowerCase() === "no" &&
+            (!data.remarks || !data.remarks.trim())
+        ) {
+            return false;
+        }
+
+        return true;
+    }, [filteredTasks, rowData]);
+
+
+    const areSelectedTasksValid = useMemo(() => {
+        if (selectedItems.size === 0) return false;
+
+        return Array.from(selectedItems).every(id => isRowValid(id));
+    }, [selectedItems, isRowValid]);
+
 
     // Convert file to base64
     const fileToBase64 = (file) => {
@@ -538,6 +590,7 @@ export default function UnifiedTaskTable({
                 departmentOptions={departmentOptions}
                 assignedToOptions={assignedToOptions}
                 userRole={userRole}
+                onTaskAdded={() => onRefresh && onRefresh('checklist')}
             />
 
             {/* Success Message */}
@@ -586,9 +639,13 @@ export default function UnifiedTaskTable({
                         {filters.status !== "Completed" && (
                             <button
                                 onClick={handleBulkSubmit}
-                                disabled={selectedItems.size === 0 || isSubmitting}
-                                className="w-full sm:w-auto rounded-md bg-green-600 py-1.5 sm:py-2 px-3 sm:px-4 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm font-medium whitespace-nowrap"
-                            >
+                                disabled={selectedItems.size === 0 || isSubmitting || !areSelectedTasksValid}
+                                className={`w-full sm:w-auto rounded-md py-1.5 sm:py-2 px-3 sm:px-4
+                                        text-white text-xs sm:text-sm font-medium whitespace-nowrap
+                                        ${selectedItems.size > 0 && areSelectedTasksValid
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-gray-300 cursor-not-allowed"
+                                    }`}                            >
                                 {isSubmitting ? "⏳ Processing..." : `✅ Update Selected (${selectedItems.size})`}
                             </button>
                         )}
@@ -636,6 +693,7 @@ export default function UnifiedTaskTable({
                                                 isMaintenanceOnly={isMaintenanceOnly}
                                                 seqNo={index + 1}
                                                 userRole={userRole}
+                                                onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
                                             />
                                         ))
                                     ) : (
@@ -690,6 +748,29 @@ export default function UnifiedTaskTable({
                 onUpdate={onUpdateTask}
                 userRole={userRole}
             />
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors z-50"
+                        >
+                            <X className="h-8 w-8" />
+                        </button>
+                        <img
+                            src={previewImage}
+                            alt="Preview"
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking image
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

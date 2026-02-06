@@ -25,8 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          # ❌ cache removed
 
       # 🔐 Create .env for Vite
       - name: Create .env file
@@ -34,7 +33,7 @@ jobs:
           echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" > .env
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build frontend (Vite)
         run: npm run build
@@ -49,6 +48,3 @@ jobs:
       - name: Deploy to S3
         run: |
           aws s3 sync dist s3://${{ secrets.S3_BUCKET }} --delete
-
-
-

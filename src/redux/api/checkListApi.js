@@ -148,6 +148,30 @@ export const updateHrManagerChecklistData = async (items) => {
 };
 
 // =======================================================
+// 7.1️⃣ HR MANAGER REJECT (AWS Backend)
+// =======================================================
+export const rejectHrManagerChecklistData = async (items) => {
+  try {
+    const response = await fetch(`${BASE_URL}/reject-role`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(items),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to reject HR tasks");
+    }
+
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    console.error("❌ Error rejecting HR manager checklist:", error);
+    throw error;
+  }
+};
+
+
+// =======================================================
 // 8️⃣ Fetch Checklist for HR Approval
 // =======================================================
 export const fetchChecklistForHrApproval = async (page = 1) => {

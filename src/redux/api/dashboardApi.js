@@ -173,7 +173,8 @@ export const fetchStaffTasksDataApi = async (
   staffFilter = "all",
   page = 1,
   limit = 50,
-  monthYear = "" // Add this parameter
+  monthYear = "", // Add this parameter
+  departmentFilter = "all" // Add department filter
 ) => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
@@ -189,8 +190,44 @@ export const fetchStaffTasksDataApi = async (
     params.append('monthYear', monthYear);
   }
 
+  // Add departmentFilter if provided
+  if (departmentFilter && departmentFilter !== "all") {
+    params.append('departmentFilter', departmentFilter);
+  }
+
   const res = await fetch(
     `${BASE_URL1}/tasks?${params.toString()}`
+  );
+
+  return await res.json();
+};
+
+// Export all staff tasks for CSV download
+export const exportAllStaffTasksApi = async (
+  dashboardType,
+  staffFilter = "all",
+  monthYear = "",
+  departmentFilter = "all"
+) => {
+  staffFilter = getFinalStaffFilter(staffFilter);
+
+  const params = new URLSearchParams({
+    dashboardType,
+    staffFilter
+  });
+
+  // Add monthYear if provided
+  if (monthYear) {
+    params.append('monthYear', monthYear);
+  }
+
+  // Add departmentFilter if provided
+  if (departmentFilter && departmentFilter !== "all") {
+    params.append('departmentFilter', departmentFilter);
+  }
+
+  const res = await fetch(
+    `${BASE_URL1}/tasks/export?${params.toString()}`
   );
 
   return await res.json();

@@ -6,6 +6,7 @@ import {
   postChecklistAdminDoneAPI,
   updateChecklistData,
   updateHrManagerChecklistData,
+  rejectHrManagerChecklistData,
   postChecklistUserStatusData,
   patchChecklistAdminStatus,
   fetchChecklistDepartmentsAPI,
@@ -71,6 +72,15 @@ export const updateHrManagerChecklist = createAsyncThunk(
     return response;
   }
 );
+
+export const rejectHrManagerChecklist = createAsyncThunk(
+  "reject/checklist/hr-manager",
+  async (items) => {
+    const response = await rejectHrManagerChecklistData(items);
+    return response;
+  }
+);
+
 
 export const fetchHrChecklistData = createAsyncThunk(
   "fetch/hr-checklist",
@@ -261,6 +271,17 @@ const checkListSlice = createSlice({
         state.loading = false;
         state.error = action.error?.message || "Failed updating HR roles";
       })
+      .addCase(rejectHrManagerChecklist.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(rejectHrManagerChecklist.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(rejectHrManagerChecklist.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error?.message || "Failed to reject HR tasks";
+      })
+
 
       // -----------------------------
       // FETCH HR CHECKLIST

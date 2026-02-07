@@ -6,6 +6,7 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import {
   fetchHrChecklistData,
   updateHrManagerChecklist,
+  rejectHrManagerChecklist,
 } from "../../redux/slice/checklistSlice";
 
 export default function HrManager() {
@@ -21,6 +22,7 @@ export default function HrManager() {
   const [selectedItems, setSelectedItems] = useState(() => new Set());
   const [selectedDoer, setSelectedDoer] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState("");
 
@@ -246,6 +248,49 @@ export default function HrManager() {
     }
   }, [dispatch, rows, selectedItems]);
 
+  const handleRejectSelected = useCallback(async () => {
+    if (selectedItems.size === 0) {
+      setFeedback({ type: "error", text: "Select at least one task before rejecting." });
+      return;
+    }
+
+    setFeedback(null);
+
+    const itemsToReject = rows
+      .filter(row => selectedItems.has(row.id) && row.taskId && row.taskId !== "-")
+      .map(row => ({
+        taskId: row.taskId
+      }));
+
+    if (itemsToReject.length === 0) {
+      setFeedback({ type: "error", text: "Selected rows do not contain valid task IDs." });
+      return;
+    }
+
+    setIsRejecting(true);
+
+    try {
+      await dispatch(rejectHrManagerChecklist(itemsToReject)).unwrap();
+
+      setFeedback({
+        type: "success",
+        text: `❌ Rejected ${itemsToReject.length} task(s)`
+      });
+
+      setSelectedItems(new Set());
+      dispatch(fetchHrChecklistData());
+
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        text: err?.message || "Failed to reject tasks."
+      });
+    } finally {
+      setIsRejecting(false);
+    }
+  }, [dispatch, rows, selectedItems]);
+
+
 
   // useEffect(() => {
   //   console.log("verify_access_dept:", localStorage.getItem("verify_access_dept"));
@@ -299,11 +344,20 @@ export default function HrManager() {
 
             <button
               onClick={handleConfirmSelected}
-              disabled={selectedItems.size === 0 || isConfirming}
+              disabled={selectedItems.size === 0 || isConfirming || isRejecting}
               className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isConfirming ? "Sending confirmation..." : "Confirm Selected"}
+              {isConfirming ? "Confirming..." : "Confirm Selected"}
             </button>
+
+            <button
+              onClick={handleRejectSelected}
+              disabled={selectedItems.size === 0 || isConfirming || isRejecting}
+              className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isRejecting ? "Rejecting..." : "Reject Selected"}
+            </button>
+
 
             <span className="text-xs text-gray-500 font-medium">
               Total: {rows.length} |

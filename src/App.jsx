@@ -18,6 +18,7 @@ import NewMachine from "./pages/admin/maintenance/newMachine"
 import UnifiedTaskPage from "./pages/admin/UnifiedTaskPage"
 import HrManager from "./pages/admin/HrManager"
 
+
 // Auth wrapper component to protect routes
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const username = localStorage.getItem("user-name")
@@ -133,7 +134,7 @@ function App() {
           }
         />
 
-            <Route
+        <Route
           path="/dashboard/hrmanager"
           element={
             <ProtectedRoute>
@@ -192,7 +193,7 @@ function App() {
         <Route path="/admin/mis-report" element={<Navigate to="/dashboard/mis-report" replace />} />
         <Route path="/admin/data/:category" element={<Navigate to="/dashboard/data/:category" replace />} />
         <Route path="/user/*" element={<Navigate to="/dashboard/admin" replace />} />
-   
+
       </Routes>
     </Router>
   )

@@ -29,12 +29,12 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (isLoggedIn && userData) {
+      // These keys are still needed for other parts of the app that call localStorage.getItem directly
       const dataToStore = {
         'user-name': userData.user_name || userData.username || "",
         'user_id': userData.id || userData.user_id || "",
         'role': userData.role || "",
         'email_id': userData.email_id || userData.email || "",
-        'token': userData.token || "",
         'user_access': userData.user_access || "",
         'userAccess': userData.user_access || "",
         'user_access1': userData.user_access1 || "",
@@ -48,8 +48,6 @@ const LoginPage = () => {
       Object.entries(dataToStore).forEach(([key, value]) => {
         if (value) {
           localStorage.setItem(key, value)
-        } else {
-          localStorage.removeItem(key)
         }
       })
 

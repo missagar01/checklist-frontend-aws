@@ -28,7 +28,9 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   // If no token exists (check Redux state and localStorage)
   const storedToken = localStorage.getItem("token");
-  if (!isLoggedIn && !token && !storedToken) {
+  const storedUserData = localStorage.getItem("userData");
+
+  if (!isLoggedIn && !token && !storedToken && !storedUserData) {
     return <Navigate to="/login" replace />
   }
 

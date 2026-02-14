@@ -16,13 +16,22 @@ export const loginUser = createAsyncThunk(
 const loginSlice = createSlice({
   name: 'userData',
   initialState: {
-    userData: null,
+    userData: JSON.parse(localStorage.getItem('userData')) || null,
     token: localStorage.getItem('token') || null,
     error: null,
     loading: false,
     isLoggedIn: !!localStorage.getItem('token'),
   },
-  reducers: {},
+  reducers: {
+    logout: (state) => {
+      state.userData = null;
+      state.token = null;
+      state.isLoggedIn = false;
+      state.error = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('userData');
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(loginUser.pending, (state) => {
@@ -34,6 +43,11 @@ const loginSlice = createSlice({
         state.userData = action.payload;
         state.token = action.payload.token;
         state.isLoggedIn = true;
+        // Persist userData for session restoration
+        localStorage.setItem('userData', JSON.stringify(action.payload));
+        if (action.payload.token) {
+          localStorage.setItem('token', action.payload.token);
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;

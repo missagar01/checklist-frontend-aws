@@ -41,8 +41,8 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
     const storedEmail = localStorage.getItem("email_id");
 
     if (!storedUsername) {
-      // Redirect to login if not authenticated
-      navigate("/login");
+      // Logic removed as App.jsx ProtectedRoute handles this.
+      // We just ensure we don't crash if we are on a protected route without data.
       return;
     }
 

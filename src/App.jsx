@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const storedToken = localStorage.getItem("token");
   const storedUserData = localStorage.getItem("userData");
 
-  if (!isLoggedIn && !token && !storedToken && !storedUserData) {
+  if (!isLoggedIn && !token && !storedToken && !storedUserData && !localStorage.getItem("user-name")) {
     return <Navigate to="/login" replace />
   }
 

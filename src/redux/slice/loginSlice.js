@@ -2,10 +2,35 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { LoginCredentialsApi } from '../api/loginApi';
 
+// Helper to sync individual keys for backward compatibility with layouts/API
+const syncLegacyKeys = (data) => {
+  if (!data) return;
+  const keys = {
+    'user-name': data.user_name || data.username || "",
+    'user_id': data.id || data.user_id || "",
+    'role': data.role || "",
+    'email_id': data.email_id || data.email || "",
+    'token': data.token || "",
+    'user_access': data.user_access || "",
+    'userAccess': data.user_access || "",
+    'user_access1': data.user_access1 || "",
+    'userAccess1': data.user_access1 || "",
+    'page_access': data.page_access || "",
+    'system_access': data.system_access || "",
+  };
+  Object.entries(keys).forEach(([key, value]) => {
+    if (value) localStorage.setItem(key, value);
+  });
+};
+
 const getInitialUserData = () => {
   try {
     const persisted = localStorage.getItem('userData');
-    if (persisted) return JSON.parse(persisted);
+    if (persisted) {
+      const data = JSON.parse(persisted);
+      syncLegacyKeys(data); // Ensure individual keys are back in sync
+      return data;
+    }
   } catch (e) {
     console.error("Error parsing userData from storage", e);
   }
@@ -14,13 +39,16 @@ const getInitialUserData = () => {
   const token = localStorage.getItem('token');
   const userName = localStorage.getItem('user-name');
   if (token && userName) {
-    return {
+    const data = {
       token,
       user_name: userName,
       role: localStorage.getItem('role'),
       user_id: localStorage.getItem('user_id'),
       system_access: localStorage.getItem('system_access'),
     };
+    // If we have legacy keys, we should probably set the main userData once
+    localStorage.setItem('userData', JSON.stringify(data));
+    return data;
   }
   return null;
 };
@@ -66,11 +94,9 @@ const loginSlice = createSlice({
         state.userData = action.payload;
         state.token = action.payload.token;
         state.isLoggedIn = true;
-        // Persist userData for session restoration
+        // Persist both centralized object and individual keys
         localStorage.setItem('userData', JSON.stringify(action.payload));
-        if (action.payload.token) {
-          localStorage.setItem('token', action.payload.token);
-        }
+        syncLegacyKeys(action.payload);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;

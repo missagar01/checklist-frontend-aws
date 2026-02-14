@@ -39,9 +39,9 @@ export default function StatisticsCards({
     const { checklist = 0, housekeeping = 0, maintenance = 0 } = data.breakdown;
     return (
       <div className="flex flex-wrap gap-2 mt-2">
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">CHK: {checklist}</span>
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">HK: {housekeeping}</span>
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">MNT: {maintenance}</span>
+        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">CHK: {checklist}</span>
+        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">HK: {housekeeping}</span>
+        <span className="text-[10px] font-bold text-orange-500 uppercase tracking-tighter">MNT: {maintenance}</span>
       </div>
     );
   };

@@ -14,7 +14,7 @@ const LoginPage = () => {
   const [isLoginLoading, setIsLoginLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    username: "",
+    username: localStorage.getItem('user-name') || "",
     password: "",
   })
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
@@ -28,21 +28,22 @@ const LoginPage = () => {
   }, [navigate])
 
   useEffect(() => {
-    if (isLoggedIn && userData) {
-      // These keys are still needed for other parts of the app that call localStorage.getItem directly
+    if (isLoggedIn && (userData || localStorage.getItem('token'))) {
+      // Ensure all legacy keys are populated for other parts of the app
       const dataToStore = {
-        'user-name': userData.user_name || userData.username || "",
-        'user_id': userData.id || userData.user_id || "",
-        'role': userData.role || "",
-        'email_id': userData.email_id || userData.email || "",
-        'user_access': userData.user_access || "",
-        'userAccess': userData.user_access || "",
-        'user_access1': userData.user_access1 || "",
-        'userAccess1': userData.user_access1 || "",
-        'page_access': userData.page_access || "",
-        'system_access': userData.system_access || "",
-        'verify_access': userData.verify_access || "",
-        'verify_access_dept': userData.verify_access_dept || "",
+        'user-name': userData?.user_name || userData?.username || localStorage.getItem('user-name') || "",
+        'user_id': userData?.id || userData?.user_id || localStorage.getItem('user_id') || "",
+        'role': userData?.role || localStorage.getItem('role') || "",
+        'email_id': userData?.email_id || userData?.email || localStorage.getItem('email_id') || "",
+        'token': userData?.token || localStorage.getItem('token') || "",
+        'user_access': userData?.user_access || localStorage.getItem('user_access') || "",
+        'userAccess': userData?.user_access || localStorage.getItem('userAccess') || "",
+        'user_access1': userData?.user_access1 || localStorage.getItem('user_access1') || "",
+        'userAccess1': userData?.user_access1 || localStorage.getItem('userAccess1') || "",
+        'page_access': userData?.page_access || localStorage.getItem('page_access') || "",
+        'system_access': userData?.system_access || localStorage.getItem('system_access') || "",
+        'verify_access': userData?.verify_access || localStorage.getItem('verify_access') || "",
+        'verify_access_dept': userData?.verify_access_dept || localStorage.getItem('verify_access_dept') || "",
       }
 
       Object.entries(dataToStore).forEach(([key, value]) => {

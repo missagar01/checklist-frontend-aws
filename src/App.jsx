@@ -52,7 +52,7 @@ function App() {
     >
       <Routes>
         {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={localStorage.getItem("token") ? <Navigate to="/dashboard/admin" replace /> : <Navigate to="/login" replace />} />
 
         {/* Login route */}
         <Route path="/login" element={<LoginPage />} />

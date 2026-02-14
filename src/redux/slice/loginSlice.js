@@ -2,6 +2,29 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { LoginCredentialsApi } from '../api/loginApi';
 
+const getInitialUserData = () => {
+  try {
+    const persisted = localStorage.getItem('userData');
+    if (persisted) return JSON.parse(persisted);
+  } catch (e) {
+    console.error("Error parsing userData from storage", e);
+  }
+
+  // Fallback for legacy keys if the main object is missing
+  const token = localStorage.getItem('token');
+  const userName = localStorage.getItem('user-name');
+  if (token && userName) {
+    return {
+      token,
+      user_name: userName,
+      role: localStorage.getItem('role'),
+      user_id: localStorage.getItem('user_id'),
+      system_access: localStorage.getItem('system_access'),
+    };
+  }
+  return null;
+};
+
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async (formData, thunkAPI) => {
@@ -16,7 +39,7 @@ export const loginUser = createAsyncThunk(
 const loginSlice = createSlice({
   name: 'userData',
   initialState: {
-    userData: JSON.parse(localStorage.getItem('userData')) || null,
+    userData: getInitialUserData(),
     token: localStorage.getItem('token') || null,
     error: null,
     loading: false,

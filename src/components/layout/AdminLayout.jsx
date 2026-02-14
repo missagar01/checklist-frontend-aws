@@ -17,7 +17,6 @@ import {
   UserRound,
   CalendarCheck,
   BookmarkCheck,
-  CrossIcon,
   X,
 } from "lucide-react";
 import { clearSessionStorage } from "../../utils/sessionStorage";
@@ -67,9 +66,6 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
     { id: "main", name: "All Task", link: "/dashboard/data/main" },
   ];
 
-  // Update the routes array based on user role and super admin status
- 
-
   const getAccessibleDepartments = () => {
     const userRole = localStorage.getItem("role") || "user";
     return dataCategories.filter(
@@ -82,17 +78,15 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
     const userRole = localStorage.getItem("role") || "user";
     const pageAccess = localStorage.getItem("page_access") || "";
 
-    // Remove any quotes from the string before splitting
     const cleanPageAccess = pageAccess.replace(/"/g, '').trim();
     const accessiblePages = cleanPageAccess
       ? cleanPageAccess
-          .split(',')
-          .map((page) => page.trim().toLowerCase())
-          .filter((page) => page !== '')
+        .split(',')
+        .map((page) => page.trim().toLowerCase())
+        .filter((page) => page !== '')
       : [];
     const accessiblePagesSet = new Set(accessiblePages);
 
-    // Define routes with pageKey properties
     const allRoutes = [
       {
         href: "/dashboard/admin",
@@ -144,7 +138,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
       },
       {
         href: "/dashboard/hrmanager",
-        label: "Task Verifition",
+        label: "Task Verification",
         icon: UserRound,
         active: location.pathname === "/dashboard/hrmanager",
         pageKey: "hrmanager",
@@ -170,384 +164,129 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
       },
     ];
 
-    // Filter routes based on user role and page_access
     const filteredRoutes = allRoutes.filter((route) => {
       const hasRolePermission = route.showFor.includes(userRole);
-      if (!hasRolePermission) {
-        return false;
-      }
-
-      if (!route.requiresPageAccess) {
-        return true;
-      }
-
-      const routeKeys = [route.pageKey, ...(route.pageKeyAliases || [])].map((key) =>
-        key.toLowerCase()
-      );
-
+      if (!hasRolePermission) return false;
+      if (!route.requiresPageAccess) return true;
+      const routeKeys = [route.pageKey, ...(route.pageKeyAliases || [])].map((key) => key.toLowerCase());
       return routeKeys.some((key) => accessiblePagesSet.has(key));
     });
 
     return filteredRoutes;
   };
 
-
-  // Check if the current path is a data category page
   const isDataPage = location.pathname.includes("/dashboard/data/");
 
-  // If it's a data page, expand the submenu by default
   useEffect(() => {
     if (isDataPage && !isDataSubmenuOpen) {
       setIsDataSubmenuOpen(true);
     }
   }, [isDataPage, isDataSubmenuOpen]);
 
-  // Get accessible routes and departments
   const accessibleRoutes = getAccessibleRoutes();
   const accessibleDepartments = getAccessibleDepartments();
 
   return (
-    <div
-      className={`flex h-screen overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50`}
-    >
+    <div className={`flex h-screen overflow-hidden bg-gray-50 font-sans`}>
       {/* Sidebar for desktop */}
-      <aside className="hidden w-64 flex-shrink-0 border-r border-blue-200 bg-white md:flex md:flex-col">
-        <div className="flex h-14 items-center border-b border-blue-200 px-4 bg-gradient-to-r from-blue-100 to-purple-100">
-          <Link
-            to="/dashboard/admin"
-            className="flex items-center gap-2 font-semibold text-blue-700"
-          >
-            <ClipboardList className="h-5 w-5 text-blue-600" />
-            <span>Combined Checklist </span>
+      <aside className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white md:flex md:flex-col shadow-sm z-20">
+        <div className="flex h-14 items-center border-b border-gray-100 px-6 bg-white">
+          <Link to="/dashboard/admin" className="flex items-center gap-2.5 font-bold text-[#c41e3a] tracking-tight">
+            <ClipboardList className="h-5 w-5" />
+            <span className="text-[15px]">Checklist & Delegation</span>
           </Link>
         </div>
-        <nav className="flex-1 overflow-y-auto p-2">
-          <ul className="space-y-1">
+        <nav className="flex-1 overflow-y-auto p-4">
+          <ul className="space-y-1.5">
             {accessibleRoutes.map((route) => (
               <li key={route.label}>
-                {route.submenu ? (
-                  <div>
-                    <button
-                      onClick={() => setIsDataSubmenuOpen(!isDataSubmenuOpen)}
-                      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${route.active
-                        ? "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50"
-                        }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <route.icon
-                          className={`h-4 w-4 ${route.active ? "text-blue-600" : ""
-                            }`}
-                        />
-                        {route.label}
-                      </div>
-                      {isDataSubmenuOpen ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </button>
-                    {isDataSubmenuOpen && (
-                      <ul className="mt-1 ml-6 space-y-1 border-l border-blue-100 pl-2">
-                        {accessibleDepartments.map((category) => (
-                          <li key={category.id}>
-                            <Link
-                              to={
-                                category.link ||
-                                `/dashboard/data/${category.id}`
-                              }
-                              className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${location.pathname ===
-                                (category.link ||
-                                  `/dashboard/data/${category.id}`)
-                                ? "bg-blue-50 text-blue-700 font-medium"
-                                : "text-gray-600 hover:bg-blue-50 hover:text-blue-700 "
-                                }`}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              {category.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ) : (
-                  <Link
-                    to={route.href}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${route.active
-                      ? "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700"
-                      : "text-gray-700 hover:bg-blue-50"
-                      }`}
-                  >
-                    <route.icon
-                      className={`h-4 w-4 ${route.active ? "text-blue-600" : ""
-                        }`}
-                    />
-                    {route.label}
-                  </Link>
-                )}
+                <Link
+                  to={route.href}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${route.active
+                    ? "bg-[#c41e3a] text-white shadow-md shadow-[#c41e3a]/20"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-[#c41e3a]"
+                    }`}
+                >
+                  <route.icon className={`h-4.5 w-4.5 ${route.active ? "text-white" : ""}`} />
+                  {route.label}
+                </Link>
               </li>
             ))}
           </ul>
         </nav>
-        <div className="border-t border-blue-200 p-4 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="border-t border-gray-100 p-4 bg-white/50 backdrop-blur-sm">
           <div className="flex flex-col">
-            {/* User info section */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full gradient-bg flex items-center justify-center">
-                  <span className="text-sm font-medium text-black">
-                    {username ? username.charAt(0).toUpperCase() : "U"}
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-[#c41e3a] flex items-center justify-center text-white font-bold shadow-sm">
+                  {username ? username.charAt(0).toUpperCase() : "U"}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-blue-700 truncate">
-                    {username || "User"}{" "}
-                    {userRole === "admin"
-                      ? isSuperAdmin
-                        ? "(Super Admin)"
-                        : "(Admin)"
-                      : ""}
+                  <p className="text-sm font-bold text-gray-800 truncate">
+                    {username || "User"}
                   </p>
-                  <p className="text-xs text-blue-600 truncate">
-                    {userEmail || "user@example.com"}
+                  <p className="text-[10px] text-gray-500 font-medium truncate uppercase tracking-wider">
+                    {userRole === "admin" ? (isSuperAdmin ? "Super Admin" : "Admin") : userRole}
                   </p>
                 </div>
               </div>
-
-              {/* Dark mode toggle (if available) */}
-              {toggleDarkMode && (
-                <button
-                  onClick={toggleDarkMode}
-                  className="text-blue-700 hover:text-blue-900 p-1 rounded-full hover:bg-blue-100"
-                >
-                  {darkMode ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                      />
-                    </svg>
-                  )}
-                  <span className="sr-only">
-                    {darkMode ? "Light mode" : "Dark mode"}
-                  </span>
-                </button>
-              )}
             </div>
-
-            {/* Logout button positioned below user info */}
-            <div className="mt-2 flex justify-center">
+            <div className="mt-4">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1 text-blue-700 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-100 text-sm"
+                className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-[#c41e3a] py-2 rounded-lg hover:bg-red-50 text-xs font-bold transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                <span>Sign Out</span>
               </button>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Mobile menu button and sidebar - similar structure as desktop but with mobile classes */}
+      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden absolute left-4 top-3 z-50 text-blue-700 p-2 rounded-md hover:bg-blue-100"
+        className="md:hidden absolute left-4 top-3.5 z-50 text-gray-700 p-2 rounded-lg bg-white/80 backdrop-blur-md shadow-sm border border-gray-100"
       >
         <Menu className="h-5 w-5" />
-        <span className="sr-only">Toggle menu</span>
       </button>
 
-      {/* Mobile sidebar */}
+      {/* Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div
-            className="fixed inset-0 bg-black/20"
-            onClick={() => setIsMobileMenuOpen(false)}
-          ></div>
-          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
-            <div className="flex h-14 items-center border-b border-blue-200 px-4 bg-gradient-to-r from-blue-100 to-purple-100">
-              <Link
-                to="/dashboard/admin"
-                className="flex items-center gap-2 font-semibold text-blue-700"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <ClipboardList className="h-5 w-5 text-blue-600" />
-                <span>Combined Checklist</span>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl flex flex-col">
+            <div className="flex h-14 items-center border-b border-gray-100 px-6">
+              <Link to="/dashboard/admin" className="flex items-center gap-2.5 font-bold text-[#c41e3a]" onClick={() => setIsMobileMenuOpen(false)}>
+                <ClipboardList className="h-5 w-5" />
+                <span>Checklist & Delegation</span>
               </Link>
             </div>
-            <nav className="flex-1 overflow-y-auto p-2 bg-white">
-              <ul className="space-y-1">
+            <nav className="flex-1 overflow-y-auto p-4">
+              <ul className="space-y-1.5">
                 {accessibleRoutes.map((route) => (
                   <li key={route.label}>
-                    {route.submenu ? (
-                      <div>
-                        <button
-                          onClick={() =>
-                            setIsDataSubmenuOpen(!isDataSubmenuOpen)
-                          }
-                          className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${route.active
-                            ? "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700"
-                            : "text-gray-700 hover:bg-blue-50"
-                            }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <route.icon
-                              className={`h-4 w-4 ${route.active ? "text-blue-600" : ""
-                                }`}
-                            />
-                            {route.label}
-                          </div>
-                          {isDataSubmenuOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </button>
-                        {isDataSubmenuOpen && (
-                          <ul className="mt-1 ml-6 space-y-1 border-l border-blue-100 pl-2">
-                            {accessibleDepartments.map((category) => (
-                              <li key={category.id}>
-                                <Link
-                                  to={
-                                    category.link ||
-                                    `/dashboard/data/${category.id}`
-                                  }
-                                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${location.pathname ===
-                                    (category.link ||
-                                      `/dashboard/data/${category.id}`)
-                                    ? "bg-blue-50 text-blue-700 font-medium"
-                                    : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
-                                    }`}
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                  {category.name}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ) : (
-                      <Link
-                        to={route.href}
-                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${route.active
-                          ? "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700"
-                          : "text-gray-700 hover:bg-blue-50"
-                          }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <route.icon
-                          className={`h-4 w-4 ${route.active ? "text-blue-600" : ""
-                            }`}
-                        />
-                        {route.label}
-                      </Link>
-                    )}
+                    <Link
+                      to={route.href}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${route.active
+                        ? "bg-[#c41e3a] text-white shadow-lg shadow-[#c41e3a]/20"
+                        : "text-gray-600"
+                        }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <route.icon className="h-5 w-5" />
+                      {route.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </nav>
-            <div className="border-t border-blue-200 p-4 bg-gradient-to-r from-blue-50 to-purple-50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full gradient-bg flex items-center justify-center">
-                    <span className="text-sm font-medium text-black">
-                      {username ? username.charAt(0).toUpperCase() : "U"}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-blue-700">
-                      {username || "User"}{" "}
-                      {userRole === "admin"
-                        ? isSuperAdmin
-                          ? "(Super Admin)"
-                          : "(Admin)"
-                        : ""}
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      {userEmail || "user@example.com"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {toggleDarkMode && (
-                    <button
-                      onClick={toggleDarkMode}
-                      className="text-blue-700 hover:text-blue-900 p-1 rounded-full hover:bg-blue-100"
-                    >
-                      {darkMode ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M20.354 15.354A9 9 0 018.646 3.646A9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                          />
-                        </svg>
-                      )}
-                      <span className="sr-only">
-                        {darkMode ? "Light mode" : "Dark mode"}
-                      </span>
-                    </button>
-                  )}
-
-                </div>
-              </div>
-              <div className="mt-2 flex justify-center">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-1 text-blue-700 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-100 text-sm"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
-              </div>
+            <div className="border-t border-gray-100 p-6">
+              <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-white bg-[#c41e3a] py-3 rounded-xl text-sm font-bold shadow-lg">
+                <LogOut className="h-5 w-5" />
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
         </div>
@@ -555,150 +294,38 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-blue-200 bg-white px-4 md:px-6">
+        <header className="flex h-14 items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md px-6 md:px-10 z-10">
           <div className="flex md:hidden w-8"></div>
-          <h1 className="text-lg font-semibold text-blue-700">
-            Combined Checklist
+          <h1 className="text-lg font-bold text-gray-800 tracking-tight hidden sm:block">
+            Checklist and Delegation
           </h1>
-          <div className="flex items-center">
-            <img
-              src="/logo.jpg"
-              alt="Company Logo"
-              className="h-8 w-auto md:h-10 lg:h-12 transition-all duration-300"
-            />
+          <div className="flex items-center bg-white p-1.5 rounded-lg shadow-sm">
+            <img src="/logo.png" alt="Logo" className="h-6 w-auto md:h-8" />
           </div>
         </header>
-        <main
-          className="flex-1 overflow-y-auto p-2 md:p-2 bg-gradient-to-br from-blue-50 to-purple-50"
-          onScroll={onScroll}
-        >
-
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#f8f9fa]" onScroll={onScroll}>
           {children}
-
-          <div className="fixed md:left-64 left-0 right-0 bottom-0 py-1 px-4 gradient-bg text-white text-center text-sm shadow-lg z-10 backdrop-blur-sm">
-            <div className="sm:hidden flex justify-between items-center mb-[-10px]">
-              <div className="p-2 rounded-full hover:bg-white/20 transition-all duration-300 cursor-pointer transform hover:scale-110">
-                <Link
-                  to={"/dashboard/admin"}
-                  className={` ${location.pathname === `/dashboard/admin`
-                    ? "bg-white/20"
-                    : ""
-                    }`}
-                // onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Home size={29} className="drop-shadow-md" />
-                </Link>
-              </div>
-              <div className="p-2 rounded-full hover:bg-white/20 transition-all duration-300 cursor-pointer transform hover:scale-110">
-                <Link
-                  to={"/dashboard/all-task"}
-                  className={` ${location.pathname === `/dashboard/all-task`
-                    ? "bg-white/20"
-                    : ""
-                    }`}
-                >
-                  <CalendarCheck size={29} className="drop-shadow-md" />
-                </Link>
-              </div>
-              <div className="p-3 rounded-full bg-white text-purple-600 hover:bg-purple-100 transition-all duration-300 cursor-pointer transform hover:scale-110 shadow-lg -mt-6">
-                <Link
-                  to={"/dashboard/assign-task"}
-                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${location.pathname === `/dashboard/assign-task`
-                    ? "bg-white/20"
-                    : ""
-                    }`}
-                >
-                  <CirclePlus size={29} className="drop-shadow-md" />
-                </Link>
-              </div>
-              <div className="p-2 rounded-full hover:bg-white/20 transition-all duration-300 cursor-pointer transform hover:scale-110">
-                <Link
-                  to={"/dashboard/delegation"}
-                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${location.pathname === `/dashboard/delegation`
-                    ? "bg-white/20"
-                    : ""
-                    }`}
-                >
-                  <BookmarkCheck size={29} className="drop-shadow-md" />
-                </Link>
-              </div>
-              <div
-                className="p-2 rounded-full hover:bg-white/20 transition-all duration-300 cursor-pointer transform hover:scale-110"
-                onClick={() => setIsUserPopupOpen(true)}
-              >
-                <UserRound size={29} className="drop-shadow-md" />
-              </div>
-            </div>
-            <a
-              // href="https://www.botivate.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="sm:hidden sm:hover:underline flex items-center justify-center gap-1 text-gray-900 transition-colors duration-300 mb-[-5px]"
-            >
-              Powered by-
-              <span className="font-bold drop-shadow-md text-gray-900">
-                Botivate
-              </span>
-            </a>
-
-            <a
-              href="https://www.botivate.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden  hover:underline sm:flex items-center justify-center gap-1 text-white/90 hover:text-white transition-colors duration-300 mb-[-5px]"
-            >
-              Powered by-
-              <span className="font-bold text-white drop-shadow-md">
-                Botivate
-              </span>
-            </a>
-          </div>
         </main>
 
         {/* User Popup */}
         {isUserPopupOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-lg p-6 w-80 shadow-xl">
-              {/* <div onClick={() => setIsUserPopupOpen(false)}  className="flex justify-end"><X size={25}/></div> */}
-
-              <div className="flex flex-col items-center justify-between">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-20 w-20 rounded-full gradient-bg flex items-center justify-center">
-                    <span className="text-3xl font-medium text-white">
-                      {username ? username.charAt(0).toUpperCase() : "U"}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-blue-700">
-                      {username || "User"}{" "}
-                      {userRole === "admin"
-                        ? isSuperAdmin
-                          ? "(Super Admin)"
-                          : "(Admin)"
-                        : ""}
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      {userEmail || "user@example.com"}
-                    </p>
-                  </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl p-8 w-80 shadow-2xl transform transition-all animate-fade-in">
+              <div className="flex flex-col items-center">
+                <div className="h-20 w-20 rounded-full bg-[#c41e3a] shadow-xl flex items-center justify-center mb-4">
+                  <span className="text-3xl font-black text-white">
+                    {username ? username.charAt(0).toUpperCase() : "U"}
+                  </span>
                 </div>
-                <div className="flex items-center  justify-around w-full gap-2 mt-4">
-                  <button
-                    onClick={() => setIsUserPopupOpen(false)}
-                    className="outline p-1 rounded-md px-2"
-                  >
-                    <span className="flex justify-center items-center">
-                      Cancel
-                    </span>
-                  </button>
+                <p className="text-lg font-bold text-gray-800">{username}</p>
+                <p className="text-xs text-gray-500 font-medium mb-6 uppercase tracking-widest">{userRole}</p>
 
-                  <button
-                    onClick={handleLogout}
-                    className="bg-blue-700 text-white hover:bg-blue-900 p-1 rounded-md px-2"
-                  >
-                    <span className="flex justify-center items-center">
-                      Log out <LogOut className="h-4 w-4" />
-                    </span>
+                <div className="flex gap-3 w-full">
+                  <button onClick={() => setIsUserPopupOpen(false)} className="flex-1 border border-gray-200 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleLogout} className="flex-1 bg-[#c41e3a] py-2.5 rounded-xl text-sm font-bold text-white hover:bg-[#a61931] shadow-lg shadow-[#c41e3a]/20 transition-all">
+                    Logout
                   </button>
                 </div>
               </div>
@@ -706,6 +333,16 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes fade-in {
+          0% { opacity: 0; transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </div>
   );
 }

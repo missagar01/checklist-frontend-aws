@@ -1,66 +1,23 @@
-import axios from "../../components/api/axios";
-
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
-
-// Create axios instance with base URL
-const housekeepingApi = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json"
-  }
-});
-
-// Add authorization header and user access headers (for non-JWT authentication)
-housekeepingApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // Add user_access1, user_access, and role from localStorage (for non-JWT auth)
-    // These headers are used by backend to filter data by user's departments
-    // IMPORTANT: Encode header values to handle non-ASCII characters (Hindi/Unicode)
-    const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || "";
-    const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
-    const role = localStorage.getItem("role") || "";
-
-    if (userAccess1) {
-      // URL encode to handle non-ASCII characters (Hindi/Unicode) in department names
-      config.headers["x-user-access1"] = encodeURIComponent(userAccess1);
-    }
-    if (userAccess) {
-      // URL encode to handle non-ASCII characters (Hindi/Unicode) in department names
-      config.headers["x-user-access"] = encodeURIComponent(userAccess);
-    }
-    if (role) {
-      config.headers["x-user-role"] = role; // Role is usually ASCII, but encode for safety
-    }
-
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import axiosInstance from "./axiosInstance";
 
 // API functions for housekeeping
+// All routes are relative to VITE_API_BASE_URL defined in axiosInstance
 
 // Assign Task - Generate task
 export const assignHousekeepingTaskAPI = (taskData) => {
-  return housekeepingApi.post("/housekeeping-dashboard/assigntask/generate", taskData, {
+  return axiosInstance.post("/housekeeping-dashboard/assigntask/generate", taskData, {
     timeout: 0, // No timeout - wait indefinitely
   });
 };
 
 // Get Locations
 export const getHousekeepingLocationsAPI = () => {
-  return housekeepingApi.get("/housekeeping-dashboard/locations");
+  return axiosInstance.get("/housekeeping-dashboard/locations");
 };
 
 // Get User Departments - using settings/users endpoint which returns users with departments
 export const getHousekeepingUserDepartmentsAPI = () => {
-  return housekeepingApi.get("/settings/users");
+  return axiosInstance.get("/settings/users");
 };
 
 // Create Location
@@ -68,19 +25,19 @@ export const createHousekeepingLocationAPI = (payload) => {
   if (!payload) {
     throw new Error('Location payload required');
   }
-  return housekeepingApi.post("/housekeeping-dashboard/locations", payload);
+  return axiosInstance.post("/housekeeping-dashboard/locations", payload);
 };
 
 // Get Pending Tasks
 export const getHousekeepingPendingTasksAPI = (page = 1, filters = {}) => {
   const params = { page, limit: filters.limit || 100, ...filters };
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/pending", { params });
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/pending", { params });
 };
 
 // Get History Tasks
 export const getHousekeepingHistoryTasksAPI = (page = 1, filters = {}) => {
   const params = { page, limit: filters.limit || 100, ...filters };
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/history", { params });
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/history", { params });
 };
 
 // Confirm Task (single)
@@ -97,7 +54,7 @@ export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null
     formData.append("image", imageFile);
   }
 
-  return housekeepingApi.post(
+  return axiosInstance.post(
     `/housekeeping-dashboard/assigntask/generate/${taskId}/confirm`,
     formData,
     {
@@ -126,7 +83,7 @@ export const submitHousekeepingTasksAPI = async (tasks = []) => {
       formData.append("image", task.image_url);
     }
 
-    return housekeepingApi.patch(
+    return axiosInstance.patch(
       `/housekeeping-dashboard/assigntask/generate/${task.task_id}`,
       formData,
       {
@@ -158,7 +115,7 @@ export const updateHousekeepingTaskAPI = (taskId, updateData) => {
     }
   });
 
-  return housekeepingApi.patch(
+  return axiosInstance.patch(
     `/housekeeping-dashboard/assigntask/generate/${taskId}`,
     formData,
     {
@@ -169,30 +126,27 @@ export const updateHousekeepingTaskAPI = (taskId, updateData) => {
 
 // Get Given By options (from settings)
 export const getHousekeepingGivenByAPI = () => {
-  return housekeepingApi.get("/settings/given-by");
+  return axiosInstance.get("/settings/given-by");
 };
 
 // Dashboard APIs
 export const getHousekeepingDashboardSummaryAPI = (options = {}) => {
-  const today = new Date().toISOString().split("T")[0];
-  return housekeepingApi.get("/housekeeping-dashboard/dashboard/summary", {
+  return axiosInstance.get("/housekeeping-dashboard/dashboard/summary", {
     params: {
-      start_date: today,
-      end_date: today,
       ...options
     }
   });
 };
 
 export const getHousekeepingDepartmentsAPI = () => {
-  return housekeepingApi.get("/housekeeping-dashboard/dashboard/departments");
+  return axiosInstance.get("/housekeeping-dashboard/dashboard/departments");
 };
 
 // Task APIs for dashboard
 const todayISO = () => new Date().toISOString().split("T")[0];
 
 export const getHousekeepingTodayTasksAPI = (options = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/today", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/today", {
     params: {
       limit: 100,
       page: 1,
@@ -202,7 +156,7 @@ export const getHousekeepingTodayTasksAPI = (options = {}) => {
 };
 
 export const getHousekeepingTomorrowTasksAPI = (options = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/tomorrow", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/tomorrow", {
     params: {
       limit: 100,
       page: 1,
@@ -212,9 +166,9 @@ export const getHousekeepingTomorrowTasksAPI = (options = {}) => {
 };
 
 export const getHousekeepingOverdueTasksAPI = (options = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/overdue", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/overdue", {
     params: {
-      end_date: todayISO(),
+      endDate: todayISO(),
       limit: 100,
       page: 1,
       ...options,
@@ -223,25 +177,25 @@ export const getHousekeepingOverdueTasksAPI = (options = {}) => {
 };
 
 export const getHousekeepingTodayCountAPI = (filters = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/today/count", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/today/count", {
     params: filters
   });
 };
 
 export const getHousekeepingTomorrowCountAPI = (filters = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/tomorrow/count", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/tomorrow/count", {
     params: filters
   });
 };
 
 export const getHousekeepingOverdueCountAPI = (filters = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/overdue/count", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/overdue/count", {
     params: filters
   });
 };
 
 export const getHousekeepingNotDoneCountAPI = (filters = {}) => {
-  return housekeepingApi.get("/housekeeping-dashboard/assigntask/generate/not-done/count", {
+  return axiosInstance.get("/housekeeping-dashboard/assigntask/generate/not-done/count", {
     params: filters
   });
 };
@@ -269,15 +223,13 @@ export const getHousekeepingTasksWithFiltersAPI = (taskType, page = 1, limit = 5
   else if (taskType === "upcoming") endpoint = "/housekeeping-dashboard/assigntask/generate/tomorrow";
   else if (taskType === "notdone") endpoint = "/housekeeping-dashboard/assigntask/generate/not-done";
 
-  return housekeepingApi.get(endpoint, {
+  return axiosInstance.get(endpoint, {
     params: {
       page,
       limit,
-      start_date: filters.start_date || todayISO(),
       ...filters,
     }
   });
 };
 
-export default housekeepingApi;
-
+export default axiosInstance;

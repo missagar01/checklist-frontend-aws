@@ -36,6 +36,7 @@ const store = configureStore({
                     'housekeeping.pendingTasks',
                     'housekeeping.historyTasks'
                 ],
+                warnAfter: 128,
             },
         }),
 });

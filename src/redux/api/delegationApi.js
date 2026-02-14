@@ -1,45 +1,7 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-// const API = "http://localhost:5050/api";
-const API = `${import.meta.env.VITE_API_BASE_URL}`;
 
-const api = axios.create({
-  baseURL: API,
-  timeout: 30000, // 30 seconds timeout
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add request interceptor for better logging
-api.interceptors.request.use(
-  (config) => {
-    console.log(`🔄 Making ${config.method?.toUpperCase()} request to: ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error('❌ Request error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor for better error handling
-api.interceptors.response.use(
-  (response) => {
-    console.log(`✅ Response received from: ${response.config.url}`);
-    return response;
-  },
-  (error) => {
-    console.error('❌ Response error:', {
-      message: error.message,
-      code: error.code,
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data
-    });
-    return Promise.reject(error);
-  }
-);
+const API = ""; // axiosInstance baseURL is used
 
 // SINGLE — send all tasks in one go
 export const insertDelegationDoneAndUpdate = createAsyncThunk(
@@ -51,7 +13,7 @@ export const insertDelegationDoneAndUpdate = createAsyncThunk(
         data: selectedDataArray
       });
 
-      const { data } = await api.post(`/delegation/submit`, {
+      const { data } = await axiosInstance.post(`/delegation/submit`, {
         selectedData: selectedDataArray,
       });
 
@@ -83,7 +45,7 @@ export const fetchDelegationDataSortByDate = async () => {
   const username = localStorage.getItem("user-name");
   const userAccess = localStorage.getItem("user_access");
 
-  const { data } = await axios.get(`${API}/delegation`, {
+  const { data } = await axiosInstance.get(`/delegation`, {
     params: { role, username, user_access: userAccess },
   });
 
@@ -96,43 +58,9 @@ export const fetchDelegation_DoneDataSortByDate = async () => {
   const username = localStorage.getItem("user-name");
   const userAccess = localStorage.getItem("user_access");
 
-  const { data } = await axios.get(`${API}/delegation-done`, {
+  const { data } = await axiosInstance.get(`/delegation-done`, {
     params: { role, username, user_access: userAccess },
   });
 
   return data;
 };
-
-// SUBMIT
-// export const insertDelegationDoneAndUpdate = async ({
-//   selectedDataArray,
-//   uploadedImages,
-// }) => {
-//   const formData = new FormData();
-//   formData.append("selectedData", JSON.stringify(selectedDataArray));
-
-//   Object.entries(uploadedImages).forEach(([taskId, file]) => {
-//     formData.append(`image_${taskId}`, file);
-//   });
-
-//   const { data } = await axios.post(`${API}/delegation/submit`, formData);
-//   return data;
-// };
-
-
-
-// SINGLE — send all tasks in one go
-// export const insertDelegationDoneAndUpdate = createAsyncThunk(
-//   "delegation/submit",
-//   async ({ selectedDataArray }, { rejectWithValue }) => {
-//     try {
-//       const { data } = await axios.post(`${API}/delegation/submit`, {
-//         selectedData: selectedDataArray,
-//       });
-
-//       return data;
-//     } catch (err) {
-//       return rejectWithValue(err.response?.data || err.message);
-//     }
-//   }
-// );

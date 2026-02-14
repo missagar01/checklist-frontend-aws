@@ -5,7 +5,7 @@ import AdminLayout from "../../components/layout/AdminLayout.jsx"
 import StatisticsCards from "./housekepping-dashboard-content/StaticsCard.jsx"
 import TaskNavigationTabs from "./housekepping-dashboard-content/TaskNavigationTab.jsx"
 
-export default function AdminDashboard() {
+export default function HousekeepingDashboard({ dateRange }) {
   const [dashboardType] = useState("checklist")
   const [taskView, setTaskView] = useState("recent")
   const [searchQuery] = useState("")
@@ -13,6 +13,13 @@ export default function AdminDashboard() {
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [userRole, setUserRole] = useState("")
   const [, setFilterStaff] = useState("all")
+  const [stats, setStats] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    overdue: 0,
+    notdone: 0,
+  })
 
   // Load user info - for user role, backend handles filtering via JWT token
   useEffect(() => {
@@ -73,9 +80,13 @@ export default function AdminDashboard() {
     // <AdminLayout>
       <div className="space-y-6">
         <StatisticsCards
-          dashboardType={dashboardType}
-          selectedDepartment={departmentFilter}
-          onDepartmentChange={setDepartmentFilter}
+          totalTask={stats.total}
+          completeTask={stats.completed}
+          pendingTask={stats.pending}
+          overdueTask={stats.overdue}
+          notDoneTask={stats.notdone}
+          dashboardType="housekeeping"
+          dateRange={dateRange}
         />
 
         <TaskNavigationTabs
@@ -87,6 +98,7 @@ export default function AdminDashboard() {
           searchQuery={searchQuery}
           setFilterStaff={setFilterStaff}
           getFrequencyColor={getFrequencyColor}
+          dateRange={dateRange}
         />
       </div>
     // </AdminLayout>

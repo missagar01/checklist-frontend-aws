@@ -9,7 +9,7 @@ import {
   getMaintenanceStaffByDepartmentApi,
 } from "../../redux/api/maintenanceDashboardApi.js"
 
-export default function MaintenanceDashboardNew() {
+export default function MaintenanceDashboardNew({ dateRange }) {
   const [taskView, setTaskView] = useState("recent")
   const [searchQuery, setSearchQuery] = useState("")
   const [dashboardStaffFilter, setDashboardStaffFilter] = useState("all")
@@ -43,7 +43,9 @@ export default function MaintenanceDashboardNew() {
       try {
         const stats = await getMaintenanceDashboardStatsApi(
           dashboardStaffFilter,
-          departmentFilter
+          departmentFilter,
+          dateRange?.startDate,
+          dateRange?.endDate
         )
         setDisplayStats({
           totalTasks: stats.totalTasks,
@@ -59,7 +61,7 @@ export default function MaintenanceDashboardNew() {
     }
 
     fetchStats()
-  }, [dashboardStaffFilter, departmentFilter])
+  }, [dashboardStaffFilter, departmentFilter, dateRange])
 
   // Fetch available departments from maintenance_task_assign
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function MaintenanceDashboardNew() {
             <h1 className="text-2xl sm:text-3xl font-bold text-purple-600">Maintenance</h1>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">Maintenance Dashboard Overview</p>
           </div>
-          
+
           {/* Filters - Responsive */}
           <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
             {userRole === "admin" && (
@@ -126,7 +128,7 @@ export default function MaintenanceDashboardNew() {
                     </option>
                   ))}
                 </select>
-                
+
                 <select
                   value={dashboardStaffFilter}
                   onChange={(e) => setDashboardStaffFilter(e.target.value)}
@@ -152,7 +154,7 @@ export default function MaintenanceDashboardNew() {
           overdueTask={displayStats.overdueTasks}
           notDoneTask={notDoneTask}
           dashboardType="maintenance"
-          dateRange={null}
+          dateRange={dateRange}
         />
 
         {/* Task Navigation Tabs */}
@@ -164,6 +166,7 @@ export default function MaintenanceDashboardNew() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           getFrequencyColor={getFrequencyColor}
+          dateRange={dateRange}
         />
       </div>
     </div>

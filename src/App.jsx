@@ -19,13 +19,16 @@ import UnifiedTaskPage from "./pages/admin/UnifiedTaskPage"
 import HrManager from "./pages/admin/HrManager"
 
 
+import { useSelector } from "react-redux"
+
 // Auth wrapper component to protect routes
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const username = localStorage.getItem("user-name")
+  const { isLoggedIn, token } = useSelector((state) => state.login);
   const userRole = localStorage.getItem("role")
 
-  // If no user is logged in, redirect to login
-  if (!username) {
+  // If no token exists (check Redux state and localStorage)
+  const storedToken = localStorage.getItem("token");
+  if (!isLoggedIn && !token && !storedToken) {
     return <Navigate to="/login" replace />
   }
 

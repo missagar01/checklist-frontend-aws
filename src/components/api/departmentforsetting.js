@@ -1,25 +1,24 @@
-import axios from "axios";
+import axiosInstance from "../../redux/api/axiosInstance";
 
-// const API = "http://localhost:5050/api/departments-for-setting";
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-const API = `${API_BASE}/departments-for-setting`;
+// Routes are relative to baseURL in axiosInstance
+const API = "/departments-for-setting";
 
 export const fetchDepartments = async () => {
-  const res = await axios.get(API);
-  return res.data.data;
+  const res = await axiosInstance.get(API);
+  return res.data;
 };
 
 export const addDepartment = async (data) => {
-  const res = await axios.post(API, data);
-  return res.data.data;
+  const res = await axiosInstance.post(API, data);
+  return res.data;
 };
 
 export const updateDepartment = async (id, data) => {
-  const res = await axios.put(`${API}/${id}`, data);
-  return res.data.data;
+  const res = await axiosInstance.put(`${API}/${id}`, data);
+  return res.data;
 };
 
 export const removeDepartment = async (id) => {
-  const res = await axios.delete(`${API}/${id}`);
-  return res.data.data;
+  const res = await axiosInstance.delete(`${API}/${id}`);
+  return res.data;
 };

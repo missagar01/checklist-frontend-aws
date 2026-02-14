@@ -24,26 +24,26 @@ export default function StaffTasksTable({
     const today = new Date()
     const currentMonth = today.getMonth() // 0-11
     const currentYear = today.getFullYear()
-    
+
     // Add current month as default
     const currentMonthYear = `${today.toLocaleString('default', { month: 'long' })} ${currentYear}`
-    
+
     // Generate options for last 12 months (including current)
     for (let i = 11; i >= 0; i--) {
       const date = new Date(currentYear, currentMonth - i, 1)
       const monthName = date.toLocaleString('default', { month: 'long' })
       const year = date.getFullYear()
       const monthYear = `${monthName} ${year}`
-      
+
       options.push({
         value: `${year}-${(date.getMonth() + 1).toString().padStart(2, '0')}`,
         label: monthYear,
         isCurrent: i === 0 // Current month
       })
     }
-    
+
     setMonthYearOptions(options)
-    
+
     // Set default selection to current month
     if (options.length > 0 && !selectedMonthYear) {
       const currentOption = options.find(opt => opt.isCurrent)
@@ -66,25 +66,26 @@ export default function StaffTasksTable({
   }, [dashboardType, dashboardStaffFilter, departmentFilter, selectedMonthYear])
 
   // Function to load staff data from server
-const loadStaffData = useCallback(async (page = 1, append = false) => {
-  if (isLoadingMore) return;
+  const loadStaffData = useCallback(async (page = 1, append = false) => {
+    if (isLoadingMore) return;
 
-  try {
-    setIsLoadingMore(true)
+    try {
+      setIsLoadingMore(true)
 
-    // Fetch staff data with their task summaries
-    const data = await fetchStaffTasksDataApi(
-      dashboardType,
-      dashboardStaffFilter,
-      page,
-      itemsPerPage,
-      selectedMonthYear // Pass monthYear parameter
-    )
+      // Fetch staff data with their task summaries
+      const data = await fetchStaffTasksDataApi(
+        dashboardType,
+        dashboardStaffFilter,
+        page,
+        itemsPerPage,
+        selectedMonthYear, // Pass monthYear parameter
+        departmentFilter // Pass departmentFilter
+      )
 
       // Get total counts for both staff with tasks and total users
       if (page === 1) {
         const [staffCount, usersCount] = await Promise.all([
-          getStaffTasksCountApi(dashboardType, dashboardStaffFilter),
+          getStaffTasksCountApi(dashboardType, dashboardStaffFilter, departmentFilter),
           getTotalUsersCountApi()
         ]);
         setTotalStaffCount(staffCount)
@@ -168,7 +169,7 @@ const loadStaffData = useCallback(async (page = 1, append = false) => {
   const renderOnTimeScore = (score) => {
     let bgColor = "bg-red-100"
     let textColor = "text-red-800"
-    
+
     if (score >= 80) {
       bgColor = "bg-green-100"
       textColor = "text-green-800"
@@ -176,7 +177,7 @@ const loadStaffData = useCallback(async (page = 1, append = false) => {
       bgColor = "bg-yellow-100"
       textColor = "text-yellow-800"
     }
-    
+
     return (
       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor} ${textColor}`}>
         {score}%
@@ -208,7 +209,7 @@ const loadStaffData = useCallback(async (page = 1, append = false) => {
               ))}
             </select>
           </div>
-          
+
           {totalStaffCount > 0 && (
             <div className="text-sm text-gray-600">
               Total users: {totalUsersCount} | Showing: {staffMembers.length}
@@ -248,57 +249,47 @@ const loadStaffData = useCallback(async (page = 1, append = false) => {
         </div>
       ) : (
         <div
-          className="staff-table-container rounded-md border border-gray-200 overflow-auto"
+          className="staff-table-container rounded-lg border border-gray-100 overflow-auto shadow-sm"
           style={{ maxHeight: "400px" }}
         >
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 sticky top-0 z-10">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-[#c41e3a] sticky top-0 z-10">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Seq No.
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Tasks
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Completed
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pending
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Done on Time
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  On Time Score
-                </th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Name</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Dept</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Total</th>
+                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Done</th>
+                {/* <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Pending</th> */}
+                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">On Time</th>
+                <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-wider">Score</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-50">
               {staffMembers.map((staff, index) => (
-                <tr key={`${staff.name}-${index}`} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={`${staff.name}-${index}`} className="hover:bg-red-50/10 transition-colors">
+                  <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{index + 1}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                      <div className="text-xs text-gray-500">{staff.email}</div>
+                      <div className="text-[13px] font-bold text-gray-800">{staff.name}</div>
+                      <div className="text-[11px] text-gray-400 font-medium">{staff.email}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.totalTasks}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.completedTasks}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.pendingTasks}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="text-[11px] font-medium text-gray-500">{staff.department || "N/A"}</div>
+                  </td>
+                  <td className="px-3 py-2 text-[13px] font-bold text-blue-600">{staff.totalTasks}</td>
+                  <td className="px-3 py-2 text-[13px] font-bold text-emerald-600">{staff.completedTasks}</td>
+                  {/* <td className="px-3 py-2 text-[13px] font-bold text-amber-600">{staff.pendingTasks}</td> */}
+                  <td className="px-3 py-2 text-[13px] font-bold text-gray-600">
                     {staff.doneOnTime || 0}
                     {staff.completedTasks > 0 && (
-                      <span className="text-xs text-gray-500 ml-1">
+                      <span className="text-[10px] text-gray-400 ml-1 font-medium">
                         ({Math.round((staff.doneOnTime / staff.completedTasks) * 100)}%)
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-2 text-right">
                     {renderOnTimeScore(staff.onTimeScore || 0)}
                   </td>
                 </tr>

@@ -10,7 +10,6 @@ export default function StatisticsCards({
   notDoneTasks = 0,
   dateRange = null
 }) {
-  // Helper to safely get count from number or object
   const getCount = (val) => {
     if (val && typeof val === 'object') return Number(val.count || 0);
     return typeof val === 'number' ? val : 0;
@@ -27,323 +26,111 @@ export default function StatisticsCards({
   const pendingRate = tCount > 0 ? (pCount / tCount) * 100 : 0;
   const upcomingTasksRate = tCount > 0 ? (uCount / tCount) * 100 : 0;
   const overdueRate = tCount > 0 ? (oCount / tCount) * 100 : 0;
-
-
-  // Calculate stroke dash arrays for each segment
-  const circumference = 251.3; // 2 * π * 40
-  const completedDash = completionRate * circumference / 100;
-  const pendingDash = pendingRate * circumference / 100;
-  const upcomingTasksDash = upcomingTasksRate * circumference / 100;
-  const overdueDash = overdueRate * circumference / 100;
-
   const notDoneRate = tCount > 0 ? (nCount / tCount) * 100 : 0;
 
+  const circumference = 251.3;
+  const completedDash = completionRate * circumference / 100;
+  const pendingDash = pendingRate * circumference / 100;
+  const overdueDash = overdueRate * circumference / 100;
   const notDoneDash = notDoneRate * circumference / 100;
 
   const renderBreakdown = (data) => {
     if (!data || typeof data !== 'object' || !data.breakdown) return null;
     const { checklist = 0, housekeeping = 0, maintenance = 0 } = data.breakdown;
     return (
-      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] sm:text-xs font-semibold tracking-wide">
-        <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">CHK: {checklist}</span>
-        <span className="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">HK: {housekeeping}</span>
-        <span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">MNT: {maintenance}</span>
+      <div className="flex flex-wrap gap-2 mt-2">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">CHK: {checklist}</span>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">HK: {housekeeping}</span>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">MNT: {maintenance}</span>
       </div>
     );
   };
 
-
+  const StatCard = ({ title, count, icon: Icon, color, textColor, data }) => (
+    <div className={`bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all hover:shadow-md border-l-4 ${color}`}>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
+        <Icon className="h-4 w-4 text-gray-400" />
+      </div>
+      <div className={`text-2xl font-bold ${textColor}`}>{count}</div>
+      {renderBreakdown(data)}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-      {/* Left side - Statistics Cards */}
-      <div className="lg:w-1/2">
-        <div className="grid grid-cols-3 sm:grid-cols-2 gap-3 sm:gap-4 justify-center">
-
-          {/* Total Tasks - Updated description for date range */}
-          <div className="rounded-lg border border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-all bg-white">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-tr-lg p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-medium text-blue-700">Total Tasks</h3>
-              <ListTodo className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-            </div>
-            <div className="hidden sm:block p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700">{tCount}</div>
-              <p className="text-xs text-blue-600">
-                {dateRange ? (
-                  <>Tasks in selected period</>
-                ) : dashboardType === "delegation" ? (
-                  "All tasks"
-                ) : (
-                  "Total tasks in checklist"
-                )}
-              </p>
-              {renderBreakdown(totalTask)}
-            </div>
-
-            <div className="sm:hidden p-3 sm:p-4 mt-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700">{tCount}</div>
-              <p className="text-xs text-blue-600">
-                {dateRange ? "Selected period" : "Total tasks"}
-              </p>
-              {renderBreakdown(totalTask)}
-            </div>
-          </div>
-
-          {/* Completed Tasks */}
-          <div className="rounded-lg border border-l-4 border-l-green-500 shadow-md hover:shadow-lg transition-all bg-white">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-green-50 to-green-100 rounded-tr-lg p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-medium text-green-700">
-                {dashboardType === "delegation" ? "Completed Once" : "Completed Tasks"}
-              </h3>
-              <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-            </div>
-            <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-700">{cCount}</div>
-              <p className="text-xs text-green-600">
-                {dateRange ? (
-                  <>Completed in period</>
-                ) : dashboardType === "delegation" ? (
-                  "Tasks completed once"
-                ) : (
-                  "Total completed"
-                )}
-              </p>
-              {renderBreakdown(completeTask)}
-            </div>
-          </div>
-
-          {/* Pending Tasks / Completed Twice */}
-          <div className="rounded-lg border border-l-4 border-l-amber-500 shadow-md hover:shadow-lg transition-all bg-white">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-amber-50 to-amber-100 rounded-tr-lg p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-medium text-amber-700">
-                {dashboardType === "delegation" ? "Completed Twice" : "Pending Tasks"}
-              </h3>
-              {dashboardType === "delegation" ? (
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
-              ) : (
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
-              )}
-            </div>
-            <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-amber-700">{pCount}</div>
-              <p className="text-xs text-amber-600">
-                {dateRange ? (
-                  <>Pending in period</>
-                ) : dashboardType === "delegation" ? (
-                  "Tasks completed twice"
-                ) : (
-                  "Including today"
-                )}
-              </p>
-              {renderBreakdown(pendingTask)}
-            </div>
-          </div>
-
-          {/* Upcoming Tasks */}
-          <div className="rounded-lg border border-l-4 border-l-purple-500 shadow-md hover:shadow-lg transition-all bg-white">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-purple-50 to-purple-100 rounded-tr-lg p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-medium text-purple-700">Upcoming Tasks</h3>
-              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
-            </div>
-            <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-700">{uCount}</div>
-              <p className="text-xs text-purple-600">
-                {dateRange ? (
-                  <>Upcoming in period</>
-                ) : (
-                  "Tomorrow's tasks"
-                )}
-              </p>
-              {renderBreakdown(upcomingTasks)}
-            </div>
-          </div>
-
-          {/* Not Done Tasks */}
-          <div className="rounded-lg border border-l-4 border-l-gray-500 shadow-md hover:shadow-lg transition-all bg-white">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-tr-lg p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-medium text-gray-700">Not Done</h3>
-              <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
-            </div>
-            <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-700">{nCount}</div>
-              <p className="text-xs text-gray-600">
-                {dateRange ? (
-                  <>Not done in period</>
-                ) : dashboardType === "delegation" ? (
-                  "N/A"
-                ) : (
-                  "Status 'No'"
-                )}
-              </p>
-              {renderBreakdown(notDoneTasks)}
-            </div>
-          </div>
-
-          {/* Overdue Tasks / Completed 3+ Times */}
-          <div className="rounded-lg border border-l-4 border-l-red-500 shadow-md hover:shadow-lg transition-all bg-white sm:col-span-2 lg:col-span-1 col-span-2">
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-red-50 to-red-100 rounded-tr-lg p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-medium text-red-700">
-                {dashboardType === "delegation" ? "Completed 3+ Times" : "Overdue Tasks"}
-              </h3>
-              {dashboardType === "delegation" ? (
-                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-              ) : (
-                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-              )}
-            </div>
-            <div className="p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-700">{oCount}</div>
-              <p className="text-xs text-red-600">
-                {dateRange ? (
-                  <>Overdue in period</>
-                ) : dashboardType === "delegation" ? (
-                  "Tasks completed 3+ times"
-                ) : (
-                  "Past due"
-                )}
-              </p>
-              {renderBreakdown(overdueTask)}
-            </div>
-          </div>
-
-        </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <StatCard title="Total" count={tCount} icon={ListTodo} color="border-l-blue-500" textColor="text-blue-600" data={totalTask} />
+        <StatCard title="Done" count={cCount} icon={CheckCircle2} color="border-l-emerald-500" textColor="text-emerald-600" data={completeTask} />
+        <StatCard title="Pending" count={pCount} icon={Clock} color="border-l-amber-500" textColor="text-amber-600" data={pendingTask} />
+        <StatCard title="Future" count={uCount} icon={Calendar} color="border-l-indigo-500" textColor="text-indigo-600" data={upcomingTasks} />
+        <StatCard title="Not Done" count={nCount} icon={XCircle} color="border-l-slate-400" textColor="text-slate-600" data={notDoneTasks} />
+        <StatCard title="Overdue" count={oCount} icon={AlertTriangle} color="border-l-[#c41e3a]" textColor="text-[#c41e3a]" data={overdueTask} />
       </div>
 
-      {/* Right side - Circular Progress Graph */}
-      <div className="lg:w-1/2">
-        <div className="rounded-lg border border-l-4 border-l-indigo-500 shadow-md hover:shadow-lg transition-all bg-white h-auto">
-          <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-tr-lg p-3">
-            <h3 className="text-xs sm:text-sm font-medium text-indigo-700">
-              {dateRange ? "Period Progress" : "Overall Progress"}
-            </h3>
-            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500" />
+      {/* Progress Card */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-8">
+        <div className="relative w-40 h-40">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="8" fill="none" />
+            <circle
+              cx="50" cy="50" r="40" stroke="#ef4444" strokeWidth="8" fill="none"
+              strokeDasharray={`${overdueDash} ${circumference}`}
+            />
+            <circle
+              cx="50" cy="50" r="40" stroke="#f59e0b" strokeWidth="8" fill="none"
+              strokeDasharray={`${pendingDash} ${circumference}`}
+              strokeDashoffset={-overdueDash}
+            />
+            <circle
+              cx="50" cy="50" r="40" stroke="#10b981" strokeWidth="8" fill="none"
+              strokeDasharray={`${completedDash} ${circumference}`}
+              strokeDashoffset={-(overdueDash + pendingDash)}
+            />
+            <circle
+              cx="50" cy="50" r="40" stroke="#94a3b8" strokeWidth="8" fill="none"
+              strokeDasharray={`${notDoneDash} ${circumference}`}
+              strokeDashoffset={-(overdueDash + pendingDash + completedDash)}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-3xl font-bold text-gray-800">{completionRate.toFixed(1)}%</span>
+            {/* <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Efficiency</span> */}
           </div>
-          <div className="p-4 sm:p-6">
-            {/* Single layout for all screen sizes - Circle left, Legend right */}
-            <div className="flex flex-row items-center justify-between">
-              {/* Circular Progress - Left */}
-              <div className="relative w-32 h-32 xs:w-36 xs:h-36 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-48 lg:h-48 xl:w-52 xl:h-52">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  {/* Background circle */}
-                  {/* <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#e5e7eb"
-                    strokeWidth="8"
-                    fill="none"
-                  /> */}
-                  {/* Overdue segment - red */}
+        </div>
 
-                  {/* Upcoming segment - gray */}
-                  {/* <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#b9b1bd"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeLinecap="line"
-                    strokeDasharray={`${upcomingTasksDash} ${circumference}`}
-                    strokeDashoffset={-overdueDash}
-                  /> */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#ef4444"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${overdueDash} ${circumference}`}
-                  />
-
-                  {/* Pending segment - amber/yellow */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#f59e0b"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${pendingDash} ${circumference}`}
-                    strokeDashoffset={-overdueDash}
-                  />
-                  {/* Completed segment - green */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#10b981"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${completedDash} ${circumference}`}
-                    strokeDashoffset={-(overdueDash + pendingDash)}
-                  />
-
-                  {/* Not Done segment - Gray (to fill the gap) */}
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="#d1d5db" // gray-300
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${notDoneDash} ${circumference}`}
-                    strokeDashoffset={-(overdueDash + pendingDash + completedDash)}
-                  />
-                </svg>
-                {/* Percentage text in center */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-indigo-700">
-                      {completionRate.toFixed(2)}%
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {dateRange ? "Period" : "Overall"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Legend - Right */}
-              <div className="grid grid-cols-1 gap-1 xs:gap-2 sm:gap-3 text-xs xs:text-sm sm:text-base md:text-lg flex-1 max-w-[200px]">
-                <div className="flex items-center space-x-1 xs:space-x-2">
-                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-green-500 flex-shrink-0"></div>
-                  <span className="font-medium">Completed:</span>
-                  <span className="text-gray-700">{completionRate.toFixed(2)}%</span>
-                </div>
-                <div className="flex items-center space-x-1 xs:space-x-2">
-                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-amber-500 flex-shrink-0"></div>
-                  <span className="font-medium">Pending:</span>
-                  <span className="text-gray-700">{pendingRate.toFixed(2)}%</span>
-                </div>
-                {/* <div className="flex items-center space-x-1 xs:space-x-2">
-                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-purple-500 flex-shrink-0"></div>
-                  <span className="font-medium">Upcoming:</span>
-                  <span className="text-gray-700">{upcomingTasksRate.toFixed(1)}%</span>
-                </div> */}
-                <div className="flex items-center space-x-1 xs:space-x-2">
-                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 flex-shrink-0"></div>
-                  <span className="font-medium">Overdue:</span>
-                  <span className="text-gray-700">{overdueRate.toFixed(2)}%</span>
-                </div>
-                <div className="flex items-center space-x-1 xs:space-x-2">
-                  <div className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 rounded-full bg-gray-300 flex-shrink-0"></div>
-                  <span className="font-medium">Not Done:</span>
-                  <span className="text-gray-700">{notDoneRate.toFixed(2)}%</span>
-                </div>
-
-              </div>
+        <div className="flex-1 space-y-2 w-full">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="font-medium text-gray-600">Completed</span>
             </div>
-
-            {/* Additional info when date range is applied */}
-            {dateRange && (
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <div className="text-xs text-gray-600 text-center">
-                  Analysis based on {tCount} tasks from selected date range
-                </div>
-              </div>
-            )}
+            <span className="font-bold text-gray-700">{completionRate.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="font-medium text-gray-600">Pending</span>
+            </div>
+            <span className="font-bold text-gray-700">{pendingRate.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-400" />
+              <span className="font-medium text-gray-600">Not Done</span>
+            </div>
+            <span className="font-bold text-gray-700">{notDoneRate.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="font-medium text-gray-600">Overdue</span>
+            </div>
+            <span className="font-bold text-gray-700">{overdueRate.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-50">
+            {/* <span className="text-xs text-gray-400 italic">Analysis based on {tCount} total tasks</span> */}
           </div>
         </div>
       </div>

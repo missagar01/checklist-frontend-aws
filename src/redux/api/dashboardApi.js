@@ -1,9 +1,7 @@
-// ------------------------------
-// dashboardApi.js (FULL FIXED FILE)
-// ------------------------------
+import axiosInstance from "./axiosInstance";
 
-const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/dashboard`;
-const BASE_URL1 = `${import.meta.env.VITE_API_BASE_URL}/staff-tasks`;
+const BASE_URL = "/dashboard";
+const BASE_URL1 = "/staff-tasks";
 
 // ---------------------------------------------------------------------
 // GLOBAL ROLE HELPER — har API me repeat na karna pade isliye function
@@ -47,8 +45,8 @@ export const fetchDashboardDataApi = async (
     username
   });
 
-  const res = await fetch(`${BASE_URL}?${params.toString()}`);
-  return await res.json();
+  const res = await axiosInstance.get(`${BASE_URL}?${params.toString()}`);
+  return res.data;
 };
 
 // ---------------------------------------------------------------------
@@ -71,13 +69,9 @@ export const getDashboardDataCount = async (dashboardType, staffFilter = "all", 
     });
 
     const url = `${BASE_URL}/count?${params.toString()}`;
-    const res = await fetch(url);
+    const res = await axiosInstance.get(url);
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    return await res.json();
+    return res.data;
 
   } catch (err) {
     console.error("Dashboard Count Error:", err);
@@ -96,8 +90,8 @@ export const countTotalTaskApi = async (dashboardType, staffFilter = "all", depa
 
   const url = `${BASE_URL}/total?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 export const countCompleteTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
@@ -108,8 +102,8 @@ export const countCompleteTaskApi = async (dashboardType, staffFilter = "all", d
 
   const url = `${BASE_URL}/completed?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 export const countPendingOrDelayTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
@@ -120,8 +114,8 @@ export const countPendingOrDelayTaskApi = async (dashboardType, staffFilter = "a
 
   const url = `${BASE_URL}/pending?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 export const countOverDueORExtendedTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
@@ -132,8 +126,8 @@ export const countOverDueORExtendedTaskApi = async (dashboardType, staffFilter =
 
   const url = `${BASE_URL}/overdue?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 
@@ -195,11 +189,11 @@ export const fetchStaffTasksDataApi = async (
     params.append('departmentFilter', departmentFilter);
   }
 
-  const res = await fetch(
+  const res = await axiosInstance.get(
     `${BASE_URL1}/tasks?${params.toString()}`
   );
 
-  return await res.json();
+  return res.data;
 };
 
 // Export all staff tasks for CSV download
@@ -226,25 +220,31 @@ export const exportAllStaffTasksApi = async (
     params.append('departmentFilter', departmentFilter);
   }
 
-  const res = await fetch(
+  const res = await axiosInstance.get(
     `${BASE_URL1}/tasks/export?${params.toString()}`
   );
 
-  return await res.json();
+  return res.data;
 };
 
-export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all") => {
+export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
-  const res = await fetch(
-    `${BASE_URL1}/count?dashboardType=${dashboardType}&staffFilter=${staffFilter}`
+  const params = new URLSearchParams({
+    dashboardType,
+    staffFilter,
+    departmentFilter
+  });
+
+  const res = await axiosInstance.get(
+    `${BASE_URL1}/count?${params.toString()}`
   );
-  return res.json();
+  return res.data;
 };
 
 export const getTotalUsersCountApi = async () => {
-  const res = await fetch(`${BASE_URL1}/users-count`);
-  return res.json();
+  const res = await axiosInstance.get(`${BASE_URL1}/users-count`);
+  return res.data;
 };
 
 // dashboardApi.js - Add this function
@@ -256,13 +256,9 @@ export const getStaffTaskSummaryApi = async (dashboardType, departmentFilter = "
     });
 
     const url = `${BASE_URL}/staff-summary?${params.toString()}`;
-    const res = await fetch(url);
+    const res = await axiosInstance.get(url);
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    return await res.json();
+    return res.data;
 
   } catch (err) {
     console.error("Staff Summary Error:", err);
@@ -272,20 +268,14 @@ export const getStaffTaskSummaryApi = async (dashboardType, departmentFilter = "
 
 // ---------------------------------------------------------------------
 export const getUniqueDepartmentsApi = async () => {
-  const res = await fetch(`${BASE_URL}/departments`);
-  return res.json();
+  const res = await axiosInstance.get(`${BASE_URL}/departments`);
+  return res.data;
 };
 
 export const getStaffNamesByDepartmentApi = async (department) => {
   try {
-    const res = await fetch(`${BASE_URL}/staff?department=${department}`);
-
-    if (!res.ok) {
-      console.error(`Staff API Error: ${res.status} ${res.statusText}`);
-      return [];
-    }
-
-    const data = await res.json();
+    const res = await axiosInstance.get(`${BASE_URL}/staff?department=${department}`);
+    const data = res.data;
 
     // Ensure we return an array
     if (Array.isArray(data)) {
@@ -320,8 +310,8 @@ export const fetchChecklistDataByDateRangeApi = async (
 
   const url = `${BASE_URL}/checklist/date-range?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 export const getChecklistDateRangeCountApi = async (
@@ -348,13 +338,9 @@ export const getChecklistDateRangeCountApi = async (
     });
 
     const url = `${BASE_URL}/checklist/date-range/count?${params.toString()}`;
-    const res = await fetch(url);
+    const res = await axiosInstance.get(url);
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    return await res.json();
+    return res.data;
 
   } catch (err) {
     console.error("Date Range Count Error:", err);
@@ -372,8 +358,8 @@ export const getChecklistDateRangeStatsApi = async (
 
   const url = `${BASE_URL}/checklist/date-range/stats?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 
@@ -385,8 +371,8 @@ export const countUpcomingTaskApi = async (dashboardType, staffFilter = "all", d
 
   const url = `${BASE_URL}/upcoming?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };
 
 export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
@@ -397,6 +383,6 @@ export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", de
 
   const url = `${BASE_URL}/notdone?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
-  const res = await fetch(url);
-  return res.json();
+  const res = await axiosInstance.get(url);
+  return res.data;
 };

@@ -32,6 +32,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import axiosInstance from "../../../redux/api/axiosInstance";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -64,7 +65,7 @@ const MachineDetails = ({ machine, goBack }) => {
   // const SHEET_Id = "15SBKzTJKzaqhjPI5yt5tKkrd3tzNuhm_Q9-iDO8n0B0";
 
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+  // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
   console.log(API_BASE_URL)
 
   
@@ -103,8 +104,8 @@ const fetchMaintenanceHistory = async () => {
   setLoadingTasks(true);
   try {
     // const res = await axios.get(`${API_BASE_URL}/${machine["Serial No"]}/history`);
-    const res = await axios.get(
-  `${API_BASE_URL}/machine-details/${encodeURIComponent(machine["Serial No"])}/history`
+    const res = await axiosInstance.get(
+  `/machine-details/${encodeURIComponent(machine["Serial No"])}/history`
 );
 
     if (res.data.success) {
@@ -259,8 +260,8 @@ const handleSave = async () => {
     console.log("📤 Sending UPDATE to PostgreSQL:", payload);
 
     // Send to Express → PostgreSQL
-    const res = await axios.put(
-      `${API_BASE_URL}/machine-details/${encodeURIComponent(serial)}`,
+    const res = await axiosInstance.put(
+      `/machine-details/${encodeURIComponent(serial)}`,
       payload
     );
 

@@ -1,30 +1,28 @@
-import axios from "axios";
+import axiosInstance from "../../redux/api/axiosInstance";
 
-// const API = "http://localhost:5050/api/doer";
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-const API = `${API_BASE}/doer`;
-
+// Routes are relative to baseURL in axiosInstance
+const API = "/doer";
 
 // GET ALL DOERS
 export const fetchDoers = async () => {
-  const res = await axios.get(`${API}/doers`);
-  return res.data.data;
+  const res = await axiosInstance.get(`${API}/doers`);
+  return res.data;
 };
 
 // ADD DOER
 export const addDoer = async (data) => {
-  const res = await axios.post(`${API}/doers`, data);
-  return res.data.data;
+  const res = await axiosInstance.post(`${API}/doers`, data);
+  return res.data;
 };
 
 // UPDATE DOER
 export const updateDoer = async (id, data) => {
-  const res = await axios.put(`${API}/doers/${id}`, data);
-  return res.data.data;
+  const res = await axiosInstance.put(`${API}/doers/${id}`, data);
+  return res.data;
 };
 
 // DELETE DOER
 export const removeDoer = async (id) => {
-  const res = await axios.delete(`${API}/doers/${id}`);
+  const res = await axiosInstance.delete(`${API}/doers/${id}`);
   return res.data;
 };

@@ -4,125 +4,71 @@ import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { loginUser } from "../redux/slice/loginSlice"
-import { LoginCredentialsApi } from "../redux/api/loginApi"
+import { User, Lock, Eye, EyeOff, LucideArrowRight, Loader2 } from "lucide-react"
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const { isLoggedIn, userData, error } = useSelector((state) => state.login);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch()
+  const { isLoggedIn, userData, error } = useSelector((state) => state.login)
 
   const [isLoginLoading, setIsLoginLoading] = useState(false)
-
-  // Check if user is already logged in (session persisted in localStorage)
-  useEffect(() => {
-    const storedUsername = localStorage.getItem('user-name');
-    if (storedUsername) {
-      // User is already logged in, redirect to dashboard
-      navigate("/dashboard/admin");
-    }
-  }, [navigate]);
+  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    // Remove email_id from here since it's not a login input
   })
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoginLoading(true);
-    dispatch(loginUser(formData));
-  };
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('user-name')
+    const storedToken = localStorage.getItem('token')
+    if (storedUsername && storedToken) {
+      navigate("/dashboard/admin")
+    }
+  }, [navigate])
 
-  // Update the useEffect in LoginPage.jsx
-  // Update the useEffect in LoginPage.jsx to add more debugging
-  // In LoginPage.jsx - update the useEffect
   useEffect(() => {
     if (isLoggedIn && userData) {
-      // Store all user data in localStorage - optimized batch operation
-
-      // console.log("✅ LOGIN userData:", userData);
-
       const dataToStore = {
         'user-name': userData.user_name || userData.username || "",
         'user_id': userData.id || userData.user_id || "",
         'role': userData.role || "",
         'email_id': userData.email_id || userData.email || "",
-      };
+        'token': userData.token || "",
+        'user_access': userData.user_access || "",
+        'userAccess': userData.user_access || "",
+        'user_access1': userData.user_access1 || "",
+        'userAccess1': userData.user_access1 || "",
+        'page_access': userData.page_access || "",
+        'system_access': userData.system_access || "",
+        'verify_access': userData.verify_access || "",
+        'verify_access_dept': userData.verify_access_dept || "",
+      }
 
-      // Batch localStorage operations
       Object.entries(dataToStore).forEach(([key, value]) => {
         if (value) {
-          localStorage.setItem(key, value);
+          localStorage.setItem(key, value)
         } else {
-          localStorage.removeItem(key);
+          localStorage.removeItem(key)
         }
-      });
-
-      // Store user_access
-      if (userData.user_access) {
-        localStorage.setItem('user_access', userData.user_access);
-        localStorage.setItem('userAccess', userData.user_access);
-      } else {
-        localStorage.removeItem('user_access');
-        localStorage.removeItem('userAccess');
-      }
-
-      // Store user_access1 (for housekeeping)
-      if (userData.user_access1) {
-        localStorage.setItem('user_access1', userData.user_access1);
-        localStorage.setItem('userAccess1', userData.user_access1);
-      } else {
-        localStorage.removeItem('user_access1');
-        localStorage.removeItem('userAccess1');
-      }
-
-      // Store page_access if available
-      if (userData.page_access) {
-        localStorage.setItem('page_access', userData.page_access);
-      } else {
-        localStorage.removeItem('page_access');
-      }
-
-      // Store system_access
-      if (userData.system_access) {
-        localStorage.setItem('system_access', userData.system_access);
-      } else {
-        localStorage.removeItem('system_access');
-      }
-
-      // Store verify_access
-      if (userData.verify_access) {
-        localStorage.setItem("verify_access", userData.verify_access);
-      } else {
-        localStorage.removeItem("verify_access");
-      }
-
-      // Store verify_access_dept
-      if (userData.verify_access_dept) {
-        localStorage.setItem("verify_access_dept", userData.verify_access_dept);
-      } else {
-        localStorage.removeItem("verify_access_dept");
-      }
-
-      console.log(userData.verify_access_dept);
-
+      })
 
       navigate("/dashboard/admin")
     } else if (error) {
-      showToast(error, "error");
-      setIsLoginLoading(false);
+      showToast(error, "error")
+      setIsLoginLoading(false)
     }
-  }, [isLoggedIn, userData, error, navigate]);
-
-  // Removed supabase subscription - not needed for current implementation
-  // User status is checked on login and session is managed via localStorage
-
-
+  }, [isLoggedIn, userData, error, navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setIsLoginLoading(true)
+    dispatch(loginUser(formData))
   }
 
   const showToast = (message, type) => {
@@ -133,84 +79,124 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
-      <div className="w-full max-w-md shadow-lg border border-blue-200 rounded-lg bg-white">
-        <div className="space-y-1 p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-t-lg">
-          <img
-            src="/logo.png"
-            alt="Company Logo"
-            className="h-auto w-100 mr-3"
-          />
-          <h2 className="text-2xl font-bold text-blue-700 p-2 items-center justify-center">Combined Checklist</h2>
+    <div className="flex min-h-screen items-center justify-center bg-[#f0f2f5] p-4 font-sans antialiased text-gray-900">
+      <div className="flex flex-col lg:flex-row w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden min-h-[450px]">
+
+        {/* Left Side - Welcome Branding (Hidden on Mobile) */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-red-600 to-red-700 p-10 flex-col justify-center text-white relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+
+          <div className="relative z-10 text-center flex flex-col items-center">
+            {/* Centered and stylized logo container */}
+            <div className="bg-white  rounded-xl shadow-lg mb-8 transform hover:scale-105 transition-transform duration-300">
+              <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
+            </div>
+
+            <h1 className="text-4xl font-extrabold mb-3 tracking-tighter">WELCOME</h1>
+            <p className="text-lg font-medium text-white/90">Combined Checklist</p>
+            <div className="mt-8 h-1 w-12 bg-white/40 mx-auto rounded-full"></div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="username" className="flex items-center text-blue-700">
-              <i className="fas fa-user h-4 w-4 mr-2"></i>
-              Username
-            </label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="Enter your username"
-              required
-              value={formData.username}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+        {/* Right Side - Compact Login Form */}
+        <div className="w-full lg:w-1/2 bg-white p-8 lg:p-10 flex flex-col justify-center">
 
-          <div className="space-y-2">
-            <label htmlFor="password" className="flex items-center text-blue-700">
-              <i className="fas fa-key h-4 w-4 mr-2"></i>
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Enter your password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <div className="w-full max-w-xs mx-auto">
+            {/* Header updated to Checklist and Delegation */}
+            <h2 className="text-xl font-bold text-gray-800 mb-6 lg:text-3xl tracking-tight leading-tight">
+              Checklist and <br className="hidden lg:block" /> Delegation
+            </h2>
 
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 -mx-4 -mb-4 mt-4 rounded-b-lg">
-            <button
-              type="submit"
-              className="w-full py-2 px-4 gradient-bg text-white rounded-md font-medium gradient-bg:hover disabled:opacity-50"
-              disabled={isLoginLoading}
-            >
-              {isLoginLoading ? "Logging in..." : "Login"}
-            </button>
-          </div>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="text-gray-400 group-focus-within:text-[#c41e3a] transition-colors" size={18} />
+                </div>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="User Name"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:ring-1 focus:ring-[#c41e3a] focus:border-[#c41e3a] focus:bg-white transition-all text-sm outline-none"
+                />
+              </div>
 
-        <div className="fixed left-0 right-0 bottom-0 py-1 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center text-sm shadow-md z-10">
-          <a
-            href="https://www.botivate.in/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
-            Powered by-<span className="font-semibold">Botivate</span>
-          </a>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="text-gray-400 group-focus-within:text-[#c41e3a] transition-colors" size={18} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:ring-1 focus:ring-[#c41e3a] focus:border-[#c41e3a] focus:bg-white transition-all text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <div className="flex justify-end">
+                <button type="button" className="text-xs font-semibold text-gray-500 hover:text-[#c41e3a] transition-colors">
+                  Forgot Password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoginLoading}
+                className="w-full py-2.5 bg-[#c41e3a] hover:bg-[#a61931] text-white rounded-lg font-bold text-sm shadow-md transform active:scale-[0.98] transition-all flex items-center justify-center mt-6 disabled:opacity-70 disabled:cursor-not-allowed group"
+              >
+                {isLoginLoading ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    Sign In
+                    <LucideArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
-      {/* Toast Notification */}
+      <div className="fixed bottom-4 text-center w-full">
+        <a
+          href="https://www.botivate.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-400 text-[10px] font-medium hover:text-[#c41e3a] transition-colors"
+        >
+          Powered by <span className="font-bold text-gray-500">Botivate</span>
+        </a>
+      </div>
+
       {toast.show && (
-        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${toast.type === "success"
-          ? "bg-green-100 text-green-800 border-l-4 border-green-500"
-          : "bg-red-100 text-red-800 border-l-4 border-red-500"
+        <div className={`fixed bottom-8 right-8 px-5 py-3 rounded-lg shadow-lg animate-fade-in z-50 ${toast.type === "success" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
           }`}>
-          {toast.message}
+          <span className="font-bold text-xs tracking-wide">{toast.message}</span>
         </div>
       )}
+
+      <style>{`
+        @keyframes fade-in {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   )
 }

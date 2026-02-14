@@ -14,6 +14,7 @@ export default function MaintenanceTaskNavigationTabs({
   getFrequencyColor,
   dashboardStaffFilter,
   departmentFilter,
+  dateRange,
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [displayedTasks, setDisplayedTasks] = useState([])
@@ -45,7 +46,9 @@ export default function MaintenanceTaskNavigationTabs({
           page,
           itemsPerPage,
           taskView,
-          departmentFilter
+          departmentFilter,
+          dateRange?.startDate,
+          dateRange?.endDate
         )
 
         // Extract data and total count from API response
@@ -136,6 +139,7 @@ export default function MaintenanceTaskNavigationTabs({
       departmentFilter,
       isLoadingMore,
       itemsPerPage,
+      dateRange,
     ]
   )
 
@@ -194,7 +198,7 @@ export default function MaintenanceTaskNavigationTabs({
   useEffect(() => {
     loadTasksFromServer(1, false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskView, dashboardStaffFilter, departmentFilter])
+  }, [taskView, dashboardStaffFilter, departmentFilter, dateRange])
 
   // Reload when search query changes (debounced)
   useEffect(() => {

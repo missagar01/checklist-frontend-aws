@@ -1,16 +1,17 @@
+import axiosInstance from "./axiosInstance";
 
-// Dynamic Base URL for settings APIs
-const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/settings`;
+// Routes are relative to baseURL in axiosInstance
+const BASE_URL = "/settings";
 
 // =======================================================
 // 1️⃣ FETCH USERS
 // =======================================================
 export const fetchUserDetailsApi = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/users`);
-    return await response.json();
+    const response = await axiosInstance.get(`${BASE_URL}/users`);
+    return response.data;
   } catch (error) {
-    console.log("Error fetching users", error);
+    console.error("Error fetching users", error);
     return [];
   }
 };
@@ -20,36 +21,24 @@ export const fetchUserDetailsApi = async () => {
 // =======================================================
 export const fetchDepartmentDataApi = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/departments`);
-    return await response.json();
+    const response = await axiosInstance.get(`${BASE_URL}/departments`);
+    return response.data;
   } catch (error) {
-    console.log("Error fetching departments", error);
+    console.error("Error fetching departments", error);
     return [];
   }
 };
-
 
 // =======================================================
 // 3️⃣ CREATE USER
 // =======================================================
 export const createUserApi = async (newUser) => {
   try {
-    const response = await fetch(`${BASE_URL}/users`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newUser),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || `Server error: ${response.status}`);
-    }
-    
-    return data;
+    const response = await axiosInstance.post(`${BASE_URL}/users`, newUser);
+    return response.data;
   } catch (error) {
     console.error("Error creating user", error);
-    throw error;
+    throw error.response?.data?.error || error.message;
   }
 };
 
@@ -58,43 +47,11 @@ export const createUserApi = async (newUser) => {
 // =======================================================
 export const updateUserDataApi = async ({ id, updatedUser }) => {
   try {
-    const response = await fetch(`${BASE_URL}/users/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedUser),
-    });
-    
-    // Check if response is JSON
-    const contentType = response.headers.get("content-type");
-    let data;
-    
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      // If not JSON, get text and try to parse
-      const text = await response.text();
-      console.error("❌ Non-JSON response received:", text.substring(0, 200));
-      throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
-    }
-    
-    if (!response.ok) {
-      console.error("❌ Update user API error:", {
-        status: response.status,
-        statusText: response.statusText,
-        error: data
-      });
-      throw new Error(data.message || data.error || `Server error: ${response.status}`);
-    }
-    
-    return data;
+    const response = await axiosInstance.put(`${BASE_URL}/users/${id}`, updatedUser);
+    return response.data;
   } catch (error) {
     console.error("❌ Error updating user:", error);
-    // If it's already an Error object, re-throw it
-    if (error instanceof Error) {
-      throw error;
-    }
-    // Otherwise wrap it
-    throw new Error(error.message || "Failed to update user");
+    throw error.response?.data?.error || error.message;
   }
 };
 
@@ -103,11 +60,9 @@ export const updateUserDataApi = async ({ id, updatedUser }) => {
 // =======================================================
 export const deleteUserByIdApi = async (id) => {
   try {
-    await fetch(`${BASE_URL}/users/${id}`, {
-      method: "DELETE",
-    });
+    await axiosInstance.delete(`${BASE_URL}/users/${id}`);
   } catch (error) {
-    console.log("Error deleting user", error);
+    console.error("Error deleting user", error);
   }
 };
 
@@ -116,15 +71,10 @@ export const deleteUserByIdApi = async (id) => {
 // =======================================================
 export const createDepartmentApi = async (newDept) => {
   try {
-    const response = await fetch(`${BASE_URL}/departments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newDept),
-    });
-    
-    return await response.json();
+    const response = await axiosInstance.post(`${BASE_URL}/departments`, newDept);
+    return response.data;
   } catch (error) {
-    console.log("Error adding department", error);
+    console.error("Error adding department", error);
     return null;
   }
 };
@@ -134,22 +84,11 @@ export const createDepartmentApi = async (newDept) => {
 // =======================================================
 export const updateDepartmentDataApi = async ({ id, updatedDept }) => {
   try {
-    const response = await fetch(`${BASE_URL}/departments/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedDept),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    const response = await axiosInstance.put(`${BASE_URL}/departments/${id}`, updatedDept);
+    return response.data;
   } catch (error) {
     console.error("Error updating department:", error);
-    throw error; // Re-throw to let Redux handle it
+    throw error.response?.data?.error || error.message;
   }
 };
 
@@ -158,29 +97,21 @@ export const updateDepartmentDataApi = async ({ id, updatedDept }) => {
 // =======================================================
 export const deleteDepartmentDataApi = async (id) => {
   try {
-    const response = await fetch(`${BASE_URL}/departments/${id}`, {
-      method: "DELETE",
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    const response = await axiosInstance.delete(`${BASE_URL}/departments/${id}`);
+    return response.data;
   } catch (error) {
     console.error("Error deleting department:", error);
-    throw error; // Re-throw to let Redux handle it
+    throw error.response?.data?.error || error.message;
   }
 };
+
 // Fetch only unique departments (without given_by)
 export const fetchDepartmentsOnlyApi = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/departments-only`);
-    return await response.json();
+    const response = await axiosInstance.get(`${BASE_URL}/departments-only`);
+    return response.data;
   } catch (error) {
-    console.log("Error fetching departments only", error);
+    console.error("Error fetching departments only", error);
     return [];
   }
 };
@@ -188,10 +119,10 @@ export const fetchDepartmentsOnlyApi = async () => {
 // Fetch only given_by data
 export const fetchGivenByDataApi = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/given-by`);
-    return await response.json();
+    const response = await axiosInstance.get(`${BASE_URL}/given-by`);
+    return response.data;
   } catch (error) {
-    console.log("Error fetching given_by data", error);
+    console.error("Error fetching given_by data", error);
     return [];
   }
 };
@@ -201,52 +132,23 @@ export const fetchGivenByDataApi = async () => {
 // =======================================================
 export const patchVerifyAccessApi = async ({ id, verify_access }) => {
   try {
-    const response = await fetch(
-      `${BASE_URL}/users/${id}/verify-access`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verify_access }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || `Server error: ${response.status}`);
-    }
-
-    return data;
+    const response = await axiosInstance.patch(`${BASE_URL}/users/${id}/verify-access`, { verify_access });
+    return response.data;
   } catch (error) {
     console.error("Error patching verify_access", error);
-    throw error;
+    throw error.response?.data?.error || error.message;
   }
 };
-
 
 // =======================================================
 // 9️⃣ PATCH VERIFY ACCESS DEPT
 // =======================================================
 export const patchVerifyAccessDeptApi = async ({ id, verify_access_dept }) => {
   try {
-    const response = await fetch(
-      `${BASE_URL}/users/${id}/verify-access-dept`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verify_access_dept }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || `Server error: ${response.status}`);
-    }
-
-    return data;
+    const response = await axiosInstance.patch(`${BASE_URL}/users/${id}/verify-access-dept`, { verify_access_dept });
+    return response.data;
   } catch (error) {
     console.error("Error patching verify_access_dept", error);
-    throw error;
+    throw error.response?.data?.error || error.message;
   }
 };

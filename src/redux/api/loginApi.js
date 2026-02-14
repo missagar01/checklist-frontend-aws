@@ -1,13 +1,11 @@
+import axiosInstance from "./axiosInstance";
 
-
-import axios from "axios";
-
-// Dynamic Base URL
-const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/login`;
+// Routes are relative to baseURL in axiosInstance
+const BASE_URL = "/login";
 
 export const LoginCredentialsApi = async (formData) => {
   try {
-    const res = await axios.post(BASE_URL, formData);
+    const res = await axiosInstance.post(BASE_URL, formData);
 
     return { data: res.data }; // same return format
   } catch (err) {
@@ -17,7 +15,7 @@ export const LoginCredentialsApi = async (formData) => {
 
 export const logoutApi = async () => {
   try {
-    await axios.post(`${BASE_URL}/logout`);
+    await axiosInstance.post(`${BASE_URL}/logout`);
   } catch (err) {
     console.warn("Logout API failed", err);
   }

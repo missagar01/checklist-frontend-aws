@@ -31,7 +31,9 @@ export default function StatisticsCards({
       // For user role: explicitly don't pass department - backend uses JWT token user_access1
       
       await dispatch(fetchHousekeepingDashboardSummary({
-        department: departmentParam
+        department: departmentParam,
+        startDate: dateRange?.startDate,
+        endDate: dateRange?.endDate
       })).unwrap();
     }
     catch (err) {

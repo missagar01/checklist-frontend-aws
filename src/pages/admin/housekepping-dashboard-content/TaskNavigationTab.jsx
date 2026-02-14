@@ -14,7 +14,8 @@ export default function TaskNavigationTabs({
   setFilterStaff,
   getFrequencyColor,
   dashboardStaffFilter,
-  departmentFilter
+  departmentFilter,
+  dateRange
 }) {
   const dispatch = useDispatch()
   const { loadingDashboardTasks, taskCounts } = useSelector((state) => state.housekeeping)
@@ -37,7 +38,7 @@ export default function TaskNavigationTabs({
     setHasMoreData(true)
     setTotalCount(0)
     totalItemsLoadedRef.current = 0
-  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter])
+  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter, dateRange])
 
   // Function to get task status based on submission_date
   const getTaskStatus = (submissionDate, status) => {
@@ -60,6 +61,11 @@ export default function TaskNavigationTabs({
       if (role.toLowerCase() !== "user" && departmentFilter && departmentFilter !== "all") {
         // For admin, use selected department filter
         departmentFilters.department = departmentFilter
+      }
+
+      if (dateRange?.startDate && dateRange?.endDate) {
+        departmentFilters.startDate = dateRange.startDate
+        departmentFilters.endDate = dateRange.endDate
       }
       // For user role, backend handles filtering from token - no need to pass department
 
@@ -95,6 +101,11 @@ export default function TaskNavigationTabs({
       if (role.toLowerCase() !== "user" && departmentFilter && departmentFilter !== "all") {
         // For admin, use selected department filter
         departmentFilters.department = departmentFilter
+      }
+
+      if (dateRange?.startDate && dateRange?.endDate) {
+        departmentFilters.startDate = dateRange.startDate
+        departmentFilters.endDate = dateRange.endDate
       }
       // For user role, backend handles filtering from token - no need to pass department
 
@@ -234,7 +245,7 @@ export default function TaskNavigationTabs({
     } finally {
       setIsLoadingMore(false)
     }
-  }, [taskView, searchQuery, isLoadingMore, itemsPerPage, departmentFilter, loadingDashboardTasks, dispatch, taskCounts, hasMoreData])
+  }, [taskView, searchQuery, isLoadingMore, itemsPerPage, departmentFilter, loadingDashboardTasks, dispatch, taskCounts, hasMoreData, dateRange])
 
   // Update totalCount when taskView or taskCounts change
   useEffect(() => {
@@ -256,7 +267,7 @@ export default function TaskNavigationTabs({
     loadTasksFromApi(1, false);
     loadTaskCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter])
+  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter, dateRange])
 
   // Load when search changes
   useEffect(() => {

@@ -1,38 +1,14 @@
-import axios from "axios";
-
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
-
-// Create axios instance with base URL
-const maintenanceApi = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json"
-  }
-});
-
-// Add authorization header
-maintenanceApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import axiosInstance from "./axiosInstance";
 
 // API functions
 export const getMaintenanceTasksAPI = (page = 1, filters = {}) => {
   const params = { page, ...filters };
-  return maintenanceApi.get("maintenance/tasks", { params });
+  return axiosInstance.get("maintenance/tasks", { params });
 };
 
 export const getPendingMaintenanceTasksAPI = (page = 1, userId = null) => {
   const params = { page, ...(userId && { userId }) };
-  return maintenanceApi.get("maintenance/tasks/pending", { params });
+  return axiosInstance.get("maintenance/tasks/pending", { params });
 };
 
 export const getCompletedMaintenanceTasksAPI = (page = 1, filters = {}) => {
@@ -45,7 +21,7 @@ export const getCompletedMaintenanceTasksAPI = (page = 1, filters = {}) => {
     ...(role === "user" ? { userId: user } : {})   // ✅ ADD THIS
   };
 
-  return maintenanceApi.get("maintenance/tasks/completed", { params });
+  return axiosInstance.get("maintenance/tasks/completed", { params });
 };
 
 
@@ -59,7 +35,7 @@ export const updateMaintenanceTaskAPI = (taskId, updateData) => {
     }
   });
 
-  return maintenanceApi.put(`maintenance/tasks/${taskId}`, formData, {
+  return axiosInstance.put(`maintenance/tasks/${taskId}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data"
     }
@@ -67,29 +43,29 @@ export const updateMaintenanceTaskAPI = (taskId, updateData) => {
 };
 
 export const updateMultipleMaintenanceTasksAPI = (tasks) => {
-  return maintenanceApi.put("maintenance/tasks/bulk/update", { tasks });
+  return axiosInstance.put("maintenance/tasks/bulk/update", { tasks });
 };
 
 export const getUniqueMachineNamesAPI = () => {
-  return maintenanceApi.get("maintenance/machines/unique");
+  return axiosInstance.get("maintenance/machines/unique");
 };
 
 export const getUniqueMaintenanceDepartmentsAPI = () => {
-  return maintenanceApi.get("maintenance/departments/unique");
+  return axiosInstance.get("maintenance/departments/unique");
 };
 
 
 
 export const getMaintenanceStatisticsAPI = () => {
-  return maintenanceApi.get("maintenance/statistics");
+  return axiosInstance.get("maintenance/statistics");
 };
 
 export const getUniqueAssignedPersonnelAPI = () => {
-  return maintenanceApi.get("maintenance/personnel/unique");
+  return axiosInstance.get("maintenance/personnel/unique");
 };
 
 export const getUniqueMaintenanceDoerNameAPI = () => {
-  return maintenanceApi.get("maintenance/doers/unique");
+  return axiosInstance.get("maintenance/doers/unique");
 };
 
-export default maintenanceApi;
+export default axiosInstance;

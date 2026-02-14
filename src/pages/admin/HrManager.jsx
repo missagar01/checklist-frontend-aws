@@ -360,7 +360,7 @@ export default function HrManager() {
 
 
             <span className="text-xs text-gray-500 font-medium">
-              Total: {rows.length} |
+              Total: {filteredRows.length} |
             </span>
 
             {selectedItems.size > 0 && (

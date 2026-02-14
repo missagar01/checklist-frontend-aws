@@ -948,8 +948,8 @@ const Setting = () => {
                 {/* Header and Tabs */}
                 <div className="my-3 sm:my-5 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                        <h1 className="text-xl sm:text-2xl font-bold text-purple-600">
-                            User Management System
+                        <h1 className="text-xl sm:text-2xl font-bold text-red-600">
+                            Settings
                         </h1>
 
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">

@@ -30,7 +30,7 @@ const CONFIG = {
     historyTitle: "DELEGATION Task History",
     description: "Showing all pending tasks",
     historyDescription:
-      "Read-only view of completed tasks with submission history",
+      "",
   },
 };
 
@@ -461,292 +461,292 @@ function DelegationDataPage() {
     resetFilters();
   }, [resetFilters]);
 
-//   const handleSubmit = async () => {
-//     const selectedItemsArray = Array.from(selectedItems);
+  //   const handleSubmit = async () => {
+  //     const selectedItemsArray = Array.from(selectedItems);
 
-//     if (selectedItemsArray.length === 0) {
-//       alert("Please select at least one item to submit");
-//       return;
-//     }
+  //     if (selectedItemsArray.length === 0) {
+  //       alert("Please select at least one item to submit");
+  //       return;
+  //     }
 
-//     const missingStatus = selectedItemsArray.filter((id) => !statusData[id]);
-//     if (missingStatus.length > 0) {
-//       alert(
-//         `Please select a status for all selected items. ${missingStatus.length} item(s) are missing status.`
-//       );
-//       return;
-//     }
+  //     const missingStatus = selectedItemsArray.filter((id) => !statusData[id]);
+  //     if (missingStatus.length > 0) {
+  //       alert(
+  //         `Please select a status for all selected items. ${missingStatus.length} item(s) are missing status.`
+  //       );
+  //       return;
+  //     }
 
-//     const missingNextDate = selectedItemsArray.filter(
-//       (id) => statusData[id] === "Extend date" && !nextTargetDate[id]
-//     );
-//     if (missingNextDate.length > 0) {
-//       alert(
-//         `Please select a next target date for all items with "Extend date" status. ${missingNextDate.length} item(s) are missing target date.`
-//       );
-//       return;
-//     }
+  //     const missingNextDate = selectedItemsArray.filter(
+  //       (id) => statusData[id] === "Extend date" && !nextTargetDate[id]
+  //     );
+  //     if (missingNextDate.length > 0) {
+  //       alert(
+  //         `Please select a next target date for all items with "Extend date" status. ${missingNextDate.length} item(s) are missing target date.`
+  //       );
+  //       return;
+  //     }
 
-//     const missingRequiredImages = selectedItemsArray.filter((id) => {
-//       const item = delegation.find((account) => account.task_id === id);
-//       const requiresAttachment =
-//         item.require_attachment &&
-//         item.require_attachment.toUpperCase() === "YES";
-//       return requiresAttachment && !uploadedImages[id] && !item.image;
-//     });
+  //     const missingRequiredImages = selectedItemsArray.filter((id) => {
+  //       const item = delegation.find((account) => account.task_id === id);
+  //       const requiresAttachment =
+  //         item.require_attachment &&
+  //         item.require_attachment.toUpperCase() === "YES";
+  //       return requiresAttachment && !uploadedImages[id] && !item.image;
+  //     });
 
-//     if (missingRequiredImages.length > 0) {
-//       alert(
-//         `Please upload images for all required attachments. ${missingRequiredImages.length} item(s) are missing required images.`
-//       );
-//       return;
-//     }
+  //     if (missingRequiredImages.length > 0) {
+  //       alert(
+  //         `Please upload images for all required attachments. ${missingRequiredImages.length} item(s) are missing required images.`
+  //       );
+  //       return;
+  //     }
 
-//     setIsSubmitting(true);
+  //     setIsSubmitting(true);
 
-//     try {
-//       const selectedData = selectedItemsArray.map((id) => {
-//         const item = delegation.find((account) => account.task_id === id);
+  //     try {
+  //       const selectedData = selectedItemsArray.map((id) => {
+  //         const item = delegation.find((account) => account.task_id === id);
 
-//         const dbStatus = statusData[id] === "Done" ? "done" :
-//           statusData[id] === "Extend date" ? "extend" :
-//             statusData[id];
+  //         const dbStatus = statusData[id] === "Done" ? "done" :
+  //           statusData[id] === "Extend date" ? "extend" :
+  //             statusData[id];
 
-//         return {
-//   task_id: item.task_id,
-//   given_by: item.given_by,
-//   name: item.name,
-//   task_description: item.task_description,
-//   task_start_date: item.task_start_date,
-//   planned_date: item.planned_date,
-//   status: dbStatus,
-//   next_extend_date: statusData[id] === "Extend date" ? nextTargetDate[id] : null,
-//   reason: remarksData[id] || "",
-//   image_url: uploadedImages[id] ? null : item.image,
-//   require_attachment: item.require_attachment
-// };
+  //         return {
+  //   task_id: item.task_id,
+  //   given_by: item.given_by,
+  //   name: item.name,
+  //   task_description: item.task_description,
+  //   task_start_date: item.task_start_date,
+  //   planned_date: item.planned_date,
+  //   status: dbStatus,
+  //   next_extend_date: statusData[id] === "Extend date" ? nextTargetDate[id] : null,
+  //   reason: remarksData[id] || "",
+  //   image_url: uploadedImages[id] ? null : item.image,
+  //   require_attachment: item.require_attachment
+  // };
 
-//       });
+  //       });
 
-//       console.log("Selected Data for submission:", selectedData);
+  //       console.log("Selected Data for submission:", selectedData);
 
-//       const submissionPromises = selectedData.map(async (taskData) => {
-//         const taskImage = uploadedImages[taskData.task_id];
+  //       const submissionPromises = selectedData.map(async (taskData) => {
+  //         const taskImage = uploadedImages[taskData.task_id];
 
-//         return dispatch(
-//           insertDelegationDoneAndUpdate({
-//             selectedDataArray: [taskData],
-//             uploadedImages: taskImage ? { [taskData.task_id]: taskImage } : {},
-//           })
-//         );
-//       });
+  //         return dispatch(
+  //           insertDelegationDoneAndUpdate({
+  //             selectedDataArray: [taskData],
+  //             uploadedImages: taskImage ? { [taskData.task_id]: taskImage } : {},
+  //           })
+  //         );
+  //       });
 
-//       const results = await Promise.allSettled(submissionPromises);
+  //       const results = await Promise.allSettled(submissionPromises);
 
-//       const failedSubmissions = results.filter(result => result.status === 'rejected');
+  //       const failedSubmissions = results.filter(result => result.status === 'rejected');
 
-//       if (failedSubmissions.length > 0) {
-//         console.error('Some submissions failed:', failedSubmissions);
-//         alert(`${failedSubmissions.length} out of ${selectedItemsArray.length} submissions failed. Please check the console for details.`);
-//       } else {
-//         setSuccessMessage(
-//           `Successfully submitted ${selectedItemsArray.length} task records!`
-//         );
-//       }
+  //       if (failedSubmissions.length > 0) {
+  //         console.error('Some submissions failed:', failedSubmissions);
+  //         alert(`${failedSubmissions.length} out of ${selectedItemsArray.length} submissions failed. Please check the console for details.`);
+  //       } else {
+  //         setSuccessMessage(
+  //           `Successfully submitted ${selectedItemsArray.length} task records!`
+  //         );
+  //       }
 
-//       setSelectedItems(new Set());
-//       setAdditionalData({});
-//       setRemarksData({});
-//       setStatusData({});
-//       setNextTargetDate({});
+  //       setSelectedItems(new Set());
+  //       setAdditionalData({});
+  //       setRemarksData({});
+  //       setStatusData({});
+  //       setNextTargetDate({});
 
-//       setTimeout(() => {
-//         dispatch(delegationData());
-//         // dispatch(delegation_DoneData());
-//         dispatch(delegationDoneData());
-//       }, 1000);
+  //       setTimeout(() => {
+  //         dispatch(delegationData());
+  //         // dispatch(delegation_DoneData());
+  //         dispatch(delegationDoneData());
+  //       }, 1000);
 
-//     } catch (error) {
-//       console.error('Submission error:', error);
-//       alert('An error occurred during submission. Please try again.');
-//     } finally {
-//       setIsSubmitting(false);
-//     }
-//   };
-
-
-// const handleSubmit = async () => {
-//   if (selectedItems.size === 0) {
-//     alert("Please select at least one task");
-//     return;
-//   }
-
-//   const selectedData = Array.from(selectedItems).map((id) => {
-//     const item = delegation.find((x) => x.task_id === id);
-
-//     return {
-//       task_id: item.task_id,
-//       given_by: item.given_by,
-//       name: item.name,
-//       task_description: item.task_description,
-//       task_start_date: item.task_start_date,
-//       planned_date: item.planned_date,
-//       status:
-//         statusData[id] === "Done"
-//           ? "done"
-//           : statusData[id] === "Extend date"
-//           ? "extend"
-//           : null,
-//       next_extend_date:
-//         statusData[id] === "Extend date" ? nextTargetDate[id] : null,
-//       reason: remarksData[id] || "",
-//       image_url: null,
-//       require_attachment: item.require_attachment,
-//     };
-//   });
-
-//   const result = await dispatch(
-//     insertDelegationDoneAndUpdate({
-//       selectedDataArray: selectedData,
-//     })
-//   );
-
-//   if (result.meta.requestStatus === "fulfilled") {
-//     alert("Successfully submitted!");
-//   } else {
-//     alert("Submission failed!");
-//     console.error(result.payload);
-//   }
-
-//   setSelectedItems(new Set());
-//   setRemarksData({});
-//   setNextTargetDate({});
-//   setStatusData({});
-// };
+  //     } catch (error) {
+  //       console.error('Submission error:', error);
+  //       alert('An error occurred during submission. Please try again.');
+  //     } finally {
+  //       setIsSubmitting(false);
+  //     }
+  //   };
 
 
-const handleSubmit = async () => {
-  const selectedItemsArray = Array.from(selectedItems);
+  // const handleSubmit = async () => {
+  //   if (selectedItems.size === 0) {
+  //     alert("Please select at least one task");
+  //     return;
+  //   }
 
-  if (selectedItemsArray.length === 0) {
-    alert("Please select at least one task");
-    return;
-  }
+  //   const selectedData = Array.from(selectedItems).map((id) => {
+  //     const item = delegation.find((x) => x.task_id === id);
 
-  // Validation checks
-  const missingStatus = selectedItemsArray.filter((id) => !statusData[id]);
-  if (missingStatus.length > 0) {
-    alert(`Please select status for all selected items. ${missingStatus.length} item(s) are missing status.`);
-    return;
-  }
+  //     return {
+  //       task_id: item.task_id,
+  //       given_by: item.given_by,
+  //       name: item.name,
+  //       task_description: item.task_description,
+  //       task_start_date: item.task_start_date,
+  //       planned_date: item.planned_date,
+  //       status:
+  //         statusData[id] === "Done"
+  //           ? "done"
+  //           : statusData[id] === "Extend date"
+  //           ? "extend"
+  //           : null,
+  //       next_extend_date:
+  //         statusData[id] === "Extend date" ? nextTargetDate[id] : null,
+  //       reason: remarksData[id] || "",
+  //       image_url: null,
+  //       require_attachment: item.require_attachment,
+  //     };
+  //   });
 
-  const missingNextDate = selectedItemsArray.filter(
-    (id) => statusData[id] === "Extend date" && !nextTargetDate[id]
-  );
-  if (missingNextDate.length > 0) {
-    alert(`Please select next target date for "Extend date" items. ${missingNextDate.length} item(s) are missing date.`);
-    return;
-  }
+  //   const result = await dispatch(
+  //     insertDelegationDoneAndUpdate({
+  //       selectedDataArray: selectedData,
+  //     })
+  //   );
 
-  const missingRequiredImages = selectedItemsArray.filter((id) => {
-    const item = delegation.find((account) => account.task_id === id);
-    const requiresAttachment = item.require_attachment?.toUpperCase() === "YES";
-    return requiresAttachment && !uploadedImages[id] && !item.image;
-  });
+  //   if (result.meta.requestStatus === "fulfilled") {
+  //     alert("Successfully submitted!");
+  //   } else {
+  //     alert("Submission failed!");
+  //     console.error(result.payload);
+  //   }
 
-  if (missingRequiredImages.length > 0) {
-    alert(`Please upload images for required attachments. ${missingRequiredImages.length} item(s) missing images.`);
-    return;
-  }
-
-  setIsSubmitting(true);
-  setError(null);
-
-  try {
-    console.log('🔄 Starting submission process...');
-
-    // Convert to base64 - but check file sizes first
-    const selectedData = await Promise.all(
-      selectedItemsArray.map(async (id) => {
-        const item = delegation.find((x) => x.task_id === id);
-        const file = uploadedImages[id];
-
-        let base64Image = null;
-       if (file) {
-  base64Image = await fileToBase64(file);   // Always correct base64
-} else if (item.image) {
-  base64Image = null;   // Prevent backend confusion
-}
+  //   setSelectedItems(new Set());
+  //   setRemarksData({});
+  //   setNextTargetDate({});
+  //   setStatusData({});
+  // };
 
 
-        return {
-          task_id: item.task_id,
-          given_by: item.given_by,
-          name: item.name,
-          task_description: item.task_description,
-          task_start_date: item.task_start_date,
-          planned_date: item.planned_date,
-          status: statusData[id] === "Done" ? "done" : 
-                 statusData[id] === "Extend date" ? "extend" : null,
-          next_extend_date: statusData[id] === "Extend date" ? nextTargetDate[id] : null,
-          reason: remarksData[id] || "",
-          image_base64: base64Image,
-        };
-      })
+  const handleSubmit = async () => {
+    const selectedItemsArray = Array.from(selectedItems);
+
+    if (selectedItemsArray.length === 0) {
+      alert("Please select at least one task");
+      return;
+    }
+
+    // Validation checks
+    const missingStatus = selectedItemsArray.filter((id) => !statusData[id]);
+    if (missingStatus.length > 0) {
+      alert(`Please select status for all selected items. ${missingStatus.length} item(s) are missing status.`);
+      return;
+    }
+
+    const missingNextDate = selectedItemsArray.filter(
+      (id) => statusData[id] === "Extend date" && !nextTargetDate[id]
     );
+    if (missingNextDate.length > 0) {
+      alert(`Please select next target date for "Extend date" items. ${missingNextDate.length} item(s) are missing date.`);
+      return;
+    }
 
-    console.log('📦 Data prepared for submission:', {
-      itemCount: selectedData.length,
-      hasImages: selectedData.some(item => item.image_base64)
+    const missingRequiredImages = selectedItemsArray.filter((id) => {
+      const item = delegation.find((account) => account.task_id === id);
+      const requiresAttachment = item.require_attachment?.toUpperCase() === "YES";
+      return requiresAttachment && !uploadedImages[id] && !item.image;
     });
 
-    const result = await dispatch(
-      insertDelegationDoneAndUpdate({ selectedDataArray: selectedData })
-    );
-
-    console.log('📨 Dispatch result:', result);
-
-    if (result.meta.requestStatus === "fulfilled") {
-      setSuccessMessage(`✅ Successfully submitted ${selectedItemsArray.length} tasks!`);
-      
-      // Reset form
-      setSelectedItems(new Set());
-      setRemarksData({});
-      setNextTargetDate({});
-      setStatusData({});
-      setUploadedImages({});
-
-      // Refresh data after a short delay
-      setTimeout(() => {
-        dispatch(delegationData());
-        dispatch(delegationDoneData());
-      }, 2000);
-
-    } else {
-      throw new Error(result.payload || "Submission failed on server");
+    if (missingRequiredImages.length > 0) {
+      alert(`Please upload images for required attachments. ${missingRequiredImages.length} item(s) missing images.`);
+      return;
     }
 
-  } catch (error) {
-    console.error('❌ Submission error:', error);
-    
-    let errorMessage = "Submission failed. ";
-    
-    if (error.message.includes('Network error') || error.message.includes('network')) {
-      errorMessage += "Please check your internet connection and try again.";
-    } else if (error.message.includes('timeout')) {
-      errorMessage += "The request timed out. Please try again.";
-    } else if (error.message.includes('large')) {
-      errorMessage = error.message;
-    } else {
-      errorMessage += error.message;
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      console.log('🔄 Starting submission process...');
+
+      // Convert to base64 - but check file sizes first
+      const selectedData = await Promise.all(
+        selectedItemsArray.map(async (id) => {
+          const item = delegation.find((x) => x.task_id === id);
+          const file = uploadedImages[id];
+
+          let base64Image = null;
+          if (file) {
+            base64Image = await fileToBase64(file);   // Always correct base64
+          } else if (item.image) {
+            base64Image = null;   // Prevent backend confusion
+          }
+
+
+          return {
+            task_id: item.task_id,
+            given_by: item.given_by,
+            name: item.name,
+            task_description: item.task_description,
+            task_start_date: item.task_start_date,
+            planned_date: item.planned_date,
+            status: statusData[id] === "Done" ? "done" :
+              statusData[id] === "Extend date" ? "extend" : null,
+            next_extend_date: statusData[id] === "Extend date" ? nextTargetDate[id] : null,
+            reason: remarksData[id] || "",
+            image_base64: base64Image,
+          };
+        })
+      );
+
+      console.log('📦 Data prepared for submission:', {
+        itemCount: selectedData.length,
+        hasImages: selectedData.some(item => item.image_base64)
+      });
+
+      const result = await dispatch(
+        insertDelegationDoneAndUpdate({ selectedDataArray: selectedData })
+      );
+
+      console.log('📨 Dispatch result:', result);
+
+      if (result.meta.requestStatus === "fulfilled") {
+        setSuccessMessage(`✅ Successfully submitted ${selectedItemsArray.length} tasks!`);
+
+        // Reset form
+        setSelectedItems(new Set());
+        setRemarksData({});
+        setNextTargetDate({});
+        setStatusData({});
+        setUploadedImages({});
+
+        // Refresh data after a short delay
+        setTimeout(() => {
+          dispatch(delegationData());
+          dispatch(delegationDoneData());
+        }, 2000);
+
+      } else {
+        throw new Error(result.payload || "Submission failed on server");
+      }
+
+    } catch (error) {
+      console.error('❌ Submission error:', error);
+
+      let errorMessage = "Submission failed. ";
+
+      if (error.message.includes('Network error') || error.message.includes('network')) {
+        errorMessage += "Please check your internet connection and try again.";
+      } else if (error.message.includes('timeout')) {
+        errorMessage += "The request timed out. Please try again.";
+      } else if (error.message.includes('large')) {
+        errorMessage = error.message;
+      } else {
+        errorMessage += error.message;
+      }
+
+      setError(errorMessage);
+      setSuccessMessage(`❌ ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setError(errorMessage);
-    setSuccessMessage(`❌ ${errorMessage}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
 
   const selectedItemsCount = selectedItems.size;
@@ -755,7 +755,7 @@ const handleSubmit = async () => {
     <AdminLayout>
       <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
         <div className="flex flex-col gap-3 sm:gap-4">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-purple-700">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-red-700">
             {showHistory
               ? CONFIG.PAGE_CONFIG.historyTitle
               : CONFIG.PAGE_CONFIG.title}
@@ -857,12 +857,12 @@ const handleSubmit = async () => {
                 ? `Completed ${CONFIG.SOURCE_SHEET_NAME} Tasks`
                 : `Pending ${CONFIG.SOURCE_SHEET_NAME} Tasks`}
             </h2>
-            <p className="text-purple-600 text-xs sm:text-sm mt-1">
+            {/* <p className="text-purple-600 text-xs sm:text-sm mt-1">
               {showHistory
-                ? `${CONFIG.PAGE_CONFIG.historyDescription} for ${userRole === "admin" ? "all" : "your"
-                } tasks`
+                ? `${CONFIG.PAGE_CONFIG.historyDescription} ${userRole === "admin" ? "" : "your"
+                } `
                 : CONFIG.PAGE_CONFIG.description}
-            </p>
+            </p> */}
           </div>
 
           {loading ? (

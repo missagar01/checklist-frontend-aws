@@ -1,22 +1,24 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 
-const API = axios.create({
-  // baseURL: "http://localhost:5050/api/assign-task",
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/assign-task`,
-});
+// Routes are relative to baseURL in axiosInstance
+const BASE_URL = "/assign-task";
 
 export const fetchUniqueDepartmentDataApi = async (user_name) => {
-  return (await API.get(`/departments/${user_name}`)).data;
+  const res = await axiosInstance.get(`${BASE_URL}/departments/${user_name}`);
+  return res.data;
 };
 
 export const fetchUniqueGivenByDataApi = async () => {
-  return (await API.get(`/given-by`)).data;
+  const res = await axiosInstance.get(`${BASE_URL}/given-by`);
+  return res.data;
 };
 
 export const fetchUniqueDoerNameDataApi = async (department) => {
-  return (await API.get(`/doer/${department}`)).data;
+  const res = await axiosInstance.get(`${BASE_URL}/doer/${department}`);
+  return res.data;
 };
 
 export const pushAssignTaskApi = async (tasks) => {
-  return (await API.post(`/assign`, tasks)).data;
+  const res = await axiosInstance.post(`${BASE_URL}/assign`, tasks);
+  return res.data;
 };

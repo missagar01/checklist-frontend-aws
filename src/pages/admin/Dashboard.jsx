@@ -1063,23 +1063,24 @@ export default function AdminDashboard() {
         </div>
         */}
 
+        <DashboardHeader
+          dashboardType={dashboardType}
+          setDashboardType={setDashboardType}
+          dashboardStaffFilter={dashboardStaffFilter}
+          setDashboardStaffFilter={setDashboardStaffFilter}
+          availableStaff={availableStaff}
+          userRole={userRole}
+          username={username}
+          departmentFilter={departmentFilter}
+          setDepartmentFilter={setDepartmentFilter}
+          availableDepartments={availableDepartments}
+          isLoadingMore={isLoadingMore}
+          onDateRangeChange={handleDateRangeChange}
+        />
+
         {/* Render the selected dashboard view */}
         {dashboardView === "checklist" && (
           <>
-            <DashboardHeader
-              dashboardType={dashboardType}
-              setDashboardType={setDashboardType}
-              dashboardStaffFilter={dashboardStaffFilter}
-              setDashboardStaffFilter={setDashboardStaffFilter}
-              availableStaff={availableStaff}
-              userRole={userRole}
-              username={username}
-              departmentFilter={departmentFilter}
-              setDepartmentFilter={setDepartmentFilter}
-              availableDepartments={availableDepartments}
-              isLoadingMore={isLoadingMore}
-              onDateRangeChange={handleDateRangeChange}
-            />
 
             <StatisticsCards
               totalTask={displayStats.totalTasks}
@@ -1114,8 +1115,8 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div className="rounded-lg border border-purple-200 shadow-md bg-white">
                   <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
-                    <h3 className="text-purple-700 font-medium">Staff Task Summary</h3>
-                    <p className="text-purple-600 text-sm">Overview of tasks assigned to each staff member</p>
+                    <h3 className="text-red-900 font-medium">Staff Task Summary</h3>
+                    <p className="text-gray-700 text-sm">Overview of tasks assigned to each staff member</p>
                   </div>
                   <div className="p-4">
                     <StaffTasksTable
@@ -1131,8 +1132,8 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {dashboardView === "maintenance" && <MaintenanceDashboard />}
-        {dashboardView === "housekeeping" && <HousekeepingDashboard />}
+        {dashboardView === "maintenance" && <MaintenanceDashboard dateRange={dateRange.filtered ? dateRange : null} />}
+        {dashboardView === "housekeeping" && <HousekeepingDashboard dateRange={dateRange.filtered ? dateRange : null} />}
       </div>
     </AdminLayout>
   )

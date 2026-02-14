@@ -1,11 +1,11 @@
-import axios from "axios";
+import axiosInstance from "./axiosInstance";
 
-// Dynamic Base URL
-const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;
+// Routes are relative to baseURL in axiosInstance
+const BASE_URL = "";
 
 export const addNewChecklistTaskApi = async (formData) => {
   try {
-    const res = await axios.post(`${BASE_URL}/add-new-task`, formData);
+    const res = await axiosInstance.post(`${BASE_URL}/add-new-task`, formData);
 
     return { data: res.data }; // same return format
   } catch (err) {

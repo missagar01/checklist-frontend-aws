@@ -118,7 +118,7 @@ export default function QuickTask() {
     setEditingTaskId(task.task_id);
     setError(null);
     setSuccessMessage("");
-    
+
     // Normalize frequency to match select box options (capitalize first letter)
     const normalizeFrequency = (freq) => {
       if (!freq) return "";
@@ -127,7 +127,7 @@ export default function QuickTask() {
       // Capitalize first letter, lowercase rest
       return freqStr.charAt(0).toUpperCase() + freqStr.slice(1).toLowerCase();
     };
-    
+
     // Normalize Yes/No values to match select box options
     const normalizeYesNo = (value) => {
       if (!value) return "";
@@ -136,7 +136,7 @@ export default function QuickTask() {
       // Capitalize first letter
       return valueStr.charAt(0).toUpperCase() + valueStr.slice(1).toLowerCase();
     };
-    
+
     // Pre-fill form with existing task data - ensure exact value matching for selects
     setEditFormData({
       task_id: task.task_id,
@@ -193,7 +193,7 @@ export default function QuickTask() {
 
       // Update was successful - show success message
       setSuccessMessage("Task updated successfully! ✅");
-      
+
       // Close modal after 2 seconds
       setTimeout(() => {
         setEditingTaskId(null);
@@ -261,7 +261,7 @@ export default function QuickTask() {
     SHEET_NAME: "Unique task",
     DELEGATION_SHEET: "Delegation",
     PAGE_CONFIG: {
-      title: "Task Management",
+      title: "Quick Task",
       description: "Showing all unique tasks",
     },
   };
@@ -439,26 +439,25 @@ export default function QuickTask() {
   return (
     <AdminLayout>
       <div className="sticky top-0 z-30 bg-white pb-4 border-b border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-red-700 ">
+            {CONFIG.PAGE_CONFIG.title}
+          </h1>
+          <p className="text-purple-600 text-sm mb-2">
+            {activeTab === "checklist"
+              ? `Showing ${quickTask.length} task`
+              : `Showing delegation tasks`}
+          </p>
+        </div>
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-purple-700">
-              {CONFIG.PAGE_CONFIG.title}
-            </h1>
-            <p className="text-purple-600 text-sm">
-              {activeTab === "checklist"
-                ? `Showing ${quickTask.length} checklist tasks`
-                : `Showing delegation tasks`}
-            </p>
-          </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="flex border border-purple-200 rounded-md overflow-hidden self-start">
               <button
-                className={`px-4 py-2 text-sm font-medium ${
-                  activeTab === "checklist"
-                    ? "bg-purple-600 text-white"
-                    : "bg-white text-purple-600 hover:bg-purple-50"
-                }`}
+                className={`px-4 py-2 text-sm font-medium ${activeTab === "checklist"
+                  ? "bg-purple-600 text-white"
+                  : "bg-white text-purple-600 hover:bg-purple-50"
+                  }`}
                 onClick={() => {
                   setActiveTab("checklist");
                   dispatch(resetChecklistPagination());
@@ -474,11 +473,10 @@ export default function QuickTask() {
                 Checklist
               </button>
               <button
-                className={`px-4 py-2 text-sm font-medium ${
-                  activeTab === "delegation"
-                    ? "bg-purple-600 text-white"
-                    : "bg-white text-purple-600 hover:bg-purple-50"
-                }`}
+                className={`px-4 py-2 text-sm font-medium ${activeTab === "delegation"
+                  ? "bg-purple-600 text-white"
+                  : "bg-white text-purple-600 hover:bg-purple-50"
+                  }`}
                 onClick={() => {
                   setActiveTab("delegation");
                   dispatch(resetDelegationPagination());
@@ -584,9 +582,8 @@ export default function QuickTask() {
                   >
                     <ChevronDown
                       size={16}
-                      className={`transition-transform ${
-                        dropdownOpen.name ? "rotate-180" : ""
-                      }`}
+                      className={`transition-transform ${dropdownOpen.name ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
                 </div>
@@ -597,11 +594,10 @@ export default function QuickTask() {
                     <div className="py-1">
                       <button
                         onClick={clearNameFilter}
-                        className={`block w-full text-left px-4 py-2 text-sm ${
-                          !nameFilter
-                            ? "bg-purple-100 text-purple-900"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`block w-full text-left px-4 py-2 text-sm ${!nameFilter
+                          ? "bg-purple-100 text-purple-900"
+                          : "text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         All Names
                       </button>
@@ -612,11 +608,10 @@ export default function QuickTask() {
                             handleNameFilterSelect(name);
                             setDropdownOpen({ ...dropdownOpen, name: false });
                           }}
-                          className={`block w-full text-left px-4 py-2 text-sm ${
-                            nameFilter === name
-                              ? "bg-purple-100 text-purple-900"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`block w-full text-left px-4 py-2 text-sm ${nameFilter === name
+                            ? "bg-purple-100 text-purple-900"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           {name}
                         </button>
@@ -635,9 +630,8 @@ export default function QuickTask() {
                   {freqFilter || "Filter by Frequency"}
                   <ChevronDown
                     size={16}
-                    className={`transition-transform ${
-                      dropdownOpen.frequency ? "rotate-180" : ""
-                    }`}
+                    className={`transition-transform ${dropdownOpen.frequency ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {dropdownOpen.frequency && (
@@ -645,11 +639,10 @@ export default function QuickTask() {
                     <div className="py-1">
                       <button
                         onClick={clearFrequencyFilter}
-                        className={`block w-full text-left px-4 py-2 text-sm ${
-                          !freqFilter
-                            ? "bg-purple-100 text-purple-900"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={`block w-full text-left px-4 py-2 text-sm ${!freqFilter
+                          ? "bg-purple-100 text-purple-900"
+                          : "text-gray-700 hover:bg-gray-100"
+                          }`}
                       >
                         All Frequencies
                       </button>
@@ -657,11 +650,10 @@ export default function QuickTask() {
                         <button
                           key={freq}
                           onClick={() => handleFrequencyFilterSelect(freq)}
-                          className={`block w-full text-left px-4 py-2 text-sm ${
-                            freqFilter === freq
-                              ? "bg-purple-100 text-purple-900"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
+                          className={`block w-full text-left px-4 py-2 text-sm ${freqFilter === freq
+                            ? "bg-purple-100 text-purple-900"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
                         >
                           {freq}
                         </button>
@@ -741,7 +733,7 @@ export default function QuickTask() {
                           type="checkbox"
                           checked={
                             selectedTasks.length ===
-                              filteredChecklistTasks.length &&
+                            filteredChecklistTasks.length &&
                             filteredChecklistTasks.length > 0
                           }
                           onChange={handleSelectAll}
@@ -774,13 +766,11 @@ export default function QuickTask() {
                       ].map((column) => (
                         <th
                           key={column.label}
-                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                            column.bg || ""
-                          } ${column.minWidth || ""} ${
-                            column.key && column.key !== "actions"
+                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.bg || ""
+                            } ${column.minWidth || ""} ${column.key && column.key !== "actions"
                               ? "cursor-pointer hover:bg-gray-100"
                               : ""
-                          }`}
+                            }`}
                           onClick={() =>
                             column.key &&
                             column.key !== "actions" &&
@@ -893,8 +883,8 @@ export default function QuickTask() {
                                 value={
                                   editFormData.task_start_date
                                     ? new Date(editFormData.task_start_date)
-                                        .toISOString()
-                                        .slice(0, 16)
+                                      .toISOString()
+                                      .slice(0, 16)
                                     : ""
                                 }
                                 onChange={(e) =>
@@ -933,15 +923,14 @@ export default function QuickTask() {
                               </select>
                             ) : (
                               <span
-                                className={`px-2 py-1 rounded-full text-xs ${
-                                  task.frequency === "Daily"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : task.frequency === "Weekly"
+                                className={`px-2 py-1 rounded-full text-xs ${task.frequency === "Daily"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : task.frequency === "Weekly"
                                     ? "bg-green-100 text-green-800"
                                     : task.frequency === "Monthly"
-                                    ? "bg-purple-100 text-purple-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
+                                      ? "bg-purple-100 text-purple-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
                               >
                                 {task.frequency}
                               </span>

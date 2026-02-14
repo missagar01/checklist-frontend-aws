@@ -901,11 +901,12 @@ const Setting = () => {
     const filteredLeaveUsers = Array.isArray(userData)
         ? userData.filter(
             (user) =>
-                !leaveUsernameFilter ||
-                (user?.user_name &&
-                    user.user_name
-                        .toLowerCase()
-                        .includes(leaveUsernameFilter.toLowerCase()))
+                user?.user_name !== "admin" &&
+                (!leaveUsernameFilter ||
+                    (user?.user_name &&
+                        user.user_name
+                            .toLowerCase()
+                            .includes(leaveUsernameFilter.toLowerCase())))
         )
         : [];
 
@@ -1059,7 +1060,7 @@ const Setting = () => {
                                             <datalist id="leaveUsernameOptions">
                                                 {Array.isArray(userData) &&
                                                     userData
-                                                        .filter((user) => user && user.id && user.user_name)
+                                                        .filter((user) => user && user.id && user.user_name && user.user_name !== "admin")
                                                         .map((user) => (
                                                             <option
                                                                 key={user.id}
@@ -1250,7 +1251,7 @@ const Setting = () => {
                                             <datalist id="usernameOptions">
                                                 {Array.isArray(userData) &&
                                                     userData
-                                                        .filter((user) => user && user.id && user.user_name)
+                                                        .filter((user) => user && user.id && user.user_name && user.user_name !== "admin")
                                                         .map((user) => (
                                                             <option
                                                                 key={user.id}
@@ -1297,7 +1298,9 @@ const Setting = () => {
                                                     All Usernames
                                                 </button>
                                                 {Array.isArray(userData) &&
-                                                    userData.map((user) => (
+                                                    userData
+                                                        .filter((user) => user && user.user_name !== "admin")
+                                                        .map((user) => (
                                                         <button
                                                             key={user.id}
                                                             onClick={() =>
@@ -1395,6 +1398,7 @@ const Setting = () => {
                                     {Array.isArray(userData) && userData.length > 0 ? (
                                         userData
                                             .filter((user) => {
+                                                if (user?.user_name === "admin") return false;
                                                 if (!usernameFilter) return true;
 
                                                 const search = usernameFilter.toLowerCase();

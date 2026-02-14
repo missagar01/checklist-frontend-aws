@@ -12,6 +12,8 @@ const SESSION_KEYS = [
   "page_access",
   "system_access",
   "userData",
+  "user-pass",
+  "user_pass",
 ];
 
 /** Clears every session/localStorage key that holds user context. */

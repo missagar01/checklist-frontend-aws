@@ -1301,19 +1301,19 @@ const Setting = () => {
                                                     userData
                                                         .filter((user) => user && user.user_name !== "admin")
                                                         .map((user) => (
-                                                        <button
-                                                            key={user.id}
-                                                            onClick={() =>
-                                                                handleUsernameFilterSelect(user.user_name)
-                                                            }
-                                                            className={`block w-full text-left px-4 py-2 text-sm ${usernameFilter === user.user_name
-                                                                ? "bg-purple-100 text-purple-900"
-                                                                : "text-gray-700 hover:bg-gray-100"
-                                                                }`}
-                                                        >
-                                                            {user.user_name}
-                                                        </button>
-                                                    ))}
+                                                            <button
+                                                                key={user.id}
+                                                                onClick={() =>
+                                                                    handleUsernameFilterSelect(user.user_name)
+                                                                }
+                                                                className={`block w-full text-left px-4 py-2 text-sm ${usernameFilter === user.user_name
+                                                                    ? "bg-purple-100 text-purple-900"
+                                                                    : "text-gray-700 hover:bg-gray-100"
+                                                                    }`}
+                                                            >
+                                                                {user.user_name}
+                                                            </button>
+                                                        ))}
                                             </div>
                                         </div>
                                     )}

@@ -15,17 +15,23 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     username: localStorage.getItem('user-name') || "",
-    password: "",
+    password: localStorage.getItem('user-pass') || "",
   })
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('user-name')
     const storedToken = localStorage.getItem('token')
+    const storedPassword = localStorage.getItem('user-pass')
+
     if (storedUsername && storedToken) {
       navigate("/dashboard/admin")
+    } else if (storedUsername && storedPassword && !isLoggedIn && !isLoginLoading && !error) {
+      // Auto-login using stored credentials
+      setIsLoginLoading(true)
+      dispatch(loginUser({ username: storedUsername, password: storedPassword }))
     }
-  }, [navigate])
+  }, [navigate, isLoggedIn, isLoginLoading, dispatch, error])
 
   useEffect(() => {
     if (isLoggedIn && (userData || localStorage.getItem('token'))) {
@@ -44,6 +50,7 @@ const LoginPage = () => {
         'system_access': userData?.system_access || localStorage.getItem('system_access') || "",
         'verify_access': userData?.verify_access || localStorage.getItem('verify_access') || "",
         'verify_access_dept': userData?.verify_access_dept || localStorage.getItem('verify_access_dept') || "",
+        'user-pass': formData.password || localStorage.getItem('user-pass') || "",
       }
 
       Object.entries(dataToStore).forEach(([key, value]) => {

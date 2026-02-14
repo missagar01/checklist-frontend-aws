@@ -81,6 +81,8 @@ const loginSlice = createSlice({
       state.error = null;
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
+      localStorage.removeItem('user-pass');
+      localStorage.removeItem('user_pass');
     }
   },
   extraReducers: (builder) => {

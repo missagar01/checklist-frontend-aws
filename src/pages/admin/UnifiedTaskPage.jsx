@@ -400,7 +400,7 @@ export default function UnifiedTaskPage() {
                     await dispatch(submitChecklistUserStatus([{
                         taskId,
                         remark: remarks || '',   // ✅ only remark
-                        status: status, 
+                        status: status,
                     }])).unwrap();
                     dispatch(checklistData(1))
                 }

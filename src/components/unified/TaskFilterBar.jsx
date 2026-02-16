@@ -89,7 +89,7 @@ export default function TaskFilterBar({
 
                 {/* MAIN TOGGLE: All vs Pending vs History */}
                 <div className="flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 bg-gray-100 rounded-lg">
-                    <button
+                    {/* <button
                         onClick={() => handleChange("status", "")}
                         className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${!status
                             ? "bg-blue-600 text-white shadow-md"
@@ -99,7 +99,7 @@ export default function TaskFilterBar({
                         <ListFilter className="h-3 w-3 sm:h-4 sm:w-4" />
                         <span className="hidden xs:inline">📊 All Tasks</span>
                         <span className="xs:hidden">All</span>
-                    </button>
+                    </button> */}
                     <button
                         onClick={() => handleChange("status", "Pending")}
                         className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${status === "Pending"
@@ -108,7 +108,7 @@ export default function TaskFilterBar({
                             }`}
                     >
                         <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden xs:inline">⏳ Pending</span>
+                        <span className="hidden xs:inline">Pending</span>
                         <span className="xs:hidden">Pending</span>
                     </button>
                     <button
@@ -119,8 +119,8 @@ export default function TaskFilterBar({
                             }`}
                     >
                         <History className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden xs:inline">✅ Completed</span>
-                        <span className="xs:hidden">Done</span>
+                        <span className="hidden xs:inline">Completed</span>
+                        <span className="xs:hidden">Completed</span>
                     </button>
                 </div>
 

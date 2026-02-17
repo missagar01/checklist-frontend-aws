@@ -261,6 +261,7 @@ const Setting = () => {
         password: "",
         phone: "",
         employee_id: "",
+        department: "", // Single selection for department column
         departments: [], // Change from single department to array
         givenBy: "",
         role: "user",
@@ -301,7 +302,7 @@ const Setting = () => {
             role: userForm.role || "user",
             status: userForm.status || "active",
             user_access: departmentsString, // Join array into comma-separated string
-            department: departmentsString, // Same data as user_access - goes to department column
+            department: userForm.department || "", // From single select dropdown
             givenBy: userForm.givenBy?.trim() || "", // Add givenBy field
             user_access1: (() => {
                 // Handle user_access1: if it's an array, join with commas; if string, use as is; otherwise convert to string
@@ -323,10 +324,10 @@ const Setting = () => {
         };
 
         // Validate required fields
-        if (!newUser.username || !newUser.email || !newUser.password) {
+        if (!newUser.username || !newUser.email || !newUser.password || !newUser.department) {
             setUpdateMessage({
                 type: "error",
-                text: "Please fill in all required fields (Username, Email, Password).",
+                text: "Please fill in all required fields (Username, Email, Password, Department).",
             });
             setIsUpdating(false);
             return;
@@ -434,7 +435,7 @@ const Setting = () => {
             role: userForm.role || "user",
             status: userForm.status || "active",
             user_access: departmentsString, // Join array into comma-separated string
-            department: departmentsString, // Same data as user_access - goes to department column
+            department: userForm.department || "", // From single select dropdown
             user_access1: (() => {
                 // Handle user_access1: if it's an array, join with commas; if string, use as is; otherwise convert to string
                 if (Array.isArray(userForm.user_access1)) {
@@ -798,12 +799,14 @@ const Setting = () => {
             password: "", // Leave empty initially, user can change if needed
             phone: user.number || "",
             employee_id: user.employee_id || "",
+            department: user.department || "",
             departments: user.user_access
                 ? user.user_access
                     .split(",")
                     .map((d) => d.trim())
                     .filter(Boolean)
                 : [], // Split comma-separated string into array
+            givenBy: user.givenBy || "",
             role: user.role || "user",
             status: user.status || "active",
             user_access1: user.user_access1 !== null && user.user_access1 !== undefined
@@ -826,12 +829,14 @@ const Setting = () => {
 
     const handleEditDepartment = (deptId) => {
         const dept = department.find((d) => d.id === deptId);
-        setDeptForm({
-            name: dept.department, // Match your API response field names
-            givenBy: dept.given_by,
-        });
-        setCurrentDeptId(deptId);
-        setShowDeptModal(true);
+        if (dept) {
+            setDeptForm({
+                name: dept.department || "",
+                givenBy: dept.given_by || "",
+            });
+            setCurrentDeptId(deptId);
+            setShowDeptModal(true);
+        }
     };
 
     const resetUserForm = () => {
@@ -841,6 +846,7 @@ const Setting = () => {
             password: "",
             phone: "",
             employee_id: "",
+            department: "",
             departments: [], // Reset to empty array
             givenBy: "",
             role: "user",
@@ -855,6 +861,7 @@ const Setting = () => {
         setUpdateMessage({ type: "", text: "" }); // Clear messages
         setOriginalSystemAccess(""); // Reset original system_access
         setVerifyAccessValue("");
+        setVerifyAccessDepts([]);
     };
 
     // Department form handlers
@@ -2008,12 +2015,36 @@ const Setting = () => {
                                                 </select>
                                             </div>
 
+                                            <div className="sm:col-span-2 lg:col-span-1">
+                                                <label
+                                                    htmlFor="department"
+                                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                                >
+                                                    Department
+                                                </label>
+                                                <select
+                                                    id="department"
+                                                    name="department"
+                                                    value={userForm.department}
+                                                    onChange={handleUserInputChange}
+                                                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    required
+                                                >
+                                                    <option value="">Select Department</option>
+                                                    {availableDepartments.map((dept) => (
+                                                        <option key={dept} value={dept}>
+                                                            {dept}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
                                             <div className="sm:col-span-2 lg:col-span-3">
                                                 <label
                                                     htmlFor="departments"
                                                     className="block text-sm font-medium text-gray-700"
                                                 >
-                                                    Departments (Multiple Selection)
+                                                    Departments Access (Multiple Selection)
                                                 </label>
 
                                                 {/* Dropdown trigger button */}

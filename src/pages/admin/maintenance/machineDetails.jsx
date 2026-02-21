@@ -39,19 +39,12 @@ import toast from "react-hot-toast";
 const MachineDetails = ({ machine, goBack }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [historyMaitenenceTasks, setHistoryMaitenenceTasks] = useState([]);
-  const [historyRepairTasks, setHistoryRepairTasks] = useState([]);
   const [nextMaintenanceDate, setNextMaintenanceDate] = useState(null);
-  const [nextRepairDate, setNextRepairDate] = useState(null);
   const [totalMaintenanceCost, setTotalMaintenanceCost] = useState(0);
-  const [totalRepairCost, setTotalRepairCost] = useState(0);
-  const [totalRepairPurchasePrise, setTotalRepairPurchasePrise] = useState(0);
   const [totalMaintenancePurchasePrise, setTotalMaintenancePurchasePrise] = useState(0);
   const [maintenanceCount, setMaintenanceCount] = useState(0);
-  const [repairCount, setRepairCount] = useState(0);
   const [metainanceHealthScore, setMetainanceHealthScore] = useState(0);
-  const [repairHealthScore, setRepairHealthScore] = useState(0);
   const [temperatureGraphData, setTemperatureGraphData] = useState([]);
-  const [percentRepairToPurchase, setPercentRepairToPurchase] = useState(0);
   const [percentMaintenanceToPurchase, setPercentMaintenanceToPurchase] = useState(0);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -68,7 +61,7 @@ const MachineDetails = ({ machine, goBack }) => {
   // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
   console.log(API_BASE_URL)
 
-  
+
   // Enhanced formatSheetData with better error handling
   const formatSheetData = (sheetData) => {
     // Check if sheetData exists and has the expected structure
@@ -98,45 +91,45 @@ const MachineDetails = ({ machine, goBack }) => {
 
 
 
-const fetchMaintenanceHistory = async () => {
-  if (!machine || !machine["Serial No"]) return;
+  const fetchMaintenanceHistory = async () => {
+    if (!machine || !machine["Serial No"]) return;
 
-  setLoadingTasks(true);
-  try {
-    // const res = await axios.get(`${API_BASE_URL}/${machine["Serial No"]}/history`);
-    const res = await axiosInstance.get(
-  `/machine-details/${encodeURIComponent(machine["Serial No"])}/history`
-);
+    setLoadingTasks(true);
+    try {
+      // const res = await axios.get(`${API_BASE_URL}/${machine["Serial No"]}/history`);
+      const res = await axiosInstance.get(
+        `/machine-details/${encodeURIComponent(machine["Serial No"])}/history`
+      );
 
-    if (res.data.success) {
-      const tasks = res.data.data || [];
-      setHistoryMaitenenceTasks(tasks);
+      if (res.data.success) {
+        const tasks = res.data.data || [];
+        setHistoryMaitenenceTasks(tasks);
 
-      const totalCost = tasks.reduce((sum, t) => sum + (parseFloat(t.maintenance_cost) || 0), 0);
-      setTotalMaintenanceCost(totalCost);
-      setMaintenanceCount(tasks.length);
+        const totalCost = tasks.reduce((sum, t) => sum + (parseFloat(t.maintenance_cost) || 0), 0);
+        setTotalMaintenanceCost(totalCost);
+        setMaintenanceCount(tasks.length);
 
-      const purchasePrice = parseFloat(machine["Purchase Price"] || 0);
-      const ratio = purchasePrice > 0 ? (totalCost * 100) / purchasePrice : 0;
-      setPercentMaintenanceToPurchase(ratio);
+        const purchasePrice = parseFloat(machine["Purchase Price"] || 0);
+        const ratio = purchasePrice > 0 ? (totalCost * 100) / purchasePrice : 0;
+        setPercentMaintenanceToPurchase(ratio);
 
-      // Temperature chart data
-      const tempData = tasks
-        .filter((t) => t.temperature_status)
-        .map((t) => ({
-          time: t.task_start_date ? new Date(t.task_start_date).toLocaleDateString() : "N/A",
-          temp: Number(t.temperature_status),
-        }));
+        // Temperature chart data
+        const tempData = tasks
+          .filter((t) => t.temperature_status)
+          .map((t) => ({
+            time: t.task_start_date ? new Date(t.task_start_date).toLocaleDateString() : "N/A",
+            temp: Number(t.temperature_status),
+          }));
 
-      setTemperatureGraphData(tempData);
+        setTemperatureGraphData(tempData);
+      }
+    } catch (err) {
+      console.error("Error fetching history:", err);
+      toast.error("Failed to fetch maintenance history");
+    } finally {
+      setLoadingTasks(false);
     }
-  } catch (err) {
-    console.error("Error fetching history:", err);
-    toast.error("Failed to fetch maintenance history");
-  } finally {
-    setLoadingTasks(false);
-  }
-};
+  };
 
 
 
@@ -230,60 +223,60 @@ const fetchMaintenanceHistory = async () => {
     }));
   };
 
-const handleSave = async () => {
-  setSaving(true);
+  const handleSave = async () => {
+    setSaving(true);
 
-  try {
-    const serial = machine?.["Serial No"];
-    if (!serial) {
-      toast.error("Missing Serial No — cannot update");
-      return;
+    try {
+      const serial = machine?.["Serial No"];
+      if (!serial) {
+        toast.error("Missing Serial No — cannot update");
+        return;
+      }
+
+      // Build clean payload for PostgreSQL
+      const payload = {
+        machine_name: editFormData.machineName,
+        model_no: editFormData.model,
+        manufacturer: editFormData.manufacturer,
+        department: editFormData.department,
+        location: editFormData.location,
+        purchase_date: editFormData.purchaseDate,
+        purchase_price: editFormData.purchasePrice,
+        vendor: editFormData.vendor,
+        warranty_expiration: editFormData.warrantyExpiration,
+        initial_maintenance_date: editFormData.initialMaintenanceDate,
+        notes: editFormData.note,
+        tag_no: editFormData.tagNo,
+        user_allot: editFormData.userAllot,
+      };
+
+      console.log("📤 Sending UPDATE to PostgreSQL:", payload);
+
+      // Send to Express → PostgreSQL
+      const res = await axiosInstance.put(
+        `/machine-details/${encodeURIComponent(serial)}`,
+        payload
+      );
+
+      console.log("📥 PostgreSQL Response:", res.data);
+
+      if (res.data.success) {
+        toast.success("Machine updated successfully");
+        setIsEditing(false);
+
+        // Refresh UI
+        setTimeout(() => window.location.reload(), 800);
+      } else {
+        toast.error("Failed to update the machine");
+      }
+
+    } catch (err) {
+      console.error("❌ Update error:", err);
+      toast.error("Error updating machine");
+    } finally {
+      setSaving(false);
     }
-
-    // Build clean payload for PostgreSQL
-    const payload = {
-      machine_name: editFormData.machineName,
-      model_no: editFormData.model,
-      manufacturer: editFormData.manufacturer,
-      department: editFormData.department,
-      location: editFormData.location,
-      purchase_date: editFormData.purchaseDate,
-      purchase_price: editFormData.purchasePrice,
-      vendor: editFormData.vendor,
-      warranty_expiration: editFormData.warrantyExpiration,
-      initial_maintenance_date: editFormData.initialMaintenanceDate,
-      notes: editFormData.note,
-      tag_no: editFormData.tagNo,
-      user_allot: editFormData.userAllot,
-    };
-
-    console.log("📤 Sending UPDATE to PostgreSQL:", payload);
-
-    // Send to Express → PostgreSQL
-    const res = await axiosInstance.put(
-      `/machine-details/${encodeURIComponent(serial)}`,
-      payload
-    );
-
-    console.log("📥 PostgreSQL Response:", res.data);
-
-    if (res.data.success) {
-      toast.success("Machine updated successfully");
-      setIsEditing(false);
-
-      // Refresh UI
-      setTimeout(() => window.location.reload(), 800);
-    } else {
-      toast.error("Failed to update the machine");
-    }
-
-  } catch (err) {
-    console.error("❌ Update error:", err);
-    toast.error("Error updating machine");
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
 
 
@@ -396,124 +389,16 @@ const handleSave = async () => {
     }
   };
 
-  const fetchRepairTasks = async () => {
-    if (!machine || !machine["Serial No"]) {
-      console.warn("Machine data not available yet");
-      return;
+
+
+  useEffect(() => {
+    if (machine && machine["Serial No"]) {
+      fetchMaintenanceHistory();
     }
-
-    setLoadingTasks(true);
-    try {
-      const response = await axios.get(
-        `${SCRIPT_URL}?sheetId=${SHEET_Id}&sheet=Repair%20Task%20Assign`
-      );
-
-      // Check if response has data and is successful
-      if (!response.data || !response.data.success) {
-        console.warn("No valid data received from API");
-        return;
-      }
-
-      const formattedHistoryData = formatSheetData(response.data);
-
-      if (formattedHistoryData.length === 0) {
-        console.warn("No formatted data available");
-        return;
-      }
-
-      const machineFilteredTasks = formattedHistoryData.filter(
-        (task) => task["Serial No"] === machine["Serial No"]
-      );
-
-      const filteredTasks = machineFilteredTasks.filter(
-        (task) => task["Actual Date"] && task["Actual Date"] !== ""
-      );
-
-      setHistoryRepairTasks(filteredTasks);
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const upcomingTask = machineFilteredTasks.find((task) => {
-        if (!task["Task Start Date"]) return false;
-        try {
-          const dateOnlyStr = task["Task Start Date"].split(" ")[0];
-          const taskDate = new Date(dateOnlyStr);
-          return taskDate > today;
-        } catch {
-          return false;
-        }
-      });
-
-      setNextRepairDate(upcomingTask);
-
-      const totalCost = filteredTasks.reduce((sum, task) => {
-        const cost = parseFloat(task["Repair Cost"]) || 0;
-        return sum + cost;
-      }, 0);
-
-      setTotalRepairCost(totalCost);
-
-      const purchasePrice = machine["Purchase Price"]
-        ? parseFloat(machine["Purchase Price"])
-        : (filteredTasks.length > 0 && filteredTasks[0]["Purchase Price"]
-          ? parseFloat(filteredTasks[0]["Purchase Price"])
-          : 0);
-
-      setTotalRepairPurchasePrise(purchasePrice);
-
-      const repairToPurchaseRatio = purchasePrice > 0
-        ? (totalCost * 100) / purchasePrice
-        : 0;
-      setPercentRepairToPurchase(repairToPurchaseRatio);
-
-      setRepairCount(filteredTasks.length);
-
-      const healthScore = machineFilteredTasks.length > 0
-        ? Math.floor((filteredTasks.length * 100) / machineFilteredTasks.length)
-        : 0;
-      setRepairHealthScore(healthScore);
-
-    } catch (error) {
-      console.error("Error fetching repair tasks:", error);
-    } finally {
-      setLoadingTasks(false);
-    }
-  };
-
-useEffect(() => {
-  if (machine && machine["Serial No"]) {
-    fetchMaintenanceHistory();
-  }
-}, [machine]);
+  }, [machine]);
 
 
-  const getMonthlyRepairCosts = () => {
-    const monthlyCosts = {};
-    historyRepairTasks.forEach((task) => {
-      if (task["Actual Date"] && task["Repair Cost"]) {
-        try {
-          const date = new Date(task["Actual Date"]);
-          const month = date.toLocaleString("default", { month: "short" });
-          const year = date.getFullYear();
-          const monthYear = `${month}-${year}`;
-          const cost = parseFloat(task["Repair Cost"]) || 0;
 
-          if (monthlyCosts[monthYear]) {
-            monthlyCosts[monthYear] += cost;
-          } else {
-            monthlyCosts[monthYear] = cost;
-          }
-        } catch (error) {
-          console.warn("Invalid date format:", task["Actual Date"]);
-        }
-      }
-    });
-
-    return Object.keys(monthlyCosts).map((monthYear) => ({
-      month: monthYear,
-      cost: monthlyCosts[monthYear],
-    }));
-  };
 
   const getMonthlyMaintenanceCosts = () => {
     const monthlyCosts = {};
@@ -543,7 +428,7 @@ useEffect(() => {
     }));
   };
 
-  const monthlyRepairCosts = getMonthlyRepairCosts();
+
   const monthlyMaintenanceCosts = getMonthlyMaintenanceCosts();
 
   // Show loading or error state if machine data is not available

@@ -22,11 +22,11 @@ const initialState = {
   userDepartments: [],
   givenByOptions: [],
   doerNames: [],
-  
+
   // Tasks
   pendingTasks: [],
   historyTasks: [],
-  
+
   // Dashboard
   dashboardSummary: {
     total: 0,
@@ -44,7 +44,7 @@ const initialState = {
     overdue: 0,
     notdone: 0
   },
-  
+
   // Loading states
   loading: false,
   assigningTask: false,
@@ -54,10 +54,10 @@ const initialState = {
   loadingDashboard: false,
   loadingTaskCounts: false,
   loadingDashboardTasks: false,
-  
+
   // Error states
   error: null,
-  
+
   // Pagination
   pendingPage: 1,
   historyPage: 1,
@@ -139,7 +139,7 @@ export const fetchHousekeepingPendingTasks = createAsyncThunk(
       const items = Array.isArray(data) ? data : data?.items || [];
       const total = data?.total ?? items.length;
       const limit = filters.limit || 100;
-      
+
       return {
         items,
         total,
@@ -162,7 +162,7 @@ export const fetchHousekeepingHistoryTasks = createAsyncThunk(
       const items = Array.isArray(data) ? data : data?.items || [];
       const total = data?.total ?? items.length;
       const limit = filters.limit || 100;
-      
+
       return {
         items,
         total,
@@ -178,9 +178,9 @@ export const fetchHousekeepingHistoryTasks = createAsyncThunk(
 // Confirm Task
 export const confirmHousekeepingTask = createAsyncThunk(
   "housekeeping/confirmTask",
-  async ({ taskId, remark = "", imageFile = null, doerName2 = "" }, { rejectWithValue }) => {
+  async ({ taskId, remark = "", imageFile = null, doerName2 = "", hod = "" }, { rejectWithValue }) => {
     try {
-      const response = await confirmHousekeepingTaskAPI(taskId, remark, imageFile, doerName2);
+      const response = await confirmHousekeepingTaskAPI(taskId, remark, imageFile, doerName2, hod);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || error.message);
@@ -276,7 +276,7 @@ export const fetchHousekeepingDashboardTasks = createAsyncThunk(
       const data = response.data;
       const items = Array.isArray(data) ? data : data?.items || [];
       const total = data?.total ?? items.length;
-      
+
       return {
         items,
         total,
@@ -329,17 +329,17 @@ const housekeepingSlice = createSlice({
         state.assigningTask = false;
         state.error = action.payload;
       })
-      
+
       // Fetch Locations
       .addCase(fetchHousekeepingLocations.fulfilled, (state, action) => {
         state.locations = action.payload;
       })
-      
+
       // Fetch User Departments
       .addCase(fetchHousekeepingUserDepartments.fulfilled, (state, action) => {
         state.userDepartments = action.payload;
       })
-      
+
       // Create Location
       .addCase(createHousekeepingLocation.pending, (state) => {
         state.creatingLocation = true;
@@ -352,7 +352,7 @@ const housekeepingSlice = createSlice({
         state.creatingLocation = false;
         state.error = action.payload;
       })
-      
+
       // Fetch Pending Tasks
       .addCase(fetchHousekeepingPendingTasks.pending, (state) => {
         state.loading = true;
@@ -372,7 +372,7 @@ const housekeepingSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch History Tasks
       .addCase(fetchHousekeepingHistoryTasks.pending, (state) => {
         state.loading = true;
@@ -392,7 +392,7 @@ const housekeepingSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Confirm Task
       .addCase(confirmHousekeepingTask.pending, (state) => {
         state.confirmingTask = true;
@@ -410,7 +410,7 @@ const housekeepingSlice = createSlice({
         state.confirmingTask = false;
         state.error = action.payload;
       })
-      
+
       // Submit Tasks
       .addCase(submitHousekeepingTasks.pending, (state) => {
         state.submittingTasks = true;
@@ -423,7 +423,7 @@ const housekeepingSlice = createSlice({
         state.submittingTasks = false;
         state.error = action.payload;
       })
-      
+
       // Update Task
       .addCase(updateHousekeepingTask.fulfilled, (state, action) => {
         const updatedTask = action.payload;
@@ -434,12 +434,12 @@ const housekeepingSlice = createSlice({
           task.task_id === updatedTask.task_id ? updatedTask : task
         );
       })
-      
+
       // Fetch Given By
       .addCase(fetchHousekeepingGivenBy.fulfilled, (state, action) => {
         state.givenByOptions = action.payload;
       })
-      
+
       // Dashboard Summary
       .addCase(fetchHousekeepingDashboardSummary.pending, (state) => {
         state.loadingDashboard = true;
@@ -453,12 +453,12 @@ const housekeepingSlice = createSlice({
         state.loadingDashboard = false;
         state.error = action.payload;
       })
-      
+
       // Dashboard Departments
       .addCase(fetchHousekeepingDepartments.fulfilled, (state, action) => {
         state.dashboardDepartments = action.payload;
       })
-      
+
       // Task Counts
       .addCase(fetchHousekeepingTaskCounts.pending, (state) => {
         state.loadingTaskCounts = true;
@@ -470,7 +470,7 @@ const housekeepingSlice = createSlice({
       .addCase(fetchHousekeepingTaskCounts.rejected, (state) => {
         state.loadingTaskCounts = false;
       })
-      
+
       // Dashboard Tasks
       .addCase(fetchHousekeepingDashboardTasks.pending, (state) => {
         state.loadingDashboardTasks = true;

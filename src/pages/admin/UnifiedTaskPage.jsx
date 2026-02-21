@@ -377,7 +377,8 @@ export default function UnifiedTaskPage() {
                 taskId,
                 remark,
                 imageFile,
-                doerName2
+                doerName2,
+                hod: username
             })).unwrap()
 
             // Refresh housekeeping data after confirm
@@ -427,6 +428,7 @@ export default function UnifiedTaskPage() {
                     remark: remarks,
                     doer_name2: updateData.doerName2 || '',  // Include doer_name2 if provided
                     attachment: originalData?.attachment,
+                    hod: username,
                 }])).unwrap()
                 await loadHousekeepingData()
                 break
@@ -510,7 +512,8 @@ export default function UnifiedTaskPage() {
                                 taskId: t.taskId,
                                 remark: t.remarks || '',
                                 imageFile: t.imageFile || null,  // Use File object directly
-                                doerName2: t.doerName2 || ''
+                                doerName2: t.doerName2 || '',
+                                hod: username
                             })).unwrap();
                         } else {
                             // Admin role: use submitHousekeepingTasks API for confirmed tasks
@@ -520,6 +523,7 @@ export default function UnifiedTaskPage() {
                                 remark: t.remarks || '',
                                 doer_name2: t.doerName2 || '',
                                 attachment: t.originalData?.attachment,
+                                hod: username,
                             }])).unwrap();
                         }
                     })

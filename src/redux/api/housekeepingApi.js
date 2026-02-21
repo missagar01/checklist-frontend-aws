@@ -41,11 +41,12 @@ export const getHousekeepingHistoryTasksAPI = (page = 1, filters = {}) => {
 };
 
 // Confirm Task (single)
-export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null, doerName2 = "") => {
+export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null, doerName2 = "", hod = "") => {
   const formData = new FormData();
 
   if (remark) formData.append("remark", remark);
   if (doerName2) formData.append("doer_name2", doerName2);
+  if (hod) formData.append("hod", hod);
   formData.append("attachment", "confirmed");
 
   if (imageFile instanceof File) {
@@ -72,6 +73,7 @@ export const submitHousekeepingTasksAPI = async (tasks = []) => {
     if (task.remark) formData.append("remark", task.remark);
     if (task.attachment) formData.append("attachment", task.attachment);
     if (task.doer_name2) formData.append("doer_name2", task.doer_name2);
+    if (task.hod) formData.append("hod", task.hod);
 
     if (task.status === "Yes") {
       formData.append("submission_date", new Date().toISOString());

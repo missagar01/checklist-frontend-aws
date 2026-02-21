@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import AdminLayout from "../../components/layout/AdminLayout.jsx"
 import DashboardHeader from "./dashboard/DashboardHeader.jsx"
@@ -305,12 +305,6 @@ export default function AdminDashboard() {
       pending: data.pending,
     }));
 
-    const pieChartData = [
-      { name: "Completed", value: completedTasks, color: "#22c55e" },
-      { name: "Pending", value: pendingTasks, color: "#facc15" },
-      { name: "Overdue", value: overdueTasks, color: "#ef4444" },
-    ];
-
     // Use stats from API if available, otherwise use our calculations
     const finalStats = {
       totalTasks: stats?.totalTasks ?? totalTasks,
@@ -318,8 +312,18 @@ export default function AdminDashboard() {
       pendingTasks: stats?.pendingTasks ?? pendingTasks,
       overdueTasks: stats?.overdueTasks ?? overdueTasks,
       upcomingTasks: stats?.upcomingTasks ?? upcomingTasks,
+      notDoneTasks: stats?.notDoneTasks ?? 0,
       completionRate: stats?.completionRate ?? (totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0)
     };
+
+    const getVal = (v) => (v && typeof v === 'object' ? v.count : v);
+
+    const pieChartData = [
+      { name: "Completed", value: getVal(finalStats.completedTasks), color: "#22c55e" },
+      { name: "Pending", value: getVal(finalStats.pendingTasks), color: "#facc15" },
+      { name: "Overdue", value: getVal(finalStats.overdueTasks), color: "#ef4444" },
+      { name: "Not Done", value: getVal(finalStats.notDoneTasks), color: "#94a3b8" },
+    ];
 
     // Update department data with filtered results
     setDepartmentData(prev => ({
@@ -342,6 +346,7 @@ export default function AdminDashboard() {
       pendingTasks: finalStats.pendingTasks,
       overdueTasks: finalStats.overdueTasks,
       upcomingTasks: finalStats.upcomingTasks,
+      notDoneTasks: finalStats.notDoneTasks,
       completionRate: finalStats.completionRate,
     });
   };
@@ -830,8 +835,13 @@ export default function AdminDashboard() {
   }, [isLoadingMore, hasMoreData])
 
   useEffect(() => {
-    // Fetch detailed data for charts and tables
-    fetchDepartmentData(1, false)
+    if (dateRange.filtered) {
+      // If date range is filtered, refresh with date range logic
+      handleDateRangeChange(dateRange.startDate, dateRange.endDate);
+    } else {
+      // Fetch detailed data for charts and tables
+      fetchDepartmentData(1, false)
+    }
 
     // Update Redux state counts with staff and department filters
     dispatch(
@@ -876,7 +886,7 @@ export default function AdminDashboard() {
         departmentFilter,
       })
     )
-  }, [dashboardType, dashboardStaffFilter, departmentFilter, dispatch])
+  }, [dashboardType, dashboardStaffFilter, departmentFilter, dispatch, dateRange.filtered])
 
   // Filter tasks based on criteria
   const filteredTasks = departmentData.allTasks.filter((task) => {
@@ -1023,22 +1033,30 @@ export default function AdminDashboard() {
     }
   }
 
+  // Memoize the dateRangeProp so children receive a stable reference
+  const dateRangeProp = useMemo(() => {
+    return dateRange.filtered ? dateRange : null;
+  }, [dateRange.filtered, dateRange.startDate, dateRange.endDate]);
+
   // Determine which statistics to show based on date range filter
-  const displayStats = dateRange.filtered ? {
-    totalTasks: filteredDateStats.totalTasks || 0,
-    completedTasks: filteredDateStats.completedTasks || 0,
-    pendingTasks: filteredDateStats.pendingTasks || 0,
-    overdueTasks: filteredDateStats.overdueTasks || 0,
-    upcomingTasks: filteredDateStats.upcomingTasks || 0,
-    notDoneTasks: filteredDateStats.notDoneTasks || 0,
-  } : {
-    totalTasks: totalTask || 0,
-    completedTasks: completeTask || 0,
-    pendingTasks: pendingTask || 0,
-    overdueTasks: overdueTask || 0,
-    upcomingTasks: upcomingTask || 0,
-    notDoneTasks: notDoneTask || 0,
-  };
+  const displayStats = useMemo(() => {
+    return dateRange.filtered ? {
+      totalTasks: filteredDateStats.totalTasks || 0,
+      completedTasks: filteredDateStats.completedTasks || 0,
+      pendingTasks: filteredDateStats.pendingTasks || 0,
+      overdueTasks: filteredDateStats.overdueTasks || 0,
+      upcomingTasks: filteredDateStats.upcomingTasks || 0,
+      notDoneTasks: filteredDateStats.notDoneTasks || 0,
+    } : {
+      totalTasks: totalTask || 0,
+      completedTasks: completeTask || 0,
+      pendingTasks: pendingTask || 0,
+      overdueTasks: overdueTask || 0,
+      upcomingTasks: upcomingTask || 0,
+      notDoneTasks: notDoneTask || 0,
+    };
+  }, [dateRange.filtered, filteredDateStats, totalTask, completeTask, pendingTask, overdueTask, upcomingTask, notDoneTask]);
+
 
   // const notDoneTask = (displayStats.totalTasks || 0) - (displayStats.completedTasks || 0);
 
@@ -1090,7 +1108,7 @@ export default function AdminDashboard() {
               upcomingTasks={displayStats.upcomingTasks}
               notDoneTasks={displayStats.notDoneTasks}
               dashboardType={dashboardType}
-              dateRange={dateRange.filtered ? dateRange : null}
+              dateRange={dateRangeProp}
             />
 
             <TaskNavigationTabs
@@ -1109,6 +1127,7 @@ export default function AdminDashboard() {
               isLoadingMore={isLoadingMore}
               hasMoreData={hasMoreData}
               stats={displayStats}
+              dateRange={dateRangeProp}
             />
 
             {activeTab === "overview" && (

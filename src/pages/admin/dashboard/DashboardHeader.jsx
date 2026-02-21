@@ -119,22 +119,22 @@ export default function DashboardHeader({
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Select Range</h3>
+                      {/* <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Select Range</h3> */}
                       {startDate && endDate && (
                         <button onClick={clearDateRange} className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase">Clear</button>
                       )}
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">From</label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          max={endDate || getTodayDate()}
+                          className="w-full rounded-lg border border-gray-200 p-2 text-xs focus:ring-1 focus:ring-red-100 focus:border-[#c41e3a] outline-none"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">From</label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        max={endDate || getTodayDate()}
-                        className="w-full rounded-lg border border-gray-200 p-2 text-xs focus:ring-1 focus:ring-red-100 focus:border-[#c41e3a] outline-none"
-                      />
-                    </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">To</label>
                       <input

@@ -25,7 +25,9 @@ export const fetchDashboardDataApi = async (
   page = 1,
   limit = 50,
   taskView = "recent",
-  departmentFilter = "all"
+  departmentFilter = "all",
+  startDate = "",
+  endDate = ""
 ) => {
 
   const role = localStorage.getItem("role");
@@ -42,7 +44,9 @@ export const fetchDashboardDataApi = async (
     taskView,
     departmentFilter,
     role,
-    username
+    username,
+    startDate,
+    endDate
   });
 
   const res = await axiosInstance.get(`${BASE_URL}?${params.toString()}`);
@@ -52,7 +56,7 @@ export const fetchDashboardDataApi = async (
 // ---------------------------------------------------------------------
 // 2️⃣ SUPABASE COUNT USING ROLE-BASED FILTERING
 // ---------------------------------------------------------------------
-export const getDashboardDataCount = async (dashboardType, staffFilter = "all", taskView = 'recent', departmentFilter = "all") => {
+export const getDashboardDataCount = async (dashboardType, staffFilter = "all", taskView = 'recent', departmentFilter = "all", startDate = "", endDate = "") => {
   try {
     const role = localStorage.getItem("role");
     const username = localStorage.getItem("user-name");
@@ -65,7 +69,9 @@ export const getDashboardDataCount = async (dashboardType, staffFilter = "all", 
       taskView,
       departmentFilter,
       role,
-      username
+      username,
+      startDate,
+      endDate
     });
 
     const url = `${BASE_URL}/count?${params.toString()}`;
@@ -306,9 +312,11 @@ export const fetchChecklistDataByDateRangeApi = async (
   staffFilter = "all",
   departmentFilter = "all"
 ) => {
+  const role = localStorage.getItem("role");
+  const username = localStorage.getItem("user-name");
   staffFilter = getFinalStaffFilter(staffFilter);
 
-  const url = `${BASE_URL}/checklist/date-range?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}`;
+  const url = `${BASE_URL}/checklist/date-range?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
   const res = await axiosInstance.get(url);
   return res.data;
@@ -354,34 +362,36 @@ export const getChecklistDateRangeStatsApi = async (
   staffFilter = "all",
   departmentFilter = "all"
 ) => {
+  const role = localStorage.getItem("role");
+  const username = localStorage.getItem("user-name");
   staffFilter = getFinalStaffFilter(staffFilter);
 
-  const url = `${BASE_URL}/checklist/date-range/stats?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}`;
+  const url = `${BASE_URL}/checklist/date-range/stats?startDate=${startDate}&endDate=${endDate}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
 
   const res = await axiosInstance.get(url);
   return res.data;
 };
 
 
-export const countUpcomingTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
+export const countUpcomingTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", startDate = "", endDate = "") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
   const role = localStorage.getItem("role");
   const username = localStorage.getItem("user-name");
 
-  const url = `${BASE_URL}/upcoming?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
+  const url = `${BASE_URL}/upcoming?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}&startDate=${startDate}&endDate=${endDate}`;
 
   const res = await axiosInstance.get(url);
   return res.data;
 };
 
-export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
+export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", startDate = "", endDate = "") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
   const role = localStorage.getItem("role");
   const username = localStorage.getItem("user-name");
 
-  const url = `${BASE_URL}/notdone?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}`;
+  const url = `${BASE_URL}/notdone?dashboardType=${dashboardType}&staffFilter=${staffFilter}&departmentFilter=${departmentFilter}&role=${role}&username=${username}&startDate=${startDate}&endDate=${endDate}`;
 
   const res = await axiosInstance.get(url);
   return res.data;

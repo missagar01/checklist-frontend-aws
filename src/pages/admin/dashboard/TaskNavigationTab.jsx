@@ -1,7 +1,7 @@
 "use client"
 
 import { Filter, ChevronDown, ChevronUp, Search, Clock, Calendar, XCircle } from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { fetchDashboardDataApi, getDashboardDataCount } from "../../../redux/api/dashboardApi"
 
 export default function TaskNavigationTabs({
@@ -15,7 +15,8 @@ export default function TaskNavigationTabs({
   getFrequencyColor,
   dashboardStaffFilter,
   departmentFilter,
-  stats
+  stats,
+  dateRange
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [displayedTasks, setDisplayedTasks] = useState([])
@@ -27,16 +28,24 @@ export default function TaskNavigationTabs({
 
   const getCount = (val) => (val && typeof val === 'object' ? Number(val.count || 0) : Number(val || 0));
 
+  // Extract primitives from dateRange to avoid identity-based re-renders
+  const dateRangeStart = dateRange?.startDate || ""
+  const dateRangeEnd = dateRange?.endDate || ""
+
   useEffect(() => {
     setCurrentPage(1)
     setDisplayedTasks([])
     setHasMoreData(true)
     setTotalCount(0)
-  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter])
+  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter, dateRangeStart, dateRangeEnd])
+
+
+  const isLoadingRef = useRef(false)
 
   const loadTasksFromServer = useCallback(async (page = 1, append = false) => {
-    if (isLoadingMore) return;
+    if (isLoadingRef.current) return;
     try {
+      isLoadingRef.current = true
       setIsLoadingMore(true)
       const data = await fetchDashboardDataApi(
         dashboardType,
@@ -44,11 +53,14 @@ export default function TaskNavigationTabs({
         page,
         itemsPerPage,
         taskView,
-        departmentFilter
+        departmentFilter,
+        dateRangeStart,
+        dateRangeEnd
       )
 
       if (page === 1) {
-        const count = await getDashboardDataCount(dashboardType, dashboardStaffFilter, taskView, departmentFilter)
+        const count = await getDashboardDataCount(dashboardType, dashboardStaffFilter, taskView, departmentFilter, dateRangeStart, dateRangeEnd)
+
         setTotalCount(typeof count === 'object' ? count.count : count)
       }
 
@@ -56,6 +68,7 @@ export default function TaskNavigationTabs({
         setHasMoreData(false)
         if (!append) setDisplayedTasks([])
         setIsLoadingMore(false)
+        isLoadingRef.current = false
         return
       }
 
@@ -91,14 +104,22 @@ export default function TaskNavigationTabs({
         return true
       })
 
-      if (append) setDisplayedTasks(prev => [...prev, ...filteredTasks])
+      if (append) {
+        setDisplayedTasks((prev) => {
+          const existingIds = new Set(prev.map(t => t.id))
+          const uniqueNewTasks = filteredTasks.filter(t => !existingIds.has(t.id))
+          return [...prev, ...uniqueNewTasks]
+        })
+      }
       else setDisplayedTasks(filteredTasks)
       setHasMoreData(data.length === itemsPerPage)
     } catch (error) {
     } finally {
       setIsLoadingMore(false)
+      isLoadingRef.current = false
     }
-  }, [dashboardType, dashboardStaffFilter, taskView, searchQuery, departmentFilter, isLoadingMore, itemsPerPage])
+  }, [dashboardType, dashboardStaffFilter, taskView, searchQuery, departmentFilter, itemsPerPage, dateRangeStart, dateRangeEnd])
+
 
   const parseTaskStartDate = (dateStr) => {
     if (!dateStr || typeof dateStr !== "string") return null
@@ -146,7 +167,8 @@ export default function TaskNavigationTabs({
 
   useEffect(() => {
     loadTasksFromServer(1, false)
-  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter])
+  }, [taskView, dashboardType, dashboardStaffFilter, departmentFilter, dateRangeStart, dateRangeEnd])
+
 
   useEffect(() => {
     if (currentPage === 1) loadTasksFromServer(1, false)
@@ -183,11 +205,11 @@ export default function TaskNavigationTabs({
     <div className="w-full bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Tab Navigation - Extremely Compact */}
       <div className="flex border-b border-gray-100">
-        {[
+        {useMemo(() => [
           { id: "recent", label: dashboardType === "delegation" ? "Today" : "Recent", icon: Clock, color: "text-[#c41e3a]", count: stats?.pendingTasks },
           { id: "upcoming", label: dashboardType === "delegation" ? "Future" : "Upcoming", icon: Calendar, color: "text-indigo-500", count: stats?.upcomingTasks },
           { id: "notdone", label: "Not Done", icon: XCircle, color: "text-zinc-500", count: stats?.notDoneTasks }
-        ].map((tab) => (
+        ], [dashboardType, stats?.pendingTasks, stats?.upcomingTasks, stats?.notDoneTasks]).map((tab) => (
           <button
             key={tab.id}
             onClick={() => setTaskView(tab.id)}
@@ -263,7 +285,7 @@ export default function TaskNavigationTabs({
               </thead>
               <tbody className="bg-white divide-y divide-gray-50">
                 {displayedTasks.map((task, index) => (
-                  <tr key={`${task.id}-${task.taskStartDate}`} className="hover:bg-red-50/10 transition-colors">
+                  <tr key={`${task.id}-${task.taskStartDate}-${index}`} className="hover:bg-red-50/10 transition-colors">
                     <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{index + 1}</td>
                     <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{task.id}</td>
                     <td className="px-3 py-2 text-[13px] text-gray-700 font-medium truncate max-w-[200px]">{task.title}</td>

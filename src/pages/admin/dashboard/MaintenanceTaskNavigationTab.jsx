@@ -33,12 +33,15 @@ export default function MaintenanceTaskNavigationTabs({
     setTotalCount(0)
   }, [taskView, dashboardStaffFilter, departmentFilter])
 
+  const isLoadingRef = useRef(false)
+
   // Function to load tasks from server
   const loadTasksFromServer = useCallback(
     async (page = 1, append = false) => {
-      if (isLoadingMore) return
+      if (isLoadingRef.current) return
 
       try {
+        isLoadingRef.current = true
         setIsLoadingMore(true)
 
         const response = await fetchMaintenanceDashboardDataApi(
@@ -66,13 +69,14 @@ export default function MaintenanceTaskNavigationTabs({
             setDisplayedTasks([])
           }
           setIsLoadingMore(false)
+          isLoadingRef.current = false
           return
         }
 
         // Process maintenance tasks - transform to checklist format
         const processedTasks = (Array.isArray(data) ? data : []).map((task) => {
           if (!task) return null;
-          
+
           const taskStartDate = parseTaskStartDate(task.Task_Start_Date || task.task_start_date)
           const completionDate = (task.Actual_Date || task.actual_date)
             ? parseTaskStartDate(task.Actual_Date || task.actual_date)
@@ -119,7 +123,11 @@ export default function MaintenanceTaskNavigationTabs({
         })
 
         if (append) {
-          setDisplayedTasks((prev) => [...prev, ...filteredTasks])
+          setDisplayedTasks((prev) => {
+            const existingIds = new Set(prev.map(t => t.id))
+            const uniqueNewTasks = filteredTasks.filter(t => !existingIds.has(t.id))
+            return [...prev, ...uniqueNewTasks]
+          })
         } else {
           setDisplayedTasks(filteredTasks)
         }
@@ -130,6 +138,7 @@ export default function MaintenanceTaskNavigationTabs({
         console.error("Error loading maintenance tasks:", error)
       } finally {
         setIsLoadingMore(false)
+        isLoadingRef.current = false
       }
     },
     [
@@ -137,7 +146,6 @@ export default function MaintenanceTaskNavigationTabs({
       taskView,
       searchQuery,
       departmentFilter,
-      isLoadingMore,
       itemsPerPage,
       dateRange,
     ]
@@ -249,31 +257,28 @@ export default function MaintenanceTaskNavigationTabs({
         <div className="grid grid-cols-3">
           <button
             onClick={() => setTaskView("recent")}
-            className={`py-3 text-center font-medium transition-colors ${
-              taskView === "recent"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            className={`py-3 text-center font-medium transition-colors ${taskView === "recent"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
           >
             Recent Tasks
           </button>
           <button
             onClick={() => setTaskView("upcoming")}
-            className={`py-3 text-center font-medium transition-colors ${
-              taskView === "upcoming"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            className={`py-3 text-center font-medium transition-colors ${taskView === "upcoming"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
           >
             Upcoming Tasks
           </button>
           <button
             onClick={() => setTaskView("notdone")}
-            className={`py-3 text-center font-medium transition-colors ${
-              taskView === "notdone"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            className={`py-3 text-center font-medium transition-colors ${taskView === "notdone"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
           >
             Not Done Tasks
           </button>
@@ -312,7 +317,7 @@ export default function MaintenanceTaskNavigationTabs({
 
       {/* Task table - with infinite scroll */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden w-full">
-        <div 
+        <div
           ref={tableContainerRef}
           className="overflow-x-auto w-full task-table-container"
           style={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto' }}
@@ -390,24 +395,22 @@ export default function MaintenanceTaskNavigationTabs({
                     </td>
                     <td className="px-2 sm:px-3 md:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
                       <span
-                        className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full ${
-                          getFrequencyColor
-                            ? getFrequencyColor(task.frequency)
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+                        className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full ${getFrequencyColor
+                          ? getFrequencyColor(task.frequency)
+                          : "bg-gray-100 text-gray-800"
+                          }`}
                       >
                         {task.frequency}
                       </span>
                     </td>
                     <td className="px-2 sm:px-3 md:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span
-                        className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full ${
-                          task.status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : task.status === "overdue"
+                        className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full ${task.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : task.status === "overdue"
                             ? "bg-red-100 text-red-800"
                             : "bg-yellow-100 text-yellow-800"
-                        }`}
+                          }`}
                       >
                         {task.status}
                       </span>

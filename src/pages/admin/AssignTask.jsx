@@ -220,27 +220,27 @@ export default function AssignTask() {
 
 
   // Fetch working days from Supabase on component mount
-useEffect(() => {
-  const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/assign-task`;
-  const fetchWorkingDays = async () => {
-    try {
-      // const res = await fetch("http://localhost:5050/api/assign-task/working-days");
-      const res = await fetch(`${BASE_URL}/working-days`);
-      const data = await res.json();
+  useEffect(() => {
+    const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/assign-task`;
+    const fetchWorkingDays = async () => {
+      try {
+        // const res = await fetch("http://localhost:5050/api/assign-task/working-days");
+        const res = await fetch(`${BASE_URL}/working-days`);
+        const data = await res.json();
 
-      const formattedDays = data.map((day) => {
-        const date = new Date(day.working_date);
-        return formatDateToDDMMYYYY(date);
-      });
+        const formattedDays = data.map((day) => {
+          const date = new Date(day.working_date);
+          return formatDateToDDMMYYYY(date);
+        });
 
-      setWorkingDays(formattedDays);
-    } catch (error) {
-      console.error("Error fetching working days:", error);
-    }
-  };
+        setWorkingDays(formattedDays);
+      } catch (error) {
+        console.error("Error fetching working days:", error);
+      }
+    };
 
-  fetchWorkingDays();
-}, []);
+    fetchWorkingDays();
+  }, []);
 
 
   const handleChange = (e) => {
@@ -455,7 +455,7 @@ useEffect(() => {
       // alert(`Successfully submitted ${generatedTasks.length} tasks!`);
 
       await pushAssignTaskApi(generatedTasks);   // FIXED ✔
-alert(`Successfully submitted ${generatedTasks.length} tasks!`);
+      alert(`Successfully submitted ${generatedTasks.length} tasks!`);
 
 
       // Reset form

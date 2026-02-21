@@ -54,7 +54,7 @@ export default function MaintenanceDashboardNew({ dateRange }) {
           overdueTasks: stats.overdueTasks,
           completionRate: stats.completionRate,
         })
-        setNotDoneTask(stats.notDone)
+        setNotDoneTask(stats.notDoneTasks)
       } catch (error) {
         console.error("Error fetching maintenance dashboard stats:", error)
       }

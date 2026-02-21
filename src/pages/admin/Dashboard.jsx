@@ -143,6 +143,9 @@ export default function AdminDashboard() {
             'all'
           );
 
+          // Update available staff for the dropdown
+          await updateAvailableStaff(filteredData, dashboardType, departmentFilter);
+
           // Also get statistics for the date range
           const stats = await getChecklistDateRangeStatsApi(
             startDate,
@@ -419,6 +422,9 @@ export default function AdminDashboard() {
         completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100) : 0
       };
 
+      // Update available staff for the dropdown
+      await updateAvailableStaff(filteredData, dashboardType, departmentFilter);
+
       processFilteredData(filteredData, stats);
     } catch (error) {
       console.error("Error fetching data with date range:", error);
@@ -527,6 +533,29 @@ export default function AdminDashboard() {
     return date.getTime() === tomorrow.getTime()
   }
 
+  // Helper function to update available staff list
+  const updateAvailableStaff = async (data, type, dept) => {
+    let uniqueStaff;
+    if (type === 'checklist' && dept !== 'all') {
+      try {
+        uniqueStaff = await getStaffNamesByDepartmentApi(dept);
+        if (!Array.isArray(uniqueStaff)) uniqueStaff = [];
+      } catch (error) {
+        console.error('Error fetching staff by department:', error);
+        uniqueStaff = [...new Set(data.map(t => t.name).filter(n => n && n.trim() !== ""))];
+      }
+    } else {
+      uniqueStaff = [...new Set(data.map(t => t.name).filter(n => n && n.trim() !== ""))];
+    }
+
+    if (userRole?.toLowerCase() !== "admin" && username) {
+      if (!uniqueStaff.some(s => s?.toLowerCase() === username?.toLowerCase())) {
+        uniqueStaff.push(username);
+      }
+    }
+    setAvailableStaff(uniqueStaff);
+  };
+
   const fetchDepartmentData = async (page = 1, append = false) => {
     try {
       if (page === 1) {
@@ -587,39 +616,8 @@ export default function AdminDashboard() {
       // FIRST: Filter data by dashboard type - REMOVE this filter for checklist to include all tasks
       let filteredData = data
 
-      // Extract unique staff names for the dropdown BEFORE staff filtering
-      let uniqueStaff;
-
-      if (dashboardType === 'checklist' && departmentFilter !== 'all') {
-        // For checklist with department filter, get staff from users table based on user_access
-        try {
-          uniqueStaff = await getStaffNamesByDepartmentApi(departmentFilter);
-          // Ensure it's an array
-          if (!Array.isArray(uniqueStaff)) {
-            uniqueStaff = [];
-          }
-        } catch (error) {
-          console.error('Error fetching staff by department:', error);
-          uniqueStaff = [...new Set(data.map((task) => task.name).filter((name) => name && name.trim() !== ""))];
-        }
-      } else {
-        // Default behavior - extract from task data
-        uniqueStaff = [...new Set(data.map((task) => task.name).filter((name) => name && name.trim() !== ""))];
-      }
-
-      // Ensure uniqueStaff is always an array
-      if (!Array.isArray(uniqueStaff)) {
-        uniqueStaff = [];
-      }
-
-      // For non-admin users, always ensure current user appears in staff dropdown
-      if (userRole !== "admin" && username) {
-        if (!uniqueStaff.some(staff => staff.toLowerCase() === username.toLowerCase())) {
-          uniqueStaff.push(username)
-        }
-      }
-
-      setAvailableStaff(uniqueStaff)
+      // Update unique staff names for the dropdown
+      await updateAvailableStaff(data, dashboardType, departmentFilter);
 
       // SECOND: Apply dashboard staff filter ONLY if not "all"
       if (dashboardStaffFilter !== "all") {

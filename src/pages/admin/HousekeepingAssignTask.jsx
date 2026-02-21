@@ -13,7 +13,7 @@ const frequencies = ["one-time", "daily", "weekly", "monthly"];
 export default function AssignTask() {
   const dispatch = useDispatch();
   const housekeepingState = useSelector((state) => state.housekeeping);
-  
+
   const {
     locations,
     userDepartments: userDepartmentsData,
@@ -31,9 +31,9 @@ export default function AssignTask() {
     task_description: "",
     frequency: "",
     task_start_date: "",
-    hod: [], // Changed to array for multiple selection
+    hod: null,
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [userDepartment, setUserDepartment] = useState("");
@@ -43,7 +43,7 @@ export default function AssignTask() {
   const [locationOptions, setLocationOptions] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [departmentUserMap, setDepartmentUserMap] = useState({});
-  const [verifierOptions, setVerifierOptions] = useState([]);
+
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [newLocation, setNewLocation] = useState("");
   const [locationError, setLocationError] = useState("");
@@ -71,13 +71,13 @@ export default function AssignTask() {
   useEffect(() => {
     const role = localStorage.getItem("role") || "";
     const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
-    
-    const departments = typeof userAccess === 'string' 
+
+    const departments = typeof userAccess === 'string'
       ? userAccess.split(',').map(d => d.trim()).filter(Boolean)
-      : Array.isArray(userAccess) 
+      : Array.isArray(userAccess)
         ? userAccess.map(d => String(d).trim()).filter(Boolean)
         : [];
-    
+
     setUserRole(role);
     setUserDepartment(departments[0] || "");
     setUserDepartments(departments);
@@ -87,7 +87,7 @@ export default function AssignTask() {
       setFormData((prev) => ({
         ...prev,
         department: firstDept,
-        hod: [],
+        hod: null,
       }));
     }
   }, []);
@@ -95,7 +95,7 @@ export default function AssignTask() {
   // Process user departments and create department-user map
   useEffect(() => {
     const isUserRole = userRole?.toLowerCase() === 'user';
-    
+
     const userMap = (Array.isArray(userDepartmentsData) ? userDepartmentsData : []).reduce((acc, entry) => {
       const dept = (entry?.department || "").trim();
       if (!dept) return acc;
@@ -109,28 +109,20 @@ export default function AssignTask() {
 
     if (isUserRole && Object.keys(userMap).length === 0) {
       const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
-      const userDepts = typeof userAccess === 'string' 
+      const userDepts = typeof userAccess === 'string'
         ? userAccess.split(',').map(d => d.trim()).filter(Boolean)
-        : Array.isArray(userAccess) 
+        : Array.isArray(userAccess)
           ? userAccess.map(d => String(d).trim()).filter(Boolean)
           : [];
       setDepartmentOptions(userDepts);
     } else {
       setDepartmentOptions(Object.keys(userMap).sort());
     }
-    
+
     setDepartmentUserMap(userMap);
   }, [userDepartmentsData, userRole]);
 
-  // Update verifier options when department changes
-  useEffect(() => {
-    const normalized = (formData.department || "").trim();
-    if (normalized && departmentUserMap[normalized]) {
-      setVerifierOptions(departmentUserMap[normalized]);
-    } else {
-      setVerifierOptions([]);
-    }
-  }, [departmentUserMap, formData.department]);
+
 
   const isUser = userRole.toLowerCase() === "user";
   const filteredDepartments = useMemo(() => {
@@ -148,45 +140,22 @@ export default function AssignTask() {
   };
 
   const handleDepartmentSelect = (value) => {
-    const normalized = (value || "").trim();
     setFormData((prev) => ({
       ...prev,
       department: value,
-      hod: [], // Reset verifier selection when department changes
+      hod: null, // Reset verifier selection when department changes
     }));
-    if (normalized && departmentUserMap[normalized]) {
-      setVerifierOptions(departmentUserMap[normalized]);
-    } else {
-      setVerifierOptions([]);
-    }
   };
 
-  const handleVerifierChange = (verifierName, isChecked) => {
-    setFormData((prev) => {
-      const currentHod = Array.isArray(prev.hod) ? prev.hod : (prev.hod ? [prev.hod] : []);
-      if (isChecked) {
-        return {
-          ...prev,
-          hod: currentHod.includes(verifierName) ? currentHod : [...currentHod, verifierName],
-        };
-      } else {
-        return {
-          ...prev,
-          hod: currentHod.filter((v) => v !== verifierName),
-        };
-      }
-    });
-  };
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const next = { ...prev, [name]: value };
-      if (name === "department" && value) {
-        next.hod = [];
-      }
-      return next;
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      hod: name === "department" ? null : prev.hod,
+    }));
   };
 
   const validate = () => {
@@ -234,17 +203,15 @@ export default function AssignTask() {
 
     setIsSubmitting(true);
     try {
-      const hodValue = Array.isArray(formData.hod) 
-        ? (formData.hod.length > 0 ? formData.hod : "")
-        : formData.hod;
-      
+
+
       const submitData = {
         ...formData,
         department: formData.location || formData.department,
-        hod: hodValue,
+        hod: null,
         task_description: formData.task_description.trim(),
       };
-      
+
       await dispatch(assignHousekeepingTask(submitData)).unwrap();
       setSuccess("Task submitted successfully.");
       setFormData({
@@ -255,7 +222,7 @@ export default function AssignTask() {
         task_description: "",
         frequency: "",
         task_start_date: "",
-        hod: [],
+        hod: null,
       });
     } catch (err) {
       if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
@@ -371,36 +338,7 @@ export default function AssignTask() {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Verifier</label>
-                <div className="border border-gray-300 rounded-lg px-3 py-2 min-h-[42px] max-h-48 overflow-y-auto bg-white">
-                  {verifierOptions.length > 0 ? (
-                    <div className="space-y-2">
-                      {verifierOptions.map((verifier) => {
-                        const isChecked = Array.isArray(formData.hod) 
-                          ? formData.hod.includes(verifier)
-                          : formData.hod === verifier;
-                        return (
-                          <label
-                            key={verifier}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => handleVerifierChange(verifier, e.target.checked)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">{verifier}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-400">No verifiers available. Please select a department first.</span>
-                  )}
-                </div>
-              </div>
+
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700">Given By</label>
@@ -516,17 +454,17 @@ export default function AssignTask() {
                       <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
                         Create New Location
                       </h3>
-                      
+
                       {locationError && (
                         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                           {locationError}
                         </div>
                       )}
-                      
+
                       {locationSuccess && (
                         <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                        {locationSuccess}
-                      </div>
+                          {locationSuccess}
+                        </div>
                       )}
 
                       <div className="space-y-1">

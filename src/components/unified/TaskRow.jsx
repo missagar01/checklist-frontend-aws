@@ -279,8 +279,8 @@ const TaskRow = memo(function TaskRow({
           </div>
         </td>
 
-        {/* Status - Hide for user role pending tasks */}
-        {!isHousekeepingPendingEditable && (
+        {/* Status - Hide for user role pending tasks OR admin in housekeeping-only mode */}
+        {!isHousekeepingPendingEditable && !isHousekeepingOnly && (
           <td className="px-2 sm:px-3 py-2 sm:py-4">
             {isCompleted ? (
               <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
@@ -326,8 +326,8 @@ const TaskRow = memo(function TaskRow({
           )}
         </td>
 
-        {/* Image - Hide for user role pending tasks */}
-        {!isHousekeepingPendingEditable && (
+        {/* Image - Hide for user role pending tasks OR admin in housekeeping-only mode */}
+        {!isHousekeepingPendingEditable && !isHousekeepingOnly && (
           <td className="px-2 sm:px-3 py-2 sm:py-4">
             {isCompleted ? (
               task.imageUrl ? (
@@ -371,23 +371,20 @@ const TaskRow = memo(function TaskRow({
               </>
             )}
           </td>
-        )
-        }
+        )}
 
-        {/* View Details Button - Hide for user role pending tasks */}
-        {
-          !isHousekeepingPendingEditable && (
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <button
-                onClick={handleViewClick}
-                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                title="View Details"
-              >
-                <Eye className="h-4 w-4" />
-              </button>
-            </td>
-          )
-        }
+        {/* View Details Button - Hide for user role pending tasks AND for admin in Housekeeping-only view */}
+        {!isHousekeepingPendingEditable && !(isAdminRole && isHousekeepingOnly) && (
+          <td className="px-2 sm:px-3 py-2 sm:py-4">
+            <button
+              onClick={handleViewClick}
+              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
+              title="View Details"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+          </td>
+        )}
       </tr >
     );
   }
@@ -547,6 +544,10 @@ const TaskRow = memo(function TaskRow({
             <span className="text-xs text-gray-700">
               {task.status || "—"}
             </span>
+          ) : isAdminRole && task.sourceSystem === 'housekeeping' ? (
+            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+              ✅ {rowData.status || "Yes"}
+            </span>
           ) : (
             <select
               disabled={!isSelected}
@@ -630,6 +631,8 @@ const TaskRow = memo(function TaskRow({
           ) : (
             <span className="text-xs text-gray-400">—</span>
           )
+        ) : isAdminRole && task.sourceSystem === 'housekeeping' ? (
+          <span className="text-xs text-gray-400">—</span>
         ) : (
           <>
             <label
@@ -736,8 +739,8 @@ export function TaskTableHeader({
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Confirmed By HOD
           </th>
-          {/* Status - Hide for user role in housekeeping-only mode */}
-          {userRole?.toLowerCase() !== "user" && (
+          {/* Status - Hide for user role OR admin in housekeeping-only mode */}
+          {normalizedRole !== "user" && !isHousekeepingOnly && (
             <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>
@@ -745,14 +748,14 @@ export function TaskTableHeader({
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Remarks
           </th>
-          {/* Image - Hide for user role in housekeeping-only mode */}
-          {userRole?.toLowerCase() !== "user" && (
+          {/* Image - Hide for user role OR admin in housekeeping-only mode */}
+          {normalizedRole !== "user" && !isHousekeepingOnly && (
             <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Image
             </th>
           )}
-          {/* View - Hide for user role in housekeeping-only mode */}
-          {userRole?.toLowerCase() !== "user" && (
+          {/* View - Hide for user role OR admin in housekeeping-only mode */}
+          {normalizedRole !== "user" && !isHousekeepingOnly && (
             <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               View
             </th>

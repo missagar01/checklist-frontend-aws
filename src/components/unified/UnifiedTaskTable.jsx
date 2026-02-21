@@ -250,6 +250,19 @@ export default function UnifiedTaskTable({
             const newSelected = new Set(prev);
             if (isChecked) {
                 newSelected.add(id);
+
+                // Auto-set status to 'Yes' for housekeeping tasks (Admin role)
+                const task = displayTasks.find(t => t.id === id);
+                const isAdmin = userRole?.toLowerCase() === 'admin';
+                if (isAdmin && task?.sourceSystem === 'housekeeping') {
+                    setRowData(prevData => ({
+                        ...prevData,
+                        [id]: {
+                            ...prevData[id],
+                            status: 'Yes'
+                        }
+                    }));
+                }
             } else {
                 newSelected.delete(id);
                 // Clean up related data when unchecking
@@ -269,9 +282,10 @@ export default function UnifiedTaskTable({
             }
             return newSelected;
         });
-    }, []);
+    }, [displayTasks, userRole]);
 
     const handleSelectAll = useCallback((e) => {
+        const isAdmin = userRole?.toLowerCase() === 'admin';
         const isUserRole = userRole?.toLowerCase() === 'user';
 
         if (e.target.checked) {
@@ -288,12 +302,30 @@ export default function UnifiedTaskTable({
                 }
                 return true; // Select all other tasks
             });
+
             const allIds = tasksToSelect.map(task => task.id);
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
                 allIds.forEach(id => newSet.add(id));
                 return newSet;
             });
+
+            // Auto-set status for housekeeping tasks (Admin role)
+            if (isAdmin) {
+                const hkTasksToSelect = tasksToSelect.filter(t => t.sourceSystem === 'housekeeping');
+                if (hkTasksToSelect.length > 0) {
+                    setRowData(prevData => {
+                        const newData = { ...prevData };
+                        hkTasksToSelect.forEach(task => {
+                            newData[task.id] = {
+                                ...newData[task.id],
+                                status: 'Yes'
+                            };
+                        });
+                        return newData;
+                    });
+                }
+            }
         } else {
             // Deselect all visible tasks
             const allIds = new Set(displayTasks.map(task => task.id));
@@ -378,9 +410,12 @@ export default function UnifiedTaskTable({
     const isRowValid = useCallback((taskId) => {
         const task = filteredTasks.find(t => t.id === taskId);
         const data = rowData[taskId] || {};
+        const isAdmin = userRole?.toLowerCase() === 'admin';
 
         // ✅ HOUSEKEEPING: allow update if doer is selected
+        // For Admin: status is auto-set to 'Yes', so always valid if housekeeping
         if (task?.sourceSystem === "housekeeping") {
+            if (isAdmin) return true; // Housekeeping admin submission is now just a checkbox
             if (data.doerName2 && data.doerName2.trim()) {
                 return true;
             }

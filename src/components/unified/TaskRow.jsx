@@ -410,7 +410,8 @@ const TaskRow = memo(function TaskRow({
                 : task.originalData?.attachment !== "confirmed" &&
                 task.confirmedByHOD !== "Confirmed" &&
                 task.confirmedByHOD !== "confirmed")) ||
-              (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user")
+              (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user") ||
+              (isAdminRole && task.sourceSystem === "maintenance")  // ✅ Admin cannot submit maintenance
               ? "opacity-50 cursor-not-allowed"
               : ""
               }`}
@@ -425,7 +426,8 @@ const TaskRow = memo(function TaskRow({
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
                   task.confirmedByHOD !== "confirmed")) ||
-              (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user")
+              (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user") ||
+              (isAdminRole && task.sourceSystem === "maintenance")  // ✅ Admin cannot submit maintenance
             }
           />
         )}

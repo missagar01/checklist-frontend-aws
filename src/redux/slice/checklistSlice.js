@@ -32,8 +32,12 @@ export const checklistData = createAsyncThunk(
 export const checklistHistoryData = createAsyncThunk(
   "fetch/history",
   async (page = 1) => {
-    const historyData = await fetchChechListDataForHistory(page);
-    return { data: historyData, page };
+    const response = await fetchChechListDataForHistory(page);
+    return {
+      data: response.data || [],
+      totalCount: response.totalCount || 0,
+      page
+    };
   }
 );
 
@@ -144,6 +148,9 @@ const checkListSlice = createSlice({
     error: null,
     hasMore: true,
     currentPage: 1,
+    historyTotal: 0,
+    historyHasMore: true,
+    historyCurrentPage: 1,
     hrHasMore: true,
     hrCurrentPage: 1,
   },
@@ -191,12 +198,17 @@ const checkListSlice = createSlice({
 
       .addCase(checklistHistoryData.fulfilled, (state, action) => {
         state.loading = false;
+        const { data, totalCount, page } = action.payload;
 
-        if (action.payload.page === 1) {
-          state.history = action.payload.data;
+        if (page === 1) {
+          state.history = data;
         } else {
-          state.history = [...state.history, ...action.payload.data];
+          state.history = [...state.history, ...data];
         }
+
+        state.historyCurrentPage = page;
+        state.historyTotal = parseInt(totalCount, 10) || 0;
+        state.historyHasMore = state.history.length < (parseInt(totalCount, 10) || 0);
       })
 
       .addCase(checklistHistoryData.rejected, (state, action) => {

@@ -37,6 +37,8 @@ export default function UnifiedTaskTable({
     maintenanceDoers = [],
 
     onRefresh, // New: Callback to refresh data when system changes
+    totalCount = 0, // NEW: Total count support
+    onStatusChange, // NEW: Status change callback
 }) {
     // State
     const [selectedItems, setSelectedItems] = useState(new Set());
@@ -99,6 +101,13 @@ export default function UnifiedTaskTable({
             onRefresh(filters.sourceSystem);
         }
     }, [filters.sourceSystem, onRefresh]);
+
+    // ✅ Sync status with parent for totalCount calculation
+    useEffect(() => {
+        if (onStatusChange) {
+            onStatusChange(filters.status);
+        }
+    }, [filters.status, onStatusChange]);
 
     // Handle scroll for infinite loading - improved detection
     const handleScroll = useCallback(() => {
@@ -663,10 +672,8 @@ export default function UnifiedTaskTable({
                             {/* <h2 className="text-blue-700 font-medium text-xs sm:text-sm md:text-base truncate">
                                 📋 All Tasks (Checklist + Maintenance + Housekeeping)
                             </h2> */}
-                            <p className="text-blue-600 text-s mt-1">
-                                Showing {displayTasks.length} of {displayTasks.length} tasks
-                                {displayTasks.length !== tasks.length}
-                                {/* {hasMore && <span className="text-blue-500"> • Loading more...</span>} */}
+                            <p className="text-blue-600 font-medium text-xs sm:text-sm mt-1">
+                                Showing {displayTasks.length} of {totalCount || displayTasks.length} tasks
                             </p>
                         </div>
 

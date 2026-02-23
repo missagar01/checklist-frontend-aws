@@ -25,7 +25,8 @@ const initialState = {
   currentPage: 1,
   hasMore: true,
   currentPageHistory: 1,
-  hasMoreHistory: true
+  hasMoreHistory: true,
+  historyTotal: 0
 };
 
 // Async thunks
@@ -55,9 +56,9 @@ export const fetchPendingMaintenanceTasks = createAsyncThunk(
 
 export const fetchCompletedMaintenanceTasks = createAsyncThunk(
   "maintenance/fetchCompletedTasks",
-  async ({ page = 1, filters = {} }, { rejectWithValue }) => {
+  async ({ page = 1, filters = {}, userId = null }, { rejectWithValue }) => {
     try {
-      const response = await getCompletedMaintenanceTasksAPI(page, filters);
+      const response = await getCompletedMaintenanceTasksAPI(page, filters, userId);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || error.message);
@@ -222,13 +223,18 @@ const maintenanceSlice = createSlice({
       })
       .addCase(fetchCompletedMaintenanceTasks.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.meta.arg.page === 1) {
-          state.history = action.payload.data;
+        const { data = [], totalCount = 0 } = action.payload;
+        const page = action.meta.arg.page || 1;
+
+        if (page === 1) {
+          state.history = data;
         } else {
-          state.history = [...state.history, ...action.payload.data];
+          state.history = [...state.history, ...data];
         }
-        state.currentPageHistory = action.meta.arg.page;
-        state.hasMoreHistory = action.payload.hasMore;
+
+        state.currentPageHistory = page;
+        state.historyTotal = parseInt(totalCount, 10) || 0;
+        state.hasMoreHistory = state.history.length < (parseInt(totalCount, 10) || 0);
       })
 
       // Update task

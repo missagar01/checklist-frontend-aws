@@ -35,7 +35,7 @@ export const fetchChechListDataForHistory = async (page = 1) => {
     `${BASE_URL}/history?page=${page}&username=${username}&role=${role}&departments=${encodeURIComponent(departments)}`
   );
 
-  return response.data.data || [];
+  return response.data;
 };
 
 

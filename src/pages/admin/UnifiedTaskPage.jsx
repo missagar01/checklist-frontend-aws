@@ -35,6 +35,7 @@ export default function UnifiedTaskPage() {
     const [userRole, setUserRole] = useState("")
     const [username, setUsername] = useState("")
     const [systemAccess, setSystemAccess] = useState([]) // New state for system access
+    const [activeStatus, setActiveStatus] = useState("Pending") // NEW: Track status in parent
 
     const dispatch = useDispatch()
 
@@ -47,6 +48,9 @@ export default function UnifiedTaskPage() {
     const {
         checklist = [],
         history: checklistHistory = [],
+        historyTotal: checklistHistoryTotal = 0,
+        historyHasMore: checklistHistoryHasMore = false,
+        historyCurrentPage: checklistHistoryCurrentPage = 1,
         loading: checklistLoading,
         hasMore: checklistHasMore = false,
         currentPage: checklistCurrentPage = 1,
@@ -57,19 +61,27 @@ export default function UnifiedTaskPage() {
     const {
         tasks: maintenanceTasks = [],
         history: maintenanceHistory = [],
+        historyTotal: maintenanceHistoryTotal = 0,
+        hasMoreHistory: maintenanceHistoryHasMore = false,
+        currentPageHistory: maintenanceHistoryCurrentPage = 1,
         loading: maintenanceLoading,
         assignedPersonnel = [],
         departments: maintenanceDepartments = [], // New
-        doers: maintenanceDoers = []              // New
+        doers: maintenanceDoers = [],              // New
+        currentPage: maintenanceCurrentPage = 1,
+        hasMore: maintenanceHasMore = false,
     } = maintenanceState || {}
 
     const {
         pendingTasks: housekeepingTasks = [],
         historyTasks: housekeepingHistory = [],
+        historyTotal: housekeepingHistoryTotal = 0,
         loading: housekeepingLoading,
         error: housekeepingError,
         pendingPage: housekeepingPendingPage = 1,
         pendingHasMore: housekeepingPendingHasMore = false,
+        historyPage: housekeepingHistoryPage = 1,
+        historyHasMore: housekeepingHistoryHasMore = false,
         dashboardDepartments: housekeepingDepartments = [],
     } = housekeepingState || {}
 
@@ -158,7 +170,7 @@ export default function UnifiedTaskPage() {
                 page: 1,
                 userId: role === "user" ? user : null
             }))
-            dispatch(fetchCompletedMaintenanceTasks({ page: 1, filters: {} }))
+            dispatch(fetchCompletedMaintenanceTasks({ page: 1, filters: {}, userId: role === "user" ? user : null }))
             dispatch(fetchUniqueMachineNames())
             dispatch(fetchUniqueAssignedPersonnel())
             dispatch(fetchMaintenanceDepartments()) // New
@@ -175,14 +187,22 @@ export default function UnifiedTaskPage() {
 
     // Callback to load more checklist data (called on scroll)
     const loadMoreChecklistData = useCallback(() => {
-        if (checklistHasMore && !checklistLoading) {
+        if (activeStatus === 'Completed') {
+            if (checklistHistoryHasMore && !checklistLoading) {
+                dispatch(checklistHistoryData(checklistHistoryCurrentPage + 1))
+            }
+        } else if (checklistHasMore && !checklistLoading) {
             dispatch(checklistData(checklistCurrentPage + 1))
         }
-    }, [checklistHasMore, checklistLoading, checklistCurrentPage, dispatch])
+    }, [checklistHasMore, checklistLoading, checklistCurrentPage, checklistHistoryHasMore, checklistHistoryCurrentPage, activeStatus, dispatch])
 
     // Callback to load more housekeeping data (called on scroll)
     const loadMoreHousekeepingData = useCallback(async () => {
-        if (housekeepingPendingHasMore && !housekeepingLoading) {
+        if (activeStatus === 'Completed') {
+            if (housekeepingHistoryHasMore && !housekeepingLoading) {
+                dispatch(fetchHousekeepingHistoryTasks({ page: housekeepingHistoryPage + 1 }))
+            }
+        } else if (housekeepingPendingHasMore && !housekeepingLoading) {
             const filters = {}
             const role = localStorage.getItem("role")
             if (role?.toLowerCase() === "user") {
@@ -198,7 +218,28 @@ export default function UnifiedTaskPage() {
                 filters
             })).unwrap()
         }
-    }, [housekeepingPendingHasMore, housekeepingLoading, housekeepingPendingPage, dispatch])
+    }, [housekeepingPendingHasMore, housekeepingLoading, housekeepingPendingPage, housekeepingHistoryHasMore, housekeepingHistoryPage, activeStatus, dispatch])
+
+    // Callback to load more maintenance data (called on scroll)
+    const loadMoreMaintenanceData = useCallback(() => {
+        const role = localStorage.getItem("role")
+        const user = localStorage.getItem("user-name")
+
+        if (activeStatus === 'Completed') {
+            if (maintenanceHistoryHasMore && !maintenanceLoading) {
+                dispatch(fetchCompletedMaintenanceTasks({
+                    page: maintenanceHistoryCurrentPage + 1,
+                    filters: {},
+                    userId: role === "user" ? user : null
+                }))
+            }
+        } else if (maintenanceHasMore && !maintenanceLoading) {
+            dispatch(fetchPendingMaintenanceTasks({
+                page: maintenanceCurrentPage + 1,
+                userId: role === "user" ? user : null
+            }))
+        }
+    }, [maintenanceHasMore, maintenanceLoading, maintenanceCurrentPage, maintenanceHistoryHasMore, maintenanceHistoryCurrentPage, activeStatus, dispatch])
 
     // Normalize and merge all tasks - filter based on system_access
     const allTasks = useMemo(() => {
@@ -628,12 +669,20 @@ export default function UnifiedTaskPage() {
                     housekeepingDepartments={housekeepingDepartments}
                     userRole={userRole}
                     onLoadMore={() => {
-                        // Load more for both checklist and housekeeping
                         loadMoreChecklistData()
                         loadMoreHousekeepingData()
+                        loadMoreMaintenanceData()
                     }}
-                    hasMore={checklistHasMore || housekeepingPendingHasMore}
+                    hasMore={
+                        activeStatus === 'Completed'
+                            ? (checklistHistoryHasMore || maintenanceHistoryHasMore || housekeepingHistoryHasMore)
+                            : (checklistHasMore || maintenanceHasMore || housekeepingPendingHasMore)
+                    }
+                    checklistHistoryTotal={Number(checklistHistoryTotal)}
+                    maintenanceHistoryTotal={Number(maintenanceHistoryTotal)}
+                    housekeepingHistoryTotal={Number(housekeepingHistoryTotal)}
                     onRefresh={handleRefresh}
+                    onStatusChange={setActiveStatus} // NEW: Sync status
                 />
             </div>
         </AdminLayout>

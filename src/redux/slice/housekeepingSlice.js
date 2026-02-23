@@ -63,6 +63,7 @@ const initialState = {
   historyPage: 1,
   pendingHasMore: true,
   historyHasMore: true,
+  historyTotal: 0,
   dashboardPage: 1,
   dashboardHasMore: true,
 };
@@ -387,6 +388,7 @@ const housekeepingSlice = createSlice({
         }
         state.historyPage = action.payload.page;
         state.historyHasMore = action.payload.hasMore;
+        state.historyTotal = parseInt(action.payload.total, 10) || 0;
       })
       .addCase(fetchHousekeepingHistoryTasks.rejected, (state, action) => {
         state.loading = false;

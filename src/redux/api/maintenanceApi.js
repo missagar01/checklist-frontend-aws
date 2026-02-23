@@ -11,14 +11,17 @@ export const getPendingMaintenanceTasksAPI = (page = 1, userId = null) => {
   return axiosInstance.get("maintenance/tasks/pending", { params });
 };
 
-export const getCompletedMaintenanceTasksAPI = (page = 1, filters = {}) => {
+export const getCompletedMaintenanceTasksAPI = (page = 1, filters = {}, userId = null) => {
   const role = localStorage.getItem("role");
   const user = localStorage.getItem("user-name");
+
+  // Use explicit userId if provided, otherwise fall back to localStorage for user role
+  const resolvedUserId = userId ?? (role === "user" ? user : null);
 
   const params = {
     page,
     ...filters,
-    ...(role === "user" ? { userId: user } : {})   // ✅ ADD THIS
+    ...(resolvedUserId ? { userId: resolvedUserId } : {})
   };
 
   return axiosInstance.get("maintenance/tasks/completed", { params });

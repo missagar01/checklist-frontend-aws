@@ -53,12 +53,12 @@ const MachineDetails = ({ machine, goBack }) => {
 
   const { serialNo } = useParams();
 
-  // const SCRIPT_URL =
-  //   "https://script.google.com/macros/s/AKfycbzudKkY63zbthWP_YcfyF-HnUOObG_XM9aS2JDCmTmcYLaY1OQq7ho6i085BXxu9N2E7Q/exec";
-  // const SHEET_Id = "15SBKzTJKzaqhjPI5yt5tKkrd3tzNuhm_Q9-iDO8n0B0";
+  const SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbzudKkY63zbthWP_YcfyF-HnUOObG_XM9aS2JDCmTmcYLaY1OQq7ho6i085BXxu9N2E7Q/exec";
+  const SHEET_Id = "15SBKzTJKzaqhjPI5yt5tKkrd3tzNuhm_Q9-iDO8n0B0";
 
 
-  // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
   console.log(API_BASE_URL)
 
 

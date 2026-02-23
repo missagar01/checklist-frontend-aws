@@ -360,7 +360,7 @@ const Machines = () => {
                         ))}
                     </div>
                   </th>
-                  <th
+                  {/* <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort("vendor")}
@@ -369,7 +369,7 @@ const Machines = () => {
                       Vendor
                     </div>
                   </th>
-                  <th
+                  {/* <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort("healthScore")}
@@ -389,7 +389,7 @@ const Machines = () => {
                     className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
 
@@ -423,7 +423,7 @@ const Machines = () => {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {machine["Vendor"]}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -444,7 +444,7 @@ const Machines = () => {
                           <Wrench size={18} />
                         </Link>
                       </div>
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
               </tbody>

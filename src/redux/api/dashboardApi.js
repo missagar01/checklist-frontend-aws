@@ -173,8 +173,9 @@ export const fetchStaffTasksDataApi = async (
   staffFilter = "all",
   page = 1,
   limit = 50,
-  monthYear = "", // Add this parameter
-  departmentFilter = "all" // Add department filter
+  monthYear = "",
+  departmentFilter = "all",
+  search = ""
 ) => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
@@ -193,6 +194,11 @@ export const fetchStaffTasksDataApi = async (
   // Add departmentFilter if provided
   if (departmentFilter && departmentFilter !== "all") {
     params.append('departmentFilter', departmentFilter);
+  }
+
+  // Add search if provided
+  if (search) {
+    params.append('search', search);
   }
 
   const res = await axiosInstance.get(
@@ -233,13 +239,14 @@ export const exportAllStaffTasksApi = async (
   return res.data;
 };
 
-export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all") => {
+export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", search = "") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
   const params = new URLSearchParams({
     dashboardType,
     staffFilter,
-    departmentFilter
+    departmentFilter,
+    search
   });
 
   const res = await axiosInstance.get(

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { fetchStaffTasksDataApi, getStaffTasksCountApi, getTotalUsersCountApi } from "../../../redux/api/dashboardApi"
+import { fetchStaffTasksDataApi, getStaffTasksCountApi } from "../../../redux/api/dashboardApi"
 
 export default function StaffTasksTable({
   dashboardType,
@@ -13,7 +13,6 @@ export default function StaffTasksTable({
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMoreData, setHasMoreData] = useState(true)
   const [totalStaffCount, setTotalStaffCount] = useState(0)
-  const [totalUsersCount, setTotalUsersCount] = useState(0)
   const [selectedMonthYear, setSelectedMonthYear] = useState("")
   const [monthYearOptions, setMonthYearOptions] = useState([])
   const itemsPerPage = 20
@@ -28,8 +27,8 @@ export default function StaffTasksTable({
     // Add current month as default
     const currentMonthYear = `${today.toLocaleString('default', { month: 'long' })} ${currentYear}`
 
-    // Generate options for last 12 months (including current)
-    for (let i = 11; i >= 0; i--) {
+    // Generate options for only last month and current month
+    for (let i = 1; i >= 0; i--) {
       const date = new Date(currentYear, currentMonth - i, 1)
       const monthName = date.toLocaleString('default', { month: 'long' })
       const year = date.getFullYear()
@@ -84,12 +83,8 @@ export default function StaffTasksTable({
 
       // Get total counts for both staff with tasks and total users
       if (page === 1) {
-        const [staffCount, usersCount] = await Promise.all([
-          getStaffTasksCountApi(dashboardType, dashboardStaffFilter, departmentFilter),
-          getTotalUsersCountApi()
-        ]);
+        const staffCount = await getStaffTasksCountApi(dashboardType, dashboardStaffFilter, departmentFilter);
         setTotalStaffCount(staffCount)
-        setTotalUsersCount(usersCount)
       }
 
       if (!data || data.length === 0) {
@@ -212,7 +207,7 @@ export default function StaffTasksTable({
 
           {totalStaffCount > 0 && (
             <div className="text-sm text-gray-600">
-              Total users: {totalUsersCount} | Showing: {staffMembers.length}
+              Total Records: {totalStaffCount} | Showing: {staffMembers.length}
             </div>
           )}
         </div>

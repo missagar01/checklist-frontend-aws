@@ -54,6 +54,7 @@ export default function UnifiedTaskPage() {
         loading: checklistLoading,
         hasMore: checklistHasMore = false,
         currentPage: checklistCurrentPage = 1,
+        pendingTotal: checklistPendingTotal = 0,
         departments: checklistDepartments = [],
         doers: checklistDoers = [],
     } = checklistState || {}
@@ -69,6 +70,7 @@ export default function UnifiedTaskPage() {
         departments: maintenanceDepartments = [], // New
         doers: maintenanceDoers = [],              // New
         currentPage: maintenanceCurrentPage = 1,
+        pendingTotal: maintenancePendingTotal = 0,
         hasMore: maintenanceHasMore = false,
     } = maintenanceState || {}
 
@@ -79,6 +81,7 @@ export default function UnifiedTaskPage() {
         loading: housekeepingLoading,
         error: housekeepingError,
         pendingPage: housekeepingPendingPage = 1,
+        pendingTotal: housekeepingPendingTotal = 0,
         pendingHasMore: housekeepingPendingHasMore = false,
         historyPage: housekeepingHistoryPage = 1,
         historyHasMore: housekeepingHistoryHasMore = false,
@@ -191,10 +194,8 @@ export default function UnifiedTaskPage() {
             if (checklistHistoryHasMore && !checklistLoading) {
                 dispatch(checklistHistoryData(checklistHistoryCurrentPage + 1))
             }
-        } else if (checklistHasMore && !checklistLoading) {
-            dispatch(checklistData(checklistCurrentPage + 1))
         }
-    }, [checklistHasMore, checklistLoading, checklistCurrentPage, checklistHistoryHasMore, checklistHistoryCurrentPage, activeStatus, dispatch])
+    }, [checklistHistoryHasMore, checklistLoading, checklistHistoryCurrentPage, activeStatus, dispatch])
 
     // Callback to load more housekeeping data (called on scroll)
     const loadMoreHousekeepingData = useCallback(async () => {
@@ -202,23 +203,8 @@ export default function UnifiedTaskPage() {
             if (housekeepingHistoryHasMore && !housekeepingLoading) {
                 dispatch(fetchHousekeepingHistoryTasks({ page: housekeepingHistoryPage + 1 }))
             }
-        } else if (housekeepingPendingHasMore && !housekeepingLoading) {
-            const filters = {}
-            const role = localStorage.getItem("role")
-            if (role?.toLowerCase() === "user") {
-                const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
-                const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
-                const accessToUse = userAccess1 || userAccess
-                if (accessToUse) {
-                    filters.department = accessToUse
-                }
-            }
-            await dispatch(fetchHousekeepingPendingTasks({
-                page: housekeepingPendingPage + 1,
-                filters
-            })).unwrap()
         }
-    }, [housekeepingPendingHasMore, housekeepingLoading, housekeepingPendingPage, housekeepingHistoryHasMore, housekeepingHistoryPage, activeStatus, dispatch])
+    }, [housekeepingHistoryHasMore, housekeepingHistoryPage, housekeepingLoading, activeStatus, dispatch])
 
     // Callback to load more maintenance data (called on scroll)
     const loadMoreMaintenanceData = useCallback(() => {
@@ -233,13 +219,8 @@ export default function UnifiedTaskPage() {
                     userId: role === "user" ? user : null
                 }))
             }
-        } else if (maintenanceHasMore && !maintenanceLoading) {
-            dispatch(fetchPendingMaintenanceTasks({
-                page: maintenanceCurrentPage + 1,
-                userId: role === "user" ? user : null
-            }))
         }
-    }, [maintenanceHasMore, maintenanceLoading, maintenanceCurrentPage, maintenanceHistoryHasMore, maintenanceHistoryCurrentPage, activeStatus, dispatch])
+    }, [maintenanceHistoryHasMore, maintenanceHistoryCurrentPage, maintenanceLoading, activeStatus, dispatch])
 
     // Normalize and merge all tasks - filter based on system_access
     const allTasks = useMemo(() => {
@@ -414,13 +395,19 @@ export default function UnifiedTaskPage() {
     // Handle HOD confirm for housekeeping tasks
     const handleHODConfirm = useCallback(async (taskId, { remark = "", imageFile = null, doerName2 = "" }) => {
         try {
-            await dispatch(confirmHousekeepingTask({
+            const payload = {
                 taskId,
                 remark,
                 imageFile,
                 doerName2,
-                hod: username
-            })).unwrap()
+            };
+
+            // Only send hod if remark or image is present
+            if (remark || imageFile) {
+                payload.hod = username;
+            }
+
+            await dispatch(confirmHousekeepingTask(payload)).unwrap()
 
             // Refresh housekeeping data after confirm
             await loadHousekeepingData()
@@ -462,17 +449,24 @@ export default function UnifiedTaskPage() {
                 }))
                 break
 
-            case 'housekeeping':
-                await dispatch(submitHousekeepingTasks([{
+            case 'housekeeping': {
+                const payload = {
                     task_id: taskId,
                     status,
                     remark: remarks,
-                    doer_name2: updateData.doerName2 || '',  // Include doer_name2 if provided
+                    doer_name2: updateData.doerName2 || '',
                     attachment: originalData?.attachment,
-                    hod: username,
-                }])).unwrap()
-                await loadHousekeepingData()
-                break
+                };
+
+                // Only send hod if remark or specialized update (like image/attachment) is present
+                if (remarks || updateData.imageFile || updateData.image) {
+                    payload.hod = username;
+                }
+
+                await dispatch(submitHousekeepingTasks([payload])).unwrap();
+                await loadHousekeepingData();
+                break;
+            }
 
             default:
                 throw new Error(`Unknown source system: ${sourceSystem}`)
@@ -547,25 +541,35 @@ export default function UnifiedTaskPage() {
                             t.originalData?.confirmedByHOD !== "confirmed";
 
                         if (userRole?.toLowerCase() === 'user' && isPending) {
-                            // User role: use confirmHousekeepingTask API for pending tasks
-                            // Use imageFile directly (File object) for FormData, not base64
-                            return dispatch(confirmHousekeepingTask({
+                            const payload = {
                                 taskId: t.taskId,
                                 remark: t.remarks || '',
-                                imageFile: t.imageFile || null,  // Use File object directly
+                                imageFile: t.imageFile || null,
                                 doerName2: t.doerName2 || '',
-                                hod: username
-                            })).unwrap();
+                            };
+
+                            // Only send hod if remark or image is present
+                            if (t.remarks || t.imageFile || t.image) {
+                                payload.hod = username;
+                            }
+
+                            return dispatch(confirmHousekeepingTask(payload)).unwrap();
                         } else {
                             // Admin role: use submitHousekeepingTasks API for confirmed tasks
-                            return dispatch(submitHousekeepingTasks([{
+                            const payload = {
                                 task_id: t.taskId,
                                 status: t.status,
                                 remark: t.remarks || '',
                                 doer_name2: t.doerName2 || '',
                                 attachment: t.originalData?.attachment,
-                                hod: username,
-                            }])).unwrap();
+                            };
+
+                            // Only send hod if remark or image is present
+                            if (t.remarks || t.image || t.imageFile) {
+                                payload.hod = username;
+                            }
+
+                            return dispatch(submitHousekeepingTasks([payload])).unwrap();
                         }
                     })
                 )
@@ -597,6 +601,38 @@ export default function UnifiedTaskPage() {
         })
     }
 
+    // Handle page change for pagination
+    const handlePageChange = useCallback(async (page, sourceSystem) => {
+        const role = localStorage.getItem("role")
+        const user = localStorage.getItem("user-name")
+
+        switch (sourceSystem) {
+            case 'checklist':
+                dispatch(checklistData({ page, replace: true }))
+                break;
+            case 'maintenance':
+                dispatch(fetchPendingMaintenanceTasks({
+                    page,
+                    userId: role === "user" ? user : null,
+                    replace: true
+                }))
+                break;
+            case 'housekeeping': {
+                const filters = {}
+                if (role?.toLowerCase() === "user") {
+                    const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
+                    const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
+                    const accessToUse = userAccess1 || userAccess
+                    if (accessToUse) filters.department = accessToUse
+                }
+                dispatch(fetchHousekeepingPendingTasks({ page, filters, replace: true }))
+                break;
+            }
+            default:
+                break;
+        }
+    }, [dispatch])
+
     // Handle refresh based on system
     const handleRefresh = useCallback((system) => {
         const role = localStorage.getItem("role")
@@ -605,7 +641,7 @@ export default function UnifiedTaskPage() {
         switch (system) {
             case 'checklist':
                 if (hasSystemAccess('checklist') || systemAccess.length === 0) {
-                    dispatch(checklistData(1))
+                    dispatch(checklistData({ page: 1, replace: true }))
                     dispatch(fetchChecklistDepartments())
                     dispatch(fetchChecklistDoers())
                 }
@@ -614,25 +650,30 @@ export default function UnifiedTaskPage() {
                 if (hasSystemAccess('maintenance') || systemAccess.length === 0) {
                     dispatch(fetchPendingMaintenanceTasks({
                         page: 1,
-                        userId: role === "user" ? user : null
+                        userId: role === "user" ? user : null,
+                        replace: true
                     }))
-                    // Also refresh filtered lists if needed, but primary task list is key
                     dispatch(fetchMaintenanceDepartments())
                     dispatch(fetchMaintenanceDoers())
                 }
                 break;
             case 'housekeeping':
                 if (hasSystemAccess('housekeeping') || systemAccess.length === 0) {
-                    loadHousekeepingData()
+                    const filters = {}
+                    if (role?.toLowerCase() === "user") {
+                        const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
+                        const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
+                        const accessToUse = userAccess1 || userAccess
+                        if (accessToUse) filters.department = accessToUse
+                    }
+                    dispatch(fetchHousekeepingPendingTasks({ page: 1, filters, replace: true }))
                     dispatch(fetchHousekeepingDepartments())
                 }
                 break;
             default:
-                // If 'all' or empty, maybe refresh all?
-                // For now, do nothing or refresh all
                 break;
         }
-    }, [dispatch, hasSystemAccess, systemAccess, loadHousekeepingData, username])
+    }, [dispatch, hasSystemAccess, systemAccess, username])
 
     return (
         <AdminLayout>
@@ -674,10 +715,44 @@ export default function UnifiedTaskPage() {
                         loadMoreMaintenanceData()
                     }}
                     hasMore={
-                        activeStatus === 'Completed'
-                            ? (checklistHistoryHasMore || maintenanceHistoryHasMore || housekeepingHistoryHasMore)
-                            : (checklistHasMore || maintenanceHasMore || housekeepingPendingHasMore)
+                        activeStatus === 'Completed' &&
+                        (checklistHistoryHasMore || maintenanceHistoryHasMore || housekeepingHistoryHasMore)
                     }
+                    totalCount={(() => {
+                        // Return total count based on source system for Pending
+                        if (activeStatus === 'Completed') return 0; // Pagination not used for history
+
+                        // We need to know which system is selected in the table's filter
+                        // This info is inside UnifiedTaskTable. We'll pass all totals
+                        // and UnifiedTaskTable can decide, OR we use the fact that it's often 
+                        // filtered by source system.
+
+                        // Since UnifiedTaskPage doesn't know the table's internal filter state easily,
+                        // we can pass a combined total or update UnifiedTaskTable to handle multiple totals.
+                        // Actually, looking at UnifiedTaskTable, it has a filters.sourceSystem state.
+
+                        // Let's pass the totals as an object and have the table select the right one.
+                        // Wait, I already added totalCount as a number prop to UnifiedTaskTable.
+
+                        // Let's pass all totals and current pages and let the table handle it, 
+                        // but wait, I can just pass the total based on what I HAVE here.
+
+                        // Actually, I'll pass a single totalCount and currentPage and update them 
+                        // when the status/source changes in the table.
+                        return activeStatus === 'Pending' ? Math.max(checklistPendingTotal, maintenancePendingTotal, housekeepingPendingTotal) : 0;
+                    })()}
+                    // Better approach: pass an object of counts
+                    pendingTotals={{
+                        checklist: checklistPendingTotal,
+                        maintenance: maintenancePendingTotal,
+                        housekeeping: housekeepingPendingTotal
+                    }}
+                    pendingPages={{
+                        checklist: checklistCurrentPage,
+                        maintenance: maintenanceCurrentPage,
+                        housekeeping: housekeepingPendingPage
+                    }}
+                    onPageChange={handlePageChange}
                     checklistHistoryTotal={Number(checklistHistoryTotal)}
                     maintenanceHistoryTotal={Number(maintenanceHistoryTotal)}
                     housekeepingHistoryTotal={Number(housekeepingHistoryTotal)}

@@ -24,6 +24,7 @@ const initialState = {
   error: null,
   currentPage: 1,
   hasMore: true,
+  pendingTotal: 0,
   currentPageHistory: 1,
   hasMoreHistory: true,
   historyTotal: 0
@@ -187,12 +188,14 @@ const maintenanceSlice = createSlice({
       })
       .addCase(fetchMaintenanceTasks.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.meta.arg.page === 1) {
+        const page = action.meta.arg.page || 1;
+        const replace = action.meta.arg.replace || false;
+        if (page === 1 || replace) {
           state.tasks = action.payload.data;
         } else {
           state.tasks = [...state.tasks, ...action.payload.data];
         }
-        state.currentPage = action.meta.arg.page;
+        state.currentPage = page;
         state.hasMore = action.payload.hasMore;
       })
       .addCase(fetchMaintenanceTasks.rejected, (state, action) => {
@@ -207,13 +210,18 @@ const maintenanceSlice = createSlice({
       })
       .addCase(fetchPendingMaintenanceTasks.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.meta.arg.page === 1) {
-          state.tasks = action.payload.data;
+        const { data = [], totalCount = 0 } = action.payload;
+        const page = action.meta.arg.page || 1;
+        const replace = action.meta.arg.replace || false;
+
+        if (page === 1 || replace) {
+          state.tasks = data;
         } else {
-          state.tasks = [...state.tasks, ...action.payload.data];
+          state.tasks = [...state.tasks, ...data];
         }
-        state.currentPage = action.meta.arg.page;
-        state.hasMore = action.payload.hasMore;
+        state.currentPage = page;
+        state.pendingTotal = parseInt(totalCount, 10) || 0;
+        state.hasMore = state.tasks.length < (parseInt(totalCount, 10) || 0);
       })
 
       // Fetch completed tasks

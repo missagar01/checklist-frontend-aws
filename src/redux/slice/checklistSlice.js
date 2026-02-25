@@ -19,9 +19,11 @@ import {
 // ============================================================
 export const checklistData = createAsyncThunk(
   "fetch/checklist",
-  async (page = 1) => {
+  async (args) => {
+    const page = typeof args === 'object' ? args.page : args || 1;
+    const replace = typeof args === 'object' ? args.replace : false;
     const { data, totalCount } = await fetchChechListDataSortByDate(page);
-    return { data, totalCount, page };
+    return { data, totalCount, page, replace };
   }
 );
 
@@ -148,6 +150,7 @@ const checkListSlice = createSlice({
     error: null,
     hasMore: true,
     currentPage: 1,
+    pendingTotal: 0,
     historyTotal: 0,
     historyHasMore: true,
     historyCurrentPage: 1,
@@ -169,17 +172,19 @@ const checkListSlice = createSlice({
 
       .addCase(checklistData.fulfilled, (state, action) => {
         state.loading = false;
+        const { data, totalCount, page, replace } = action.payload;
 
-        if (action.payload.page === 1) {
-          state.checklist = action.payload.data;
+        if (page === 1 || replace) {
+          state.checklist = data;
         } else {
-          state.checklist = [...state.checklist, ...action.payload.data];
+          state.checklist = [...state.checklist, ...data];
         }
 
-        state.currentPage = action.payload.page;
+        state.currentPage = page;
+        state.pendingTotal = parseInt(totalCount, 10) || 0;
 
         // Determine pagination
-        state.hasMore = state.checklist.length < action.payload.totalCount;
+        state.hasMore = state.checklist.length < (parseInt(totalCount, 10) || 0);
       })
 
       .addCase(checklistData.rejected, (state, action) => {

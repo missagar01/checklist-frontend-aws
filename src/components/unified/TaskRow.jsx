@@ -813,7 +813,7 @@ export function TaskTableHeader({
         <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           Temperature
         </th>
-        {(!isUserRole || isMaintenanceOnly) && (
+        {(isMaintenanceOnly) && (
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             {isHistoryMode ? "Status" : "Task Status"}
           </th>

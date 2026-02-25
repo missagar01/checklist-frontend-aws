@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { fetchStaffTasksDataApi, exportAllStaffTasksApi, getStaffTasksCountApi, getTotalUsersCountApi, getUniqueDepartmentsApi } from "../redux/api/dashboardApi"
+import { fetchStaffTasksDataApi, exportAllStaffTasksApi, getStaffTasksCountApi, getUniqueDepartmentsApi } from "../redux/api/dashboardApi"
 import AdminLayout from '../components/layout/AdminLayout';
 
 function MisReportPage() {
@@ -14,11 +14,11 @@ function MisReportPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
     const [totalStaffCount, setTotalStaffCount] = useState(0)
-    const [totalUsersCount, setTotalUsersCount] = useState(0)
     const [availableStaff, setAvailableStaff] = useState([])
     const [availableDepartments, setAvailableDepartments] = useState([])
     const [monthYearOptions, setMonthYearOptions] = useState([])
     const [searchQuery, setSearchQuery] = useState("")
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
     const itemsPerPage = 50
 
     const userRole = localStorage.getItem("role")
@@ -31,8 +31,8 @@ function MisReportPage() {
         const currentMonth = today.getMonth() // 0-11
         const currentYear = today.getFullYear()
 
-        // Generate options for last 12 months (including current)
-        for (let i = 11; i >= 0; i--) {
+        // Generate options for only last month and current month
+        for (let i = 1; i >= 0; i--) {
             const date = new Date(currentYear, currentMonth - i, 1)
             const monthName = date.toLocaleString('default', { month: 'long' })
             const year = date.getFullYear()
@@ -80,22 +80,15 @@ function MisReportPage() {
         setStaffMembers([])
         setFilteredStaffMembers([])
         setTotalStaffCount(0)
-    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear])
+    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, debouncedSearchQuery])
 
-    // Optimized filter function with debouncing
+    // Debounce search query
     useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredStaffMembers(staffMembers)
-        } else {
-            const query = searchQuery.toLowerCase().trim()
-            const filtered = staffMembers.filter(staff =>
-                staff.name?.toLowerCase().includes(query) ||
-                staff.email?.toLowerCase().includes(query) ||
-                staff.employee_id?.toLowerCase().includes(query)
-            )
-            setFilteredStaffMembers(filtered)
-        }
-    }, [staffMembers, searchQuery])
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery)
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchQuery])
 
     // Load staff data from server using scoring API
     const loadStaffData = useCallback(async (page = 1) => {
@@ -106,12 +99,13 @@ function MisReportPage() {
 
             // Fetch staff scoring data
             const data = await fetchStaffTasksDataApi(
-                "checklist", // Always use checklist as it merges both sources
+                "checklist",
                 dashboardStaffFilter,
                 page,
                 itemsPerPage,
                 selectedMonthYear,
-                departmentFilter
+                departmentFilter,
+                debouncedSearchQuery
             )
 
             // Get total count from first item or fetch separately
@@ -119,13 +113,9 @@ function MisReportPage() {
                 setTotalStaffCount(data[0].total_count)
             } else {
                 // Fallback: fetch count separately
-                const staffCount = await getStaffTasksCountApi("checklist", dashboardStaffFilter)
+                const staffCount = await getStaffTasksCountApi("checklist", dashboardStaffFilter, departmentFilter, debouncedSearchQuery)
                 setTotalStaffCount(staffCount)
             }
-
-            // Get total users count
-            const usersCount = await getTotalUsersCountApi()
-            setTotalUsersCount(usersCount)
 
             if (!data || data.length === 0) {
                 setStaffMembers([])
@@ -141,12 +131,12 @@ function MisReportPage() {
         } finally {
             setIsLoading(false)
         }
-    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, isLoading])
+    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, debouncedSearchQuery, isLoading])
 
     // Initial load when component mounts or dependencies change
     useEffect(() => {
         loadStaffData(currentPage)
-    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, currentPage])
+    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, debouncedSearchQuery, currentPage])
 
     // Calculate total pages
     const totalPages = Math.ceil(totalStaffCount / itemsPerPage)
@@ -309,19 +299,19 @@ function MisReportPage() {
                 {/* Header Section */}
                 <div className="bg-white rounded-lg border border-purple-200 shadow-md">
                     <div className="p-6">
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             {/* Title Section */}
-                            <div className="flex-1">
-                                <h1 className="text-2xl font-bold text-purple-700">Staff MIS Report</h1>
-                                <p className="text-sm text-gray-600 mt-1">Staff Performance Scoring (Checklist + Maintenance)</p>
+                            <div className="flex-1 text-center md:text-left">
+                                <h1 className="text-xl md:text-2xl font-bold text-purple-700">Staff MIS Report</h1>
+                                <p className="text-xs md:text-sm text-gray-600 mt-1">Staff Performance Scoring (Checklist + Maintenance)</p>
                             </div>
 
                             {/* Download Button */}
-                            <div>
+                            <div className="w-full md:w-auto">
                                 <button
                                     onClick={downloadCSV}
                                     disabled={totalStaffCount === 0 || isExporting}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                                    className="w-full md:w-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm"
                                 >
                                     {isExporting ? (
                                         <>
@@ -341,9 +331,9 @@ function MisReportPage() {
                         </div>
 
                         {/* Filters Section */}
-                        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
                             {/* Search Bar */}
-                            <div className="w-full sm:w-64">
+                            <div className="w-full">
                                 <input
                                     type="text"
                                     placeholder="Search staff..."
@@ -354,7 +344,7 @@ function MisReportPage() {
                             </div>
 
                             {/* Department Filter */}
-                            <div className="w-full sm:w-48">
+                            <div className="w-full">
                                 <select
                                     value={departmentFilter}
                                     onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -370,7 +360,7 @@ function MisReportPage() {
                             </div>
 
                             {/* Month Filter */}
-                            <div className="w-full sm:w-48">
+                            <div className="w-full">
                                 <select
                                     value={selectedMonthYear}
                                     onChange={(e) => setSelectedMonthYear(e.target.value)}
@@ -386,7 +376,7 @@ function MisReportPage() {
                             </div>
 
                             {/* Staff Filter */}
-                            <div className="w-full sm:w-48">
+                            <div className="w-full">
                                 <select
                                     value={dashboardStaffFilter}
                                     onChange={(e) => setDashboardStaffFilter(e.target.value)}
@@ -430,9 +420,9 @@ function MisReportPage() {
                                         Staff: {dashboardStaffFilter}
                                     </span>
                                 )}
-                                {searchQuery && (
+                                {debouncedSearchQuery && (
                                     <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
-                                        Search: "{searchQuery}"
+                                        Search: "{debouncedSearchQuery}"
                                     </span>
                                 )}
                             </div>
@@ -443,12 +433,10 @@ function MisReportPage() {
                         <div className="space-y-4">
                             {/* Show total counts */}
                             <div className="text-sm text-gray-600">
-                                {searchQuery ? (
-                                    `Showing ${filteredStaffMembers.length} of ${staffMembers.length} staff members`
+                                {debouncedSearchQuery ? (
+                                    `Showing ${staffMembers.length} records matching your search out of ${totalStaffCount}`
                                 ) : (
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                        <span>Total Users: <strong>{totalUsersCount}</strong></span>
-                                        <span className="hidden sm:inline">•</span>
                                         <span>Total Records: <strong>{totalStaffCount}</strong></span>
                                         <span className="hidden sm:inline">•</span>
                                         <span>Page: <strong>{currentPage} of {totalPages}</strong></span>
@@ -456,7 +444,7 @@ function MisReportPage() {
                                 )}
                             </div>
 
-                            {filteredStaffMembers.length === 0 && !isLoading ? (
+                            {staffMembers.length === 0 && !isLoading ? (
                                 <div className="text-center p-8 text-gray-500">
                                     {searchQuery ? (
                                         <div>
@@ -514,7 +502,7 @@ function MisReportPage() {
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
-                                                {filteredStaffMembers.map((staff, index) => (
+                                                {staffMembers.map((staff, index) => (
                                                     <tr key={`${staff.name}-${index}`} className="hover:bg-gray-50">
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             {(currentPage - 1) * itemsPerPage + index + 1}
@@ -550,41 +538,43 @@ function MisReportPage() {
                                     </div>
 
                                     {/* Pagination Controls */}
-                                    {!searchQuery && totalPages > 1 && (
-                                        <div className="flex justify-center items-center gap-2 mt-4">
+                                    {totalPages > 1 && (
+                                        <div className="flex flex-wrap justify-center items-center gap-2 mt-4 px-2">
                                             {/* Previous Button */}
                                             <button
                                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                                 disabled={currentPage === 1 || isLoading}
-                                                className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-2 py-1 md:px-3 md:py-1 rounded-md border border-gray-300 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                Previous
+                                                Prev
                                             </button>
 
                                             {/* Page Numbers */}
-                                            {getPageNumbers().map((page, idx) => (
-                                                page === '...' ? (
-                                                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">...</span>
-                                                ) : (
-                                                    <button
-                                                        key={page}
-                                                        onClick={() => setCurrentPage(page)}
-                                                        disabled={isLoading}
-                                                        className={`px-3 py-1 rounded-md text-sm font-medium ${currentPage === page
-                                                            ? 'bg-purple-600 text-white'
-                                                            : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                    >
-                                                        {page}
-                                                    </button>
-                                                )
-                                            ))}
+                                            <div className="flex items-center gap-1">
+                                                {getPageNumbers().map((page, idx) => (
+                                                    page === '...' ? (
+                                                        <span key={`ellipsis-${idx}`} className="px-1 text-gray-500 text-xs md:text-sm">...</span>
+                                                    ) : (
+                                                        <button
+                                                            key={page}
+                                                            onClick={() => setCurrentPage(page)}
+                                                            disabled={isLoading}
+                                                            className={`min-w-[28px] md:min-w-[36px] h-8 md:h-9 flex items-center justify-center rounded-md text-xs md:text-sm font-medium ${currentPage === page
+                                                                ? 'bg-purple-600 text-white'
+                                                                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                        >
+                                                            {page}
+                                                        </button>
+                                                    )
+                                                ))}
+                                            </div>
 
                                             {/* Next Button */}
                                             <button
                                                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                                 disabled={currentPage === totalPages || isLoading}
-                                                className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-2 py-1 md:px-3 md:py-1 rounded-md border border-gray-300 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Next
                                             </button>

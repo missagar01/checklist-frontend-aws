@@ -60,6 +60,7 @@ const initialState = {
 
   // Pagination
   pendingPage: 1,
+  pendingTotal: 0,
   historyPage: 1,
   pendingHasMore: true,
   historyHasMore: true,
@@ -133,18 +134,19 @@ export const createHousekeepingLocation = createAsyncThunk(
 // Get Pending Tasks
 export const fetchHousekeepingPendingTasks = createAsyncThunk(
   "housekeeping/fetchPendingTasks",
-  async ({ page = 1, filters = {} }, { rejectWithValue }) => {
+  async ({ page = 1, filters = {}, replace = false }, { rejectWithValue }) => {
     try {
-      const response = await getHousekeepingPendingTasksAPI(page, filters);
+      const limit = filters.limit || 50;
+      const response = await getHousekeepingPendingTasksAPI(page, { ...filters, limit });
       const data = response.data;
       const items = Array.isArray(data) ? data : data?.items || [];
       const total = data?.total ?? items.length;
-      const limit = filters.limit || 100;
 
       return {
         items,
         total,
         page,
+        replace,
         hasMore: (page * limit) < total && items.length > 0
       };
     } catch (error) {
@@ -361,13 +363,16 @@ const housekeepingSlice = createSlice({
       })
       .addCase(fetchHousekeepingPendingTasks.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload.page === 1) {
-          state.pendingTasks = action.payload.items;
+        const { items, total, page, replace, hasMore } = action.payload;
+
+        if (page === 1 || replace) {
+          state.pendingTasks = items;
         } else {
-          state.pendingTasks = [...state.pendingTasks, ...action.payload.items];
+          state.pendingTasks = [...state.pendingTasks, ...items];
         }
-        state.pendingPage = action.payload.page;
-        state.pendingHasMore = action.payload.hasMore;
+        state.pendingPage = page;
+        state.pendingTotal = parseInt(total, 10) || 0;
+        state.pendingHasMore = hasMore;
       })
       .addCase(fetchHousekeepingPendingTasks.rejected, (state, action) => {
         state.loading = false;

@@ -484,8 +484,8 @@ const TaskRow = memo(function TaskRow({
         </div>
       </td>
 
-      {/* Sound Status - For completed: show value, for pending: show dropdown */}
-      {task.sourceSystem === "maintenance" ? (
+      {/* Sound Status - Only for maintenance tab */}
+      {isMaintenanceOnly && (
         <td className="px-2 sm:px-3 py-2 sm:py-4">
           {isCompleted ? (
             <span className="text-xs text-gray-700">
@@ -506,14 +506,10 @@ const TaskRow = memo(function TaskRow({
             </select>
           )}
         </td>
-      ) : (
-        <td className="px-2 sm:px-3 py-2 sm:py-4">
-          <span className="text-xs text-gray-400">—</span>
-        </td>
       )}
 
-      {/* Temperature - For completed: show value, for pending: show input */}
-      {task.sourceSystem === "maintenance" ? (
+      {/* Temperature - Only for maintenance tab */}
+      {isMaintenanceOnly && (
         <td className="px-2 sm:px-3 py-2 sm:py-4">
           {isCompleted ? (
             <span className="text-xs text-gray-700">
@@ -530,25 +526,17 @@ const TaskRow = memo(function TaskRow({
             />
           )}
         </td>
-      ) : (
-        <td className="px-2 sm:px-3 py-2 sm:py-4">
-          <span className="text-xs text-gray-400">—</span>
-        </td>
       )}
 
-      {(!isUserRole || task.sourceSystem === 'maintenance') && (
+      {/* Maintenance Status Column - Only for maintenance system */}
+      {isMaintenanceOnly && task.sourceSystem === 'maintenance' && (
         <td className="px-2 sm:px-3 py-2 sm:py-4">
           {isCompleted ? (
-            <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-              ✅ {task.originalStatus || "Yes"}
-            </span>
-          ) : task.sourceSystem === "checklist" ? (
-            <span className="text-xs text-gray-700">
-              {task.status || "—"}
-            </span>
-          ) : isAdminRole && task.sourceSystem === 'housekeeping' ? (
-            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
-              ✅ {rowData.status || "Yes"}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${(task.originalStatus?.toLowerCase() === 'yes' || task.status?.toLowerCase() === 'yes')
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+              }`}>
+              {task.originalStatus || task.status || "Pending"}
             </span>
           ) : (
             <select
@@ -565,12 +553,15 @@ const TaskRow = memo(function TaskRow({
         </td>
       )}
 
-      {/* User Status Checklist column */}
+      {/* Status Column - For Checklist and Housekeeping systems */}
       {!isMaintenanceOnly && (
         <td className="px-2 sm:px-3 py-2 sm:py-4">
           {isCompleted ? (
-            <span className="text-xs text-gray-700">
-              {task.status || task.originalStatus || "—"}
+            <span className={`text-xs font-medium ${(task.originalData?.status?.toLowerCase() === 'yes' || task.originalStatus?.toLowerCase() === 'yes')
+              ? 'text-green-600'
+              : 'text-red-600'
+              }`}>
+              {task.originalData?.status || task.originalStatus || "Pending"}
             </span>
           ) : isUserRole ? (
             <select
@@ -583,19 +574,36 @@ const TaskRow = memo(function TaskRow({
               <option value="Yes">Yes / हाँ</option>
               <option value="No">No / नहीं</option>
             </select>
+          ) : isAdminRole && task.sourceSystem === 'housekeeping' ? (
+            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+              ✅ {rowData.status || "Yes"}
+            </span>
           ) : (
-            <span className="text-xs text-gray-700">
-              {task.status || task.originalStatus || "—"}
+            <span className={`text-xs font-medium ${(task.originalData?.status?.toLowerCase() === 'yes' || task.originalStatus?.toLowerCase() === 'yes')
+              ? 'text-green-600'
+              : 'text-red-600'
+              }`}>
+              {task.originalData?.status || task.originalStatus || "Pending"}
             </span>
           )}
         </td>
       )}
 
-      {/* Admin Done column */}
-      {isAdminRole && (
+      {/* Admin Done column - Hidden for maintenance, visible for others */}
+      {!isMaintenanceOnly && (
         <td className="px-2 sm:px-3 py-2 sm:py-4">
-          <span className="text-xs text-gray-700">
-            {task.adminDone || task.originalData?.admin_done || "—"}
+          <span className={`text-xs font-medium ${(() => {
+            const val = (task.adminDone && task.adminDone !== "—" ? task.adminDone : task.originalData?.admin_done)?.toLowerCase();
+            if (!val || val === "pending" || val === "—") return 'text-gray-500';
+            if (['yes', 'confirmed', 'confirm'].includes(val)) return 'text-green-600';
+            return 'text-red-600';
+          })()
+            }`}>
+            {task.adminDone && task.adminDone !== "—"
+              ? task.adminDone
+              : task.originalData?.admin_done && task.originalData?.admin_done !== "—"
+                ? task.originalData.admin_done
+                : "Pending"}
           </span>
         </td>
       )}
@@ -807,23 +815,27 @@ export function TaskTableHeader({
         <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           Due Date
         </th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Sound Status
-        </th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Temperature
-        </th>
+        {isMaintenanceOnly && (
+          <>
+            <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Sound Status
+            </th>
+            <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Temperature
+            </th>
+          </>
+        )}
         {(isMaintenanceOnly) && (
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            {isHistoryMode ? "Status" : "Task Status"}
+            task_status
           </th>
         )}
         {!isMaintenanceOnly && (
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            user_status-checklist
+            Status
           </th>
         )}
-        {isAdminRole && (
+        {!isMaintenanceOnly && (
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Admin Done
           </th>

@@ -749,7 +749,7 @@ export default function UnifiedTaskTable({
                                     ) : (
                                         <TaskTableEmpty
                                             hasFilters={hasFilters}
-                                            colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isUserRole ? 14 : 16)}
+                                            colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isMaintenanceOnly ? 14 : 13)}
                                         />
                                     )}
                                 </tbody>

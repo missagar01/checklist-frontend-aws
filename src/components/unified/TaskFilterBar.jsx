@@ -9,6 +9,7 @@ export default function TaskFilterBar({
     departmentOptions = [],
     assignedToOptions = [],
     userRole = "admin",
+    systemCounts = { checklist: 0, maintenance: 0, housekeeping: 0 },
     onTaskAdded, // Callback when a task is successfully added
 }) {
     // Modal State
@@ -157,8 +158,12 @@ export default function TaskFilterBar({
                                 : "bg-purple-100 text-purple-700 hover:bg-purple-200"
                                 }`}
                         >
-                            <span className="hidden sm:inline">✅ Checklist</span>
-                            <span className="sm:hidden">CL</span>
+                            <span className="hidden sm:inline">
+                                Checklist {currentUserRole?.toLowerCase() === 'user' ? `(${systemCounts.checklist})` : ''}
+                            </span>
+                            <span className="sm:hidden">
+                                CL {currentUserRole?.toLowerCase() === 'user' ? `(${systemCounts.checklist})` : ''}
+                            </span>
                         </button>
                         <button
                             onClick={() => handleChange("sourceSystem", sourceSystem === "maintenance" ? "" : "maintenance")}
@@ -167,8 +172,12 @@ export default function TaskFilterBar({
                                 : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                                 }`}
                         >
-                            <span className="hidden sm:inline">🔧 Maintenance</span>
-                            <span className="sm:hidden">Maint</span>
+                            <span className="hidden sm:inline">
+                                Maintenance {currentUserRole?.toLowerCase() === 'user' ? `(${systemCounts.maintenance})` : ''}
+                            </span>
+                            <span className="sm:hidden">
+                                Maint {currentUserRole?.toLowerCase() === 'user' ? `(${systemCounts.maintenance})` : ''}
+                            </span>
                         </button>
                         <button
                             onClick={() => handleChange("sourceSystem", sourceSystem === "housekeeping" ? "" : "housekeeping")}
@@ -177,8 +186,12 @@ export default function TaskFilterBar({
                                 : "bg-green-100 text-green-700 hover:bg-green-200"
                                 }`}
                         >
-                            <span className="hidden sm:inline">🏠 Housekeeping</span>
-                            <span className="sm:hidden">HK</span>
+                            <span className="hidden sm:inline">
+                                Housekeeping {currentUserRole?.toLowerCase() === 'user' ? `(${systemCounts.housekeeping})` : ''}
+                            </span>
+                            <span className="sm:hidden">
+                                HK {currentUserRole?.toLowerCase() === 'user' ? `(${systemCounts.housekeeping})` : ''}
+                            </span>
                         </button>
 
                         {/* ADD TASK BUTTON - Only with popup form */}

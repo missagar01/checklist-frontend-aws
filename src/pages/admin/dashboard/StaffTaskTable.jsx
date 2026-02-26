@@ -244,64 +244,109 @@ export default function StaffTasksTable({
         </div>
       ) : (
         <div
-          className="staff-table-container rounded-lg border border-gray-100 overflow-auto shadow-sm"
-          style={{ maxHeight: "400px" }}
+          className="staff-table-container overflow-hidden rounded-lg border border-gray-100"
+          style={{ maxHeight: "450px", overflowY: "auto" }}
         >
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-[#c41e3a] sticky top-0 z-10">
-              <tr>
-                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
-                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Name</th>
-                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Dept</th>
-                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Total</th>
-                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Done</th>
-                {/* <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Pending</th> */}
-                <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">On Time</th>
-                <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-wider">Score</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-50">
-              {staffMembers.map((staff, index) => (
-                <tr key={`${staff.name}-${index}`} className="hover:bg-red-50/10 transition-colors">
-                  <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{index + 1}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <div>
-                      <div className="text-[13px] font-bold text-gray-800">{staff.name}</div>
-                      <div className="text-[11px] text-gray-400 font-medium">{staff.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <div className="text-[11px] font-medium text-gray-500">{staff.department || "N/A"}</div>
-                  </td>
-                  <td className="px-3 py-2 text-[13px] font-bold text-blue-600">{staff.totalTasks}</td>
-                  <td className="px-3 py-2 text-[13px] font-bold text-emerald-600">{staff.completedTasks}</td>
-                  {/* <td className="px-3 py-2 text-[13px] font-bold text-amber-600">{staff.pendingTasks}</td> */}
-                  <td className="px-3 py-2 text-[13px] font-bold text-gray-600">
-                    {staff.doneOnTime || 0}
-                    {staff.completedTasks > 0 && (
-                      <span className="text-[10px] text-gray-400 ml-1 font-medium">
-                        ({Math.round((staff.doneOnTime / staff.completedTasks) * 100)}%)
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {renderOnTimeScore(staff.onTimeScore || 0)}
-                  </td>
+          {/* Desktop Table View */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead className="bg-[#c41e3a] sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">#</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Name</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Dept</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Total</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Done</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">On Time</th>
+                  <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-tight">Score</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-50">
+                {staffMembers.map((staff, index) => (
+                  <tr key={`${staff.name}-${index}`} className="hover:bg-red-50/5 transition-colors border-l-2 border-transparent hover:border-[#c41e3a]">
+                    <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{index + 1}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div>
+                        <div className="text-[13px] font-bold text-gray-800">{staff.name}</div>
+                        <div className="text-[11px] text-gray-400 font-medium">{staff.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="text-[11px] font-bold text-indigo-600 uppercase tracking-tighter">{staff.department || "N/A"}</div>
+                    </td>
+                    <td className="px-3 py-2 text-[13px] font-bold text-blue-600">{staff.totalTasks}</td>
+                    <td className="px-3 py-2 text-[13px] font-bold text-emerald-600">{staff.completedTasks}</td>
+                    <td className="px-3 py-2 text-[13px] font-bold text-gray-600">
+                      {staff.doneOnTime || 0}
+                      {staff.completedTasks > 0 && (
+                        <span className="text-[10px] text-gray-400 ml-1 font-medium">
+                          ({Math.round((staff.doneOnTime / staff.completedTasks) * 100)}%)
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {renderOnTimeScore(staff.onTimeScore || 0)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-2 bg-gray-50/50 p-2">
+            {staffMembers.map((staff, index) => (
+              <div key={`${staff.name}-${index}`} className="p-2.5 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-[#c41e3a] transition-all active:scale-[0.98]">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-[#c41e3a]/10 text-[#c41e3a] text-[10px] font-black rounded-md border border-[#c41e3a]/20">
+                    {index + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <h4 className="text-[14px] font-bold text-gray-800 leading-tight">{staff.name}</h4>
+                      {renderOnTimeScore(staff.onTimeScore || 0)}
+                    </div>
+                    <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter mt-0.5">
+                      {staff.department || "N/A"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pl-7">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Total</span>
+                    <span className="text-[12px] font-black text-blue-600">{staff.totalTasks}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Done</span>
+                    <span className="text-[12px] font-black text-emerald-600">{staff.completedTasks}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">On Time</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[12px] font-black text-gray-700">{staff.doneOnTime || 0}</span>
+                      {staff.completedTasks > 0 && (
+                        <span className="text-[9px] text-gray-400 font-bold">
+                          {Math.round((staff.doneOnTime / staff.completedTasks) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
           {isLoadingMore && (
-            <div className="text-center py-4">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <p className="text-sm text-gray-500 mt-2">Loading more staff...</p>
+            <div className="text-center py-4 bg-gray-50/50">
+              <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-solid border-[#c41e3a] border-r-transparent"></div>
+              <p className="text-[10px] text-gray-500 mt-1 font-bold uppercase">Loading more...</p>
             </div>
           )}
 
           {!hasMoreData && staffMembers.length > 0 && (
-            <div className="text-center py-4 text-sm text-gray-500">
-              All staff members loaded
+            <div className="text-center py-4 text-[11px] text-gray-400 font-bold uppercase tracking-widest bg-gray-50/50">
+              End of list
             </div>
           )}
         </div>

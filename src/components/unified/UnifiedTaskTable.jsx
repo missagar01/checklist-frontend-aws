@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { CheckCircle2, X, AlertTriangle } from "lucide-react";
-import TaskRow, { TaskTableHeader, TaskTableEmpty } from "./TaskRow";
+import TaskRow, { TaskTableHeader, TaskTableEmpty, TaskCard } from "./TaskRow";
 import TaskFilterBar from "./TaskFilterBar";
 import TaskDrawer from "./TaskDrawer";
 import { filterTasks, sortByDate, sortHousekeepingTasks } from "../../utils/taskNormalizer";
@@ -43,6 +43,9 @@ export default function UnifiedTaskTable({
     pendingPages = {},  // NEW: Object mapping sourceSystem -> currentPage
     onPageChange,  // NEW: Page change callback
     onStatusChange, // NEW: Status change callback
+    checklistHistoryTotal = 0,
+    maintenanceHistoryTotal = 0,
+    housekeepingHistoryTotal = 0,
 }) {
     // State
     const [selectedItems, setSelectedItems] = useState(new Set());
@@ -56,6 +59,23 @@ export default function UnifiedTaskTable({
         startDate: "",
         endDate: "",
     });
+
+    // Calculate counts for each system based on current status
+    const systemCounts = useMemo(() => {
+        const isHistory = filters.status === "Completed";
+        if (isHistory) {
+            return {
+                checklist: checklistHistoryTotal,
+                maintenance: maintenanceHistoryTotal,
+                housekeeping: housekeepingHistoryTotal
+            };
+        }
+        return {
+            checklist: pendingTotals.checklist || 0,
+            maintenance: pendingTotals.maintenance || 0,
+            housekeeping: pendingTotals.housekeeping || 0
+        };
+    }, [filters.status, pendingTotals, checklistHistoryTotal, maintenanceHistoryTotal, housekeepingHistoryTotal]);
 
     // Compute active options based on selected source system
     const { departmentOptions, assignedToOptions } = useMemo(() => {
@@ -638,6 +658,7 @@ export default function UnifiedTaskTable({
                 departmentOptions={departmentOptions}
                 assignedToOptions={assignedToOptions}
                 userRole={userRole}
+                systemCounts={systemCounts}
                 onTaskAdded={() => onRefresh && onRefresh('checklist')}
             />
 
@@ -671,14 +692,24 @@ export default function UnifiedTaskTable({
             <div className="w-full rounded-lg border border-blue-200 shadow-md bg-white overflow-hidden">
                 {/* Table Header */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100 px-2 sm:px-4 py-2 sm:py-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex-1 min-w-0">
-                            {/* <h2 className="text-blue-700 font-medium text-xs sm:text-sm md:text-base truncate">
-                                📋 All Tasks (Checklist + Maintenance + Housekeeping)
-                            </h2> */}
-                            <p className="text-blue-600 font-medium text-xs sm:text-sm mt-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex-1 min-w-0 flex items-center justify-between">
+                            <p className="text-blue-600 font-medium text-[11px] sm:text-sm">
                                 Showing {displayTasks.length} of {totalCount || displayTasks.length} tasks
                             </p>
+
+                            <div className="sm:hidden flex items-center bg-white/50 px-2 py-1 rounded-md border border-blue-100 shadow-sm">
+                                <span className="mr-1.5 text-[10px] font-black text-blue-700 uppercase">Select All</span>
+                                <input
+                                    type="checkbox"
+                                    checked={isAllSelected}
+                                    ref={(el) => {
+                                        if (el) el.indeterminate = isIndeterminate;
+                                    }}
+                                    onChange={handleSelectAll}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                            </div>
                         </div>
 
                         {/* Only show Update button for pending tasks (not history) */}
@@ -686,19 +717,19 @@ export default function UnifiedTaskTable({
                             <button
                                 onClick={handleBulkSubmit}
                                 disabled={selectedItems.size === 0 || isSubmitting || !areSelectedTasksValid}
-                                className={`w-full sm:w-auto rounded-md py-1.5 sm:py-2 px-3 sm:px-4
-                                        text-white text-xs sm:text-sm font-medium whitespace-nowrap
+                                className={`w-fit self-end sm:self-auto sm:w-auto rounded-md py-1.5 sm:py-2 px-3 sm:px-4
+                                        text-white text-[10px] sm:text-sm font-bold whitespace-nowrap shadow-md mt-1 sm:mt-0
                                         ${selectedItems.size > 0 && areSelectedTasksValid
-                                        ? "bg-green-600 hover:bg-green-700"
-                                        : "bg-gray-300 cursor-not-allowed"
-                                    }`}                            >
-                                {isSubmitting ? "⏳ Processing..." : `✅ Update Selected (${selectedItems.size})`}
+                                        ? "bg-green-600 hover:bg-green-700 active:scale-95"
+                                        : "bg-gray-300 cursor-not-allowed text-gray-500 shadow-none border border-gray-200"
+                                    } transition-all`}                            >
+                                {isSubmitting ? "⏳ Processing..." : `✅ Update (${selectedItems.size})`}
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* Table Container */}
+                {/* Table/Cards Container */}
                 <div
                     ref={tableContainerRef}
                     className="w-full overflow-x-auto overflow-y-auto"
@@ -712,48 +743,87 @@ export default function UnifiedTaskTable({
                         </div>
                     ) : (
                         <>
-                            <table className="w-full divide-y divide-gray-200" style={{ width: '100%', tableLayout: 'auto' }}>
-                                <TaskTableHeader
-                                    onSelectAll={handleSelectAll}
-                                    isAllSelected={isAllSelected}
-                                    isIndeterminate={isIndeterminate}
-                                    isHistoryMode={filters.status === "Completed"}
-                                    isHousekeepingOnly={isHousekeepingOnly}
-                                    isMaintenanceOnly={isMaintenanceOnly}
-                                    userRole={userRole}
-                                />
-                                <tbody className="bg-white divide-y divide-gray-100">
-                                    {displayTasks.length > 0 ? (
-                                        displayTasks.map((task, index) => {
-                                            const activePage = pendingPages[task.sourceSystem] || 1;
-                                            return (
-                                                <TaskRow
-                                                    key={`${task.sourceSystem}-${task.id}-${index}`}
-                                                    task={task}
-                                                    isSelected={selectedItems.has(task.id)}
-                                                    onSelect={handleSelectItem}
-                                                    onView={handleViewTask}
-                                                    rowData={rowData[task.id] || {}}
-                                                    onRowDataChange={handleRowDataChange}
-                                                    uploadedImage={uploadedImages[task.id]}
-                                                    onImageUpload={handleImageUpload}
-                                                    isHistoryMode={filters.status === "Completed"}
-                                                    isHousekeepingOnly={isHousekeepingOnly}
-                                                    isMaintenanceOnly={isMaintenanceOnly}
-                                                    seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
-                                                    userRole={userRole}
-                                                    onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
-                                                />
-                                            );
-                                        })
-                                    ) : (
+                            {/* Desktop Table View */}
+                            <div className="hidden sm:block">
+                                <table className="w-full divide-y divide-gray-200" style={{ width: '100%', tableLayout: 'auto' }}>
+                                    <TaskTableHeader
+                                        onSelectAll={handleSelectAll}
+                                        isAllSelected={isAllSelected}
+                                        isIndeterminate={isIndeterminate}
+                                        isHistoryMode={filters.status === "Completed"}
+                                        isHousekeepingOnly={isHousekeepingOnly}
+                                        isMaintenanceOnly={isMaintenanceOnly}
+                                        userRole={userRole}
+                                    />
+                                    <tbody className="bg-white divide-y divide-gray-100">
+                                        {displayTasks.length > 0 ? (
+                                            displayTasks.map((task, index) => {
+                                                const activePage = pendingPages[task.sourceSystem] || 1;
+                                                return (
+                                                    <TaskRow
+                                                        key={`${task.sourceSystem}-${task.id}-${index}`}
+                                                        task={task}
+                                                        isSelected={selectedItems.has(task.id)}
+                                                        onSelect={handleSelectItem}
+                                                        onView={handleViewTask}
+                                                        rowData={rowData[task.id] || {}}
+                                                        onRowDataChange={handleRowDataChange}
+                                                        uploadedImage={uploadedImages[task.id]}
+                                                        onImageUpload={handleImageUpload}
+                                                        isHistoryMode={filters.status === "Completed"}
+                                                        isHousekeepingOnly={isHousekeepingOnly}
+                                                        isMaintenanceOnly={isMaintenanceOnly}
+                                                        seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
+                                                        userRole={userRole}
+                                                        onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
+                                                    />
+                                                );
+                                            })
+                                        ) : (
+                                            <TaskTableEmpty
+                                                hasFilters={hasFilters}
+                                                colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isMaintenanceOnly ? 14 : 13)}
+                                            />
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="sm:hidden bg-gray-50/50 p-3 space-y-3">
+                                {displayTasks.length > 0 ? (
+                                    displayTasks.map((task, index) => {
+                                        const activePage = pendingPages[task.sourceSystem] || 1;
+                                        return (
+                                            <TaskCard
+                                                key={`card-${task.sourceSystem}-${task.id}-${index}`}
+                                                task={task}
+                                                isSelected={selectedItems.has(task.id)}
+                                                onSelect={handleSelectItem}
+                                                onView={handleViewTask}
+                                                rowData={rowData[task.id] || {}}
+                                                onRowDataChange={handleRowDataChange}
+                                                uploadedImage={uploadedImages[task.id]}
+                                                onImageUpload={handleImageUpload}
+                                                isHistoryMode={filters.status === "Completed"}
+                                                isHousekeepingOnly={isHousekeepingOnly}
+                                                isMaintenanceOnly={isMaintenanceOnly}
+                                                seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
+                                                userRole={userRole}
+                                                onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
+                                            />
+                                        );
+                                    })
+                                ) : (
+                                    <div className="bg-white rounded-lg border border-gray-100 p-8 text-center">
                                         <TaskTableEmpty
                                             hasFilters={hasFilters}
-                                            colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isMaintenanceOnly ? 14 : 13)}
+                                            isMobile={true}
                                         />
-                                    )}
-                                </tbody>
-                            </table>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Loading indicator at bottom for infinite scroll */}
                             {filters.status === "Completed" && isFetchingMore && (
                                 <div className="bg-white border-t border-gray-200 py-3">

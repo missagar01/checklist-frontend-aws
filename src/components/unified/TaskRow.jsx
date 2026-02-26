@@ -686,6 +686,359 @@ const TaskRow = memo(function TaskRow({
   );
 });
 
+export const TaskCard = memo(function TaskCard({
+  task,
+  isSelected,
+  onSelect,
+  onView,
+  rowData = {},
+  onRowDataChange,
+  uploadedImage,
+  onImageUpload,
+  isHistoryMode = false,
+  isHousekeepingOnly = false,
+  isMaintenanceOnly = false,
+  seqNo = 0,
+  userRole = "admin",
+  onImageClick,
+}) {
+  const isCompleted =
+    task.status === "Completed" ||
+    task.originalStatus === "Yes" ||
+    task.originalStatus === "Completed" ||
+    isHistoryMode;
+
+  const normalizedRole = userRole?.toLowerCase();
+  const isUserRole = normalizedRole === "user";
+  const isAdminRole = normalizedRole === "admin";
+
+  const isHousekeepingPendingEditable =
+    isUserRole &&
+    task.sourceSystem === "housekeeping" &&
+    !isCompleted &&
+    task.originalData?.attachment !== "confirmed" &&
+    task.confirmedByHOD !== "Confirmed" &&
+    task.confirmedByHOD !== "confirmed";
+
+  const shouldShowChecklistRemarkInput =
+    isUserRole && task.sourceSystem === "checklist" && !isCompleted;
+
+  const rawStartDate =
+    task.task_start_date ??
+    task.taskStartDate ??
+    task.dueDate ??
+    task.originalData?.task_start_date ??
+    task.originalData?.Task_Start_Date ??
+    "";
+  const formattedStartDate =
+    rawStartDate && rawStartDate !== "—" ? formatDateTime(rawStartDate) : null;
+  const startDateDisplay =
+    formattedStartDate && formattedStartDate !== "—"
+      ? formattedStartDate
+      : task.dueDateFormatted || "—";
+
+  const handleDataChange = (field, value) => {
+    onRowDataChange?.(task.id, field, value);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onImageUpload?.(task.id, file);
+    }
+  };
+
+  const isSelectDisabled =
+    (task.sourceSystem === "housekeeping" &&
+      (isUserRole
+        ? task.originalData?.attachment === "confirmed" ||
+        task.confirmedByHOD === "Confirmed" ||
+        task.confirmedByHOD === "confirmed"
+        : task.originalData?.attachment !== "confirmed" &&
+        task.confirmedByHOD !== "Confirmed" &&
+        task.confirmedByHOD !== "confirmed")) ||
+    (task.sourceSystem === "checklist" && !isUserRole) ||
+    (isAdminRole && task.sourceSystem === "maintenance");
+
+  return (
+    <div
+      className={`relative p-3 bg-white rounded-lg border shadow-sm transition-all active:scale-[0.99] ${isSelected ? "border-blue-400 ring-1 ring-blue-100" : "border-gray-100"
+        } ${isCompleted ? "bg-green-50/10" : ""}`}
+    >
+      {/* Absolute Checkbox top-right */}
+      {!isCompleted && (
+        <div className="absolute top-3 right-3 z-10">
+          <input
+            type="checkbox"
+            className={`h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${isSelectDisabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"
+              }`}
+            checked={isSelected}
+            onChange={(e) => onSelect?.(task.id, e.target.checked)}
+            disabled={isSelectDisabled}
+          />
+        </div>
+      )}
+      <div className="flex items-start gap-3 mb-3">
+        {/* Checkbox / SNo */}
+        <div className="flex flex-col items-center gap-1.5">
+          {isCompleted ? (
+            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mb-0.5">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </div>
+          ) : (
+            <div className="w-5 h-5" /> /* Spacer for when checkbox moves to right */
+          )}
+          <span className="text-[10px] font-black text-gray-400">#{seqNo}</span>
+        </div>
+
+        {/* Header Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-1">
+            <span
+              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${task.sourceSystem === "checklist"
+                ? "bg-purple-50 text-purple-700 border-purple-100"
+                : task.sourceSystem === "maintenance"
+                  ? "bg-blue-50 text-blue-700 border-blue-100"
+                  : "bg-green-50 text-green-700 border-green-100"
+                }`}
+            >
+              {task.sourceSystem}
+            </span>
+            {/* View icon hidden as requested */}
+          </div>
+          <h4 className="text-[14px] font-bold text-gray-800 leading-tight">
+            {task.title}
+          </h4>
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        {/* Grid Meta Info */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+          {/* Machine / Dept */}
+          <div>
+            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">
+              {task.sourceSystem === "housekeeping" ? "Department" : "Machine/Dept"}
+            </span>
+            <p className="text-[11px] font-bold text-gray-700">
+              {task.machineName !== "—" ? task.machineName : task.department}
+            </p>
+          </div>
+
+          {/* Doer / Assigned */}
+          <div>
+            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">
+              {task.sourceSystem === "housekeeping" ? "Doer 2" : "Doer Name"}
+            </span>
+            {task.sourceSystem === "housekeeping" && isUserRole && !isCompleted ? (
+              <select
+                value={rowData.doerName2 || task.assignedToSecondary || ""}
+                onChange={(e) => handleDataChange("doerName2", e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-1 py-0.5 text-[10px] font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400 mt-0.5"
+              >
+                <option value="">Select...</option>
+                {DOER2_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-[11px] font-bold text-gray-700">
+                {task.sourceSystem === "housekeeping"
+                  ? task.assignedToSecondary || rowData.doerName2 || "—"
+                  : task.assignedTo}
+              </p>
+            )}
+          </div>
+
+          {/* Date */}
+          <div>
+            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">
+              {task.sourceSystem === "housekeeping" ? "Start Date" : "Due Date"}
+            </span>
+            <p className="text-[10px] font-mono font-medium text-gray-600">
+              {task.sourceSystem === "housekeeping" ? startDateDisplay : task.dueDateFormatted}
+            </p>
+          </div>
+
+          {/* Score / Frequency / HOD */}
+          <div>
+            {task.sourceSystem === "housekeeping" ? (
+              <>
+                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Confirmed HOD</span>
+                <p className={`text-[10px] font-bold ${task.confirmedByHOD?.toLowerCase().includes("confirm") ? "text-green-600" : "text-gray-600"}`}>
+                  {task.confirmedByHOD || "—"}
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Frequency</span>
+                <p className="text-[10px] font-bold text-gray-600 uppercase">{task.frequency || "—"}</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Maintenance Specific Fields */}
+        {task.sourceSystem === "maintenance" && isMaintenanceOnly && (
+          <div className="grid grid-cols-2 gap-4 pt-1 border-t border-gray-50">
+            <div>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Sound Status</span>
+              {isCompleted ? (
+                <p className="text-[11px] font-bold">{task.soundStatus || "—"}</p>
+              ) : (
+                <select
+                  disabled={!isSelected}
+                  value={rowData.soundStatus || ""}
+                  onChange={(e) => handleDataChange("soundStatus", e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-1 py-0.5 text-[10px] disabled:bg-gray-50 mt-0.5"
+                >
+                  <option value="">Select</option>
+                  <option value="Good">Good</option>
+                  <option value="Bad">Bad</option>
+                  <option value="Need Repair">Need Repair</option>
+                  <option value="OK">OK</option>
+                </select>
+              )}
+            </div>
+            <div>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Temp</span>
+              {isCompleted ? (
+                <p className="text-[11px] font-bold">{task.temperature || "—"}</p>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Temp"
+                  disabled={!isSelected}
+                  value={rowData.temperature || ""}
+                  onChange={(e) => handleDataChange("temperature", e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-1 py-0.5 text-[10px] disabled:bg-gray-50 mt-0.5"
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Status & Remarks Selection */}
+        <div className="space-y-2 pt-1 border-t border-gray-50">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* Status Field */}
+            <div className={`${isAdminRole && task.sourceSystem === "housekeeping" ? "w-full" : "flex-1 min-w-[120px]"}`}>
+              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Status</span>
+              {isCompleted ? (
+                <p className={`text-[11px] font-bold uppercase ${(() => {
+                  const val = (task.sourceSystem === 'maintenance'
+                    ? (task.originalStatus || task.status)
+                    : (task.originalData?.status || task.originalStatus || task.status))?.toLowerCase();
+                  return (val === 'yes' || val === 'completed' || val === 'confirmed') ? "text-green-600" : "text-red-600";
+                })()}`}>
+                  {task.sourceSystem === 'maintenance'
+                    ? (task.originalStatus || task.status || "Pending")
+                    : (task.originalData?.status || task.originalStatus || (task.status === "Completed" ? "Yes" : task.status) || "Pending")
+                  }
+                </p>
+              ) : isUserRole || (isAdminRole && task.sourceSystem === "maintenance") ? (
+                <select
+                  disabled={!isSelected}
+                  value={rowData.status || ""}
+                  onChange={(e) => handleDataChange("status", e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-2 py-0.5 text-[11px] font-bold disabled:bg-gray-50 focus:border-blue-400 mt-0.5"
+                >
+                  <option value="">Select Status</option>
+                  <option value="Yes">Yes / हाँ</option>
+                  <option value="No">No / नहीं</option>
+                </select>
+              ) : isAdminRole && task.sourceSystem === "housekeeping" ? (
+                <div className="mt-0.5">
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-md border border-blue-100 uppercase inline-flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" /> {rowData.status || "Yes"}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[11px] font-bold text-gray-500 uppercase mt-0.5">
+                  {task.originalStatus || "Pending"}
+                </p>
+              )}
+            </div>
+
+            {/* Image Upload / Preview */}
+            <div className="flex items-center gap-2">
+              {!isCompleted && !isHousekeepingPendingEditable && !(isAdminRole && task.sourceSystem === "housekeeping") && (
+                <div className="flex-shrink-0">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight block">Image</span>
+                  <label className={`flex items-center gap-1.5 px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded-md cursor-pointer border border-gray-200 mt-0.5 ${!isSelected && "opacity-50 cursor-not-allowed"}`}>
+                    <Upload className="h-3 w-3 text-blue-600" />
+                    <span className="text-[10px] font-bold text-blue-600">
+                      {uploadedImage ? "Change" : "Upload"}
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      disabled={!isSelected}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Existing Image Preview */}
+              {isCompleted && task.imageUrl && (
+                <div className="flex-shrink-0">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight block">Photo</span>
+                  <img
+                    src={task.imageUrl}
+                    alt="Task"
+                    className="h-8 w-8 object-cover rounded-md mt-0.5 border border-gray-100 cursor-pointer shadow-xs"
+                    onClick={() => onImageClick?.(task.imageUrl)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Remarks Input */}
+          <div className="pt-0.5">
+            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Remarks</span>
+            {(isHousekeepingPendingEditable || shouldShowChecklistRemarkInput) && !isCompleted ? (
+              <input
+                type="text"
+                placeholder="Enter remark here..."
+                value={rowData.remarks || ""}
+                onChange={(e) => handleDataChange("remarks", e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400 mt-0.5"
+                disabled={!isSelected}
+              />
+            ) : (
+              <p className="text-[11px] text-gray-700 mt-0.5 break-words">
+                {task.remarks || task.originalData?.remark || "—"}
+              </p>
+            )}
+          </div>
+
+          {/* Uploaded Preview */}
+          {!isCompleted && uploadedImage && (
+            <div className="relative inline-block mt-2">
+              <img
+                src={uploadedImage.previewUrl}
+                alt="Preview"
+                className="h-16 w-auto rounded border border-gray-200 shadow-sm"
+              />
+              <button
+                onClick={() => handleDataChange("removeImage", true)}
+                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 shadow-md"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default TaskRow;
 
 /**
@@ -857,23 +1210,35 @@ export function TaskTableHeader({
 /**
  * TaskTableEmpty - Empty state component
  */
-export function TaskTableEmpty({ hasFilters = false, colSpan = 14 }) {
+export function TaskTableEmpty({ hasFilters = false, colSpan = 14, isMobile = false }) {
+  const content = (
+    <div className="flex flex-col items-center">
+      <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+        <span className="text-2xl">📋</span>
+      </div>
+      <p className="text-gray-500 text-sm">
+        {hasFilters ? "No tasks matching your filters" : "No tasks found"}
+      </p>
+      {hasFilters && (
+        <p className="text-gray-400 text-xs mt-1">
+          Try clicking "Clear All Filters" above
+        </p>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="px-4 py-12 text-center">
+        {content}
+      </div>
+    );
+  }
+
   return (
     <tr>
       <td colSpan={colSpan} className="px-4 py-12 text-center">
-        <div className="flex flex-col items-center">
-          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-            <span className="text-2xl">📋</span>
-          </div>
-          <p className="text-gray-500 text-sm">
-            {hasFilters ? "No tasks matching your filters" : "No tasks found"}
-          </p>
-          {hasFilters && (
-            <p className="text-gray-400 text-xs mt-1">
-              Try clicking "Clear All Filters" above
-            </p>
-          )}
-        </div>
+        {content}
       </td>
     </tr>
   );

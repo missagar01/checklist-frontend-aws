@@ -262,50 +262,90 @@ export default function TaskNavigationTabs({
           </div>
         )}
 
-        {/* Table Section - Extremely Compact */}
+        {/* Table/Card Section - Extremely Compact & Responsive */}
         {displayedTasks.length === 0 && !isLoadingMore ? (
           <div className="text-center py-8 bg-gray-50/30 rounded-lg border border-dashed border-gray-200">
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Empty View</p>
           </div>
         ) : (
-          <div className="task-table-container overflow-x-auto border border-gray-100 rounded-lg" style={{ maxHeight: "300px" }}>
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-[#c41e3a] sticky top-0 z-10">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">#</th>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">ID</th>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Task</th>
-                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">User</th>
-                  {dashboardType === "checklist" && (
-                    <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Dept</th>
-                  )}
-                  <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider">Start</th>
-                  <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-wider">Freq</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-50">
-                {displayedTasks.map((task, index) => (
-                  <tr key={`${task.id}-${task.taskStartDate}-${index}`} className="hover:bg-red-50/10 transition-colors">
-                    <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{index + 1}</td>
-                    <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{task.id}</td>
-                    <td className="px-3 py-2 text-[13px] text-gray-700 font-medium truncate max-w-[200px]">{task.title}</td>
-                    <td className="px-3 py-2 text-[13px] text-gray-700 font-medium truncate max-w-[200px]">{task.assignedTo}</td>
+          <div className="task-table-container overflow-hidden rounded-lg border border-gray-100" style={{ maxHeight: "450px", overflowY: "auto" }}>
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-[#c41e3a] sticky top-0 z-10">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">S.No</th>
+                    <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider tracking-tight">Task</th>
+                    <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider tracking-tight">User</th>
                     {dashboardType === "checklist" && (
-                      <td className="px-3 py-2 text-xs font-bold text-indigo-600">{task.department}</td>
+                      <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider tracking-tight">Dept</th>
                     )}
-                    <td className="px-3 py-2 text-[13px] text-gray-600">{task.taskStartDate}</td>
-                    <td className="px-3 py-2 text-right">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-sm ${getFrequencyColor(task.frequency)} text-white`}>
-                        {task.frequency}
-                      </span>
-                    </td>
+                    <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-wider tracking-tight">Start</th>
+                    <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-wider tracking-tight">Freq</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-50">
+                  {displayedTasks.map((task, index) => (
+                    <tr key={`${task.id}-${task.taskStartDate}-${index}`} className="hover:bg-red-50/5 transition-colors border-l-2 border-transparent hover:border-[#c41e3a]">
+                      <td className="px-3 py-2 text-[13px] font-bold text-gray-600">{index + 1}</td>
+                      <td className="px-3 py-2 text-[13px] text-gray-800 font-semibold leading-tight">{task.title}</td>
+                      <td className="px-3 py-2 text-[13px] text-gray-600 font-medium">{task.assignedTo}</td>
+                      {dashboardType === "checklist" && (
+                        <td className="px-3 py-2 text-[11px] font-bold text-indigo-600 uppercase tracking-tighter">{task.department}</td>
+                      )}
+                      <td className="px-3 py-2 text-[12px] font-medium text-gray-500 font-mono whitespace-nowrap">{task.taskStartDate}</td>
+                      <td className="px-3 py-2 text-right">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-sm ${getFrequencyColor(task.frequency)} text-white inline-block min-w-[70px] text-center`}>
+                          {task.frequency}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-2 bg-gray-50/50 p-2">
+              {displayedTasks.map((task, index) => (
+                <div key={`${task.id}-${task.taskStartDate}-${index}`} className="p-2.5 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-[#c41e3a] transition-all active:scale-[0.98]">
+                  <div className="flex items-start gap-2 mb-1.5">
+                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-[#c41e3a]/10 text-[#c41e3a] text-[10px] font-black rounded-md border border-[#c41e3a]/20">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="text-[13px] font-bold text-gray-800 leading-tight">{task.title}</h4>
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase shadow-xs ${getFrequencyColor(task.frequency)} text-white whitespace-nowrap`}>
+                          {task.frequency}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-7">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1 h-1 rounded-full bg-red-400"></div>
+                      <span className="text-[10px] font-bold text-gray-600">{task.assignedTo}</span>
+                    </div>
+                    {dashboardType === "checklist" && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
+                        <span className="text-[10px] font-bold text-indigo-600">{task.department}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <div className="w-1 h-1 rounded-full bg-emerald-400"></div>
+                      <span className="text-[10px] font-mono font-medium text-gray-500">{task.taskStartDate}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {isLoadingMore && (
-              <div className="p-2 text-center">
-                <div className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-solid border-[#c41e3a] border-r-transparent"></div>
+              <div className="p-3 text-center bg-gray-50/50">
+                <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-[#c41e3a] border-r-transparent"></div>
               </div>
             )}
           </div>

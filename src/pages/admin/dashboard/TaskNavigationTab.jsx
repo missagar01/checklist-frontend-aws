@@ -326,17 +326,17 @@ export default function TaskNavigationTabs({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-7">
                     <div className="flex items-center gap-1">
                       <div className="w-1 h-1 rounded-full bg-red-400"></div>
-                      <span className="text-[10px] font-bold text-gray-600">{task.assignedTo}</span>
+                      <span className="text-[12px] font-bold text-gray-600">{task.assignedTo}</span>
                     </div>
                     {dashboardType === "checklist" && (
                       <div className="flex items-center gap-1">
                         <div className="w-1 h-1 rounded-full bg-indigo-400"></div>
-                        <span className="text-[10px] font-bold text-indigo-600">{task.department}</span>
+                        <span className="text-[11px] font-bold text-indigo-600">{task.department}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1">
                       <div className="w-1 h-1 rounded-full bg-emerald-400"></div>
-                      <span className="text-[10px] font-mono font-medium text-gray-500">{task.taskStartDate}</span>
+                      <span className="text-[11px] font-mono font-medium text-gray-500">{task.taskStartDate}</span>
                     </div>
                   </div>
                 </div>

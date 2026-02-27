@@ -1114,7 +1114,7 @@ export default function AdminDashboard() {
               <>
                 <div className="flex items-center gap-4 my-8">
                   <div className="flex-1 h-px bg-gray-200"></div>
-                  <h2 className="text-lg font-bold text-gray-400 uppercase tracking-[0.2em]">
+                  <h2 className="text-lg font-bold text-gray-600 uppercase tracking-[0.2em]">
                     Division wise Analysis
                   </h2>
                   <div className="flex-1 h-px bg-gray-200"></div>

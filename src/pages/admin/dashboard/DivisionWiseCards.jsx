@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ListTodo, CheckCircle2, Clock, AlertTriangle, XCircle, LayoutGrid, Calendar, X, ChevronRight, BarChart3 } from "lucide-react";
+import { ListTodo, CheckCircle2, Clock, AlertTriangle, XCircle, LayoutGrid, Calendar, X, ChevronRight, BarChart3, Info } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getDivisionWiseTaskCountsApi } from "../../../redux/api/dashboardApi";
 
 export default function DivisionWiseCards({ dateRange, userRole, username }) {
@@ -54,106 +56,202 @@ export default function DivisionWiseCards({ dateRange, userRole, username }) {
         );
     };
 
-    const StatItem = ({ label, countData, countOverride, icon: Icon, color, textColor, division }) => (
-        <div 
-            onClick={() => openBreakdownModal(division, label, countData, Icon, color, textColor)}
-            className={`flex flex-col p-3 rounded-xl bg-gray-50/50 border border-gray-100 transition-all hover:bg-white hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer border-l-4 ${color}`}
-        >
-            <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${textColor}`} />
-                    <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
+    const STAT_COLORS = {
+        'Done': '#10b981',
+        'Pending': '#f59e0b',
+        'Not Done': '#94a3b8',
+        'Overdue': '#dc2626',
+        'Future': '#6366f1'
+    };
+
+    const DivisionPieChart = ({ data, total, completed }) => {
+        const [activeLabel, setActiveLabel] = useState(null);
+        const [activePercent, setActivePercent] = useState(null);
+
+        const completionScore = total > 0 ? ((completed / total) * 100).toFixed(2) : "0.00";
+
+        const onPieEnter = (_, index) => {
+            const item = data[index];
+            if (item) {
+                setActiveLabel(item.name);
+                setActivePercent(((item.value / total) * 100).toFixed(2));
+            }
+        };
+
+        const onPieLeave = () => {
+            setActiveLabel(null);
+            setActivePercent(null);
+        };
+
+        return (
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="h-44 w-44 xs:h-48 xs:w-48 relative flex-shrink-0"
+            >
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={45}
+                            outerRadius={70}
+                            paddingAngle={3}
+                            dataKey="value"
+                            stroke="none"
+                            onMouseEnter={onPieEnter}
+                            onMouseLeave={onPieLeave}
+                            onClick={onPieEnter}
+                        >
+                            {data.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={STAT_COLORS[entry.name]}
+                                    className="outline-none cursor-pointer transition-opacity hover:opacity-80"
+                                />
+                            ))}
+                        </Pie>
+                        <Tooltip content={<></>} />
+                    </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                    <AnimatePresence mode="wait">
+                        {activeLabel ? (
+                            <motion.div
+                                key="active"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                className="flex flex-col items-center text-center px-1"
+                            >
+                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none mb-0.5 truncate max-w-full">
+                                    {activeLabel}
+                                </span>
+                                <span className="text-lg font-black text-gray-800 leading-none">
+                                    {activePercent}%
+                                </span>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="score"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                className="flex flex-col items-center"
+                            >
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter leading-none mb-0.5 underline underline-offset-4 decoration-emerald-500/50">
+                                    Score
+                                </span>
+                                <span className="text-xl font-black text-gray-800 leading-none">
+                                    {completionScore}%
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-                <ChevronRight className="h-3 w-3 text-gray-300" />
+            </motion.div>
+        );
+    };
+
+    const StatItem = ({ label, countData, value, icon: Icon, color, textColor, division }) => (
+        <motion.div
+            whileTap={{ scale: 0.96 }}
+            onClick={() => openBreakdownModal(division, label, countData, Icon, color, textColor)}
+            className={`flex items-center justify-between rounded-full bg-white border border-gray-100 shadow-sm transition-all hover:shadow cursor-pointer py-1 px-3 mb-1.5 sm:py-1.5 sm:px-4 sm:mb-2`}
+        >
+            <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-hidden">
+                <div className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full flex-shrink-0`} style={{ backgroundColor: STAT_COLORS[label] || '#94a3b8' }} />
+                <span className="text-[9px] sm:text-[11px] font-black text-gray-600 uppercase tracking-tight whitespace-nowrap">{label}</span>
             </div>
-            <div className={`text-xl font-extrabold ${textColor} mb-1`}>
-                {countOverride !== undefined ? countOverride : (countData?.count || 0)}
+            <div className={`text-[10px] sm:text-[13px] font-black text-gray-900 ml-2 sm:ml-3 bg-gray-50 px-2 sm:px-3 py-0.5 rounded-full border border-gray-100 min-w-[35px] sm:min-w-[60px] text-center tabular-nums`}>
+                {value}
             </div>
-            {renderBreakdown(countData)}
-        </div>
+        </motion.div>
     );
 
     const Modal = () => {
         if (!isModalOpen || !modalData) return null;
 
-        const maxCount = Math.max(...Object.values(modalData.departments).map(d => d.total || 0), 1);
         const sortedDepts = Object.entries(modalData.departments).sort((a, b) => (b[1].total || 0) - (a[1].total || 0));
 
         return (
-            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                <div 
-                    className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 duration-300"
-                    onClick={(e) => e.stopPropagation()}
+            <AnimatePresence>
+                <div
+                    className="fixed inset-0 z-[999] flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-[4px]"
+                    onClick={() => setIsModalOpen(false)}
                 >
-                    {/* Header */}
-                    <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50 flex items-center justify-between relative text-gray-800">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-red-50">
-                                <modalData.icon className="h-6 w-6 text-red-600" />
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="bg-white w-full max-w-md rounded-2xl sm:rounded-[28px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header Area */}
+                        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-50 flex items-center justify-between bg-white sticky top-0 z-10">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="p-1.5 sm:p-2 rounded-xl bg-gray-50">
+                                    <modalData.icon className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-gray-700" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <h2 className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-0.5">{modalData.division}</h2>
+                                    <h3 className="text-sm sm:text-base font-[1000] text-gray-900 uppercase tracking-tight">{modalData.label}</h3>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-0.5">{modalData.division}</h2>
-                                <h3 className="text-lg font-extrabold text-gray-800 flex items-center gap-2">
-                                    {modalData.label} Tasks 
-                                    <span className="text-sm px-2 py-0.5 rounded-full bg-red-600 text-white shadow-sm">
-                                        {modalData.count}
-                                    </span>
-                                </h3>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="text-sm sm:text-base font-black text-gray-800 bg-gray-100 px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl shadow-inner">
+                                    {modalData.count}
+                                </div>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                >
+                                    <XCircle className="h-6 w-6 sm:h-7 sm:w-7" />
+                                </button>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => setIsModalOpen(false)}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
-                        >
-                            <X className="h-6 w-6" />
-                        </button>
-                    </div>
 
-                    {/* Content */}
-                    <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white">
-                        {sortedDepts.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                                <BarChart3 className="h-12 w-12 mb-4 opacity-20" />
-                                <p className="font-medium">No departmental data available</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-gray-100">
-                                {sortedDepts.map(([dept, data], idx) => (
-                                    <div key={idx} className="py-4 group hover:bg-gray-50/80 px-3 rounded-xl transition-all">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 opacity-60"></div>
-                                                <span className="text-sm font-bold text-gray-600 group-hover:text-red-700 transition-colors uppercase tracking-tight">{dept}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Total</span>
-                                                <span className="text-sm font-black text-white px-3 py-1 rounded-lg shadow-sm bg-gray-700 group-hover:bg-red-600 transition-colors">
+                        {/* Content Area */}
+                        <div className="p-3 sm:p-4 overflow-y-auto custom-scrollbar flex-1 pb-6 sm:pb-8">
+                            {sortedDepts.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-10 text-gray-300">
+                                    <BarChart3 className="h-10 w-10 mb-3 opacity-20" />
+                                    <p className="text-sm font-bold">No data found</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2 sm:space-y-3">
+                                    {sortedDepts.map(([dept, data], idx) => (
+                                        <div key={idx} className="bg-gray-50/50 p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm transition-all hover:bg-white hover:border-red-100 group">
+                                            <div className="flex justify-between items-center mb-2 sm:mb-3">
+                                                <span className="text-[13px] sm:text-sm font-black text-gray-800 uppercase tracking-tight truncate max-w-[75%] group-hover:text-red-600 transition-colors">{dept}</span>
+                                                <span className="text-[11px] sm:text-xs font-[1000] text-red-600 bg-red-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-red-100 shadow-sm">
                                                     {data.total || 0}
                                                 </span>
                                             </div>
+
+                                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                                                <div className="bg-white p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-emerald-50 flex flex-col items-center shadow-sm">
+                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter mb-0.5">CHK</span>
+                                                    <span className="text-[13px] sm:text-sm font-[1000] text-emerald-700">{data.checklist || 0}</span>
+                                                </div>
+                                                <div className="bg-white p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-indigo-50 flex flex-col items-center shadow-sm">
+                                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter mb-0.5">MNT</span>
+                                                    <span className="text-[13px] sm:text-sm font-[1000] text-indigo-700">{data.maintenance || 0}</span>
+                                                </div>
+                                                <div className="bg-white p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-amber-50 flex flex-col items-center shadow-sm">
+                                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-tighter mb-0.5">HK</span>
+                                                    <span className="text-[13px] sm:text-sm font-[1000] text-amber-700">{data.housekeeping || 0}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        
-                                        <div className="flex items-center gap-4 mt-1 pl-4.5">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase">chk:</span>
-                                                <span className="text-[11px] font-black text-gray-700">{data.checklist || 0}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase">mnt:</span>
-                                                <span className="text-[11px] font-black text-gray-700">{data.maintenance || 0}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase">hk:</span>
-                                                <span className="text-[11px] font-black text-gray-700">{data.housekeeping || 0}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
                 </div>
-            </div>
+            </AnimatePresence>
         );
     };
 
@@ -177,115 +275,111 @@ export default function DivisionWiseCards({ dateRange, userRole, username }) {
     const divisions = Object.keys(divisionCounts).sort();
     if (divisions.length === 0) return null;
 
+    const getPercent = (count, total) => {
+        if (!total || total === 0) return "0.00%";
+        return `${((count / total) * 100).toFixed(2)}%`;
+    };
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8 mt-2">
             {divisions.map((division) => {
                 const stats = divisionCounts[division];
                 if (!stats) return null;
 
-                // Align "TOTAL" with dashboard: Sum of components EXCEPT future
-                // Total (dashboard) = Done + Pending + Not Done + Overdue (all up to today)
                 const dashboardTotal = (stats.completed?.count || 0) +
                     (stats.pending?.count || 0) +
                     (stats.notDone?.count || 0) +
                     (stats.overdue?.count || 0);
 
-                // We'll also calculate a custom breakdown for the total card that excludes future
-                const totalDepartments = {};
-                ['completed', 'pending', 'notDone', 'overdue'].forEach(metric => {
-                    Object.entries(stats[metric]?.departments || {}).forEach(([dept, deptData]) => {
-                        if (!totalDepartments[dept]) {
-                            totalDepartments[dept] = { total: 0, checklist: 0, housekeeping: 0, maintenance: 0 };
-                        }
-                        totalDepartments[dept].total += deptData.total || 0;
-                        totalDepartments[dept].checklist += deptData.checklist || 0;
-                        totalDepartments[dept].housekeeping += deptData.housekeeping || 0;
-                        totalDepartments[dept].maintenance += deptData.maintenance || 0;
-                    });
-                });
-
-                const totalBreakdown = {
-                    count: dashboardTotal,
-                    departments: totalDepartments,
-                    breakdown: {
-                        checklist: (stats.completed?.breakdown?.checklist || 0) + (stats.pending?.breakdown?.checklist || 0) + (stats.notDone?.breakdown?.checklist || 0) + (stats.overdue?.breakdown?.checklist || 0),
-                        housekeeping: (stats.completed?.breakdown?.housekeeping || 0) + (stats.pending?.breakdown?.housekeeping || 0) + (stats.notDone?.breakdown?.housekeeping || 0) + (stats.overdue?.breakdown?.housekeeping || 0),
-                        maintenance: (stats.completed?.breakdown?.maintenance || 0) + (stats.pending?.breakdown?.maintenance || 0) + (stats.notDone?.breakdown?.maintenance || 0) + (stats.overdue?.breakdown?.maintenance || 0)
-                    }
-                };
+                const pieData = [
+                    { name: 'Done', value: stats.completed?.count || 0 },
+                    { name: 'Pending', value: stats.pending?.count || 0 },
+                    { name: 'Not Done', value: stats.notDone?.count || 0 },
+                    { name: 'Overdue', value: stats.overdue?.count || 0 },
+                ].filter(item => item.value > 0);
 
                 if (dashboardTotal === 0 && (stats.future?.count || 0) === 0) return null;
 
                 return (
-                    <div key={division} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md border-t-4 border-t-indigo-600 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-5">
-                            <LayoutGrid className="h-20 w-20 text-indigo-900" />
-                        </div>
-
-                        <div className="flex items-center gap-3 mb-6 pb-3 border-b border-gray-50">
-                            <div className="bg-indigo-50 p-2 rounded-lg">
-                                <LayoutGrid className="h-5 w-5 text-indigo-600" />
-                            </div>
-                            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide truncate" title={division}>
+                    <motion.div
+                        key={division}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white p-4 sm:p-5 rounded-[28px] sm:rounded-[36px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:shadow-[0_12px_40px_rgb(0,0,0,0.06)] relative overflow-hidden flex flex-col"
+                    >
+                        {/* Hero Header Area */}
+                        <div className="flex items-center justify-between mb-4 sm:mb-5 border-b border-gray-50 pb-3 sm:pb-4">
+                            <h3 className="text-base sm:text-lg font-[1000] text-gray-900 uppercase tracking-widest leading-none truncate max-w-[50%]">
                                 {division}
                             </h3>
+                            <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-900 px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-lg border border-gray-800">
+                                <ListTodo className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-400" />
+                                <span className="text-[10px] sm:text-xs font-black text-white uppercase tracking-tighter">Total: {dashboardTotal}</span>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                            <StatItem
-                                label="Total"
-                                countData={totalBreakdown}
-                                icon={ListTodo}
-                                color="border-l-blue-500"
-                                textColor="text-blue-600"
-                                division={division}
-                            />
-                            <StatItem
-                                label="Done"
-                                countData={stats.completed}
-                                icon={CheckCircle2}
-                                color="border-l-emerald-500"
-                                textColor="text-emerald-600"
-                                division={division}
-                            />
-                            <StatItem
-                                label="Pending"
-                                countData={stats.pending}
-                                icon={Clock}
-                                color="border-l-amber-500"
-                                textColor="text-amber-600"
-                                division={division}
-                            />
-                            <StatItem
-                                label="Future"
-                                countData={stats.future}
-                                icon={Calendar}
-                                color="border-l-indigo-500"
-                                textColor="text-indigo-600"
-                                division={division}
-                            />
-                            <StatItem
-                                label="Not Done"
-                                countData={stats.notDone}
-                                icon={XCircle}
-                                color="border-l-slate-400"
-                                textColor="text-slate-600"
-                                division={division}
-                            />
-                            <StatItem
-                                label="Overdue"
-                                countData={stats.overdue}
-                                icon={AlertTriangle}
-                                color="border-l-[#c41e3a]"
-                                textColor="text-[#c41e3a]"
-                                division={division}
-                            />
+                        {/* Side-by-Side Content */}
+                        <div className="flex items-center justify-between gap-2 sm:gap-6 h-full">
+                            {/* Left Side: Dynamic Interactive Graph */}
+                            <div className="flex-1 flex justify-center items-center min-w-0">
+                                <DivisionPieChart data={pieData} total={dashboardTotal} completed={stats.completed?.count || 0} />
+                            </div>
+
+                            {/* Right Side: High-Clarity Status Chips */}
+                            <div className="w-[120px] sm:w-[160px] flex flex-col justify-center flex-shrink-0">
+                                <StatItem
+                                    label="Done"
+                                    countData={stats.completed}
+                                    value={stats.completed?.count || 0}
+                                    icon={CheckCircle2}
+                                    color="border-emerald-100"
+                                    textColor="text-emerald-700"
+                                    division={division}
+                                />
+                                <StatItem
+                                    label="Pending"
+                                    countData={stats.pending}
+                                    value={stats.pending?.count || 0}
+                                    icon={Clock}
+                                    color="border-amber-100"
+                                    textColor="text-amber-700"
+                                    division={division}
+                                />
+                                <StatItem
+                                    label="Not Done"
+                                    countData={stats.notDone}
+                                    value={stats.notDone?.count || 0}
+                                    icon={XCircle}
+                                    color="border-slate-100"
+                                    textColor="text-slate-700"
+                                    division={division}
+                                />
+                                <StatItem
+                                    label="Overdue"
+                                    countData={stats.overdue}
+                                    value={stats.overdue?.count || 0}
+                                    icon={AlertTriangle}
+                                    color="border-red-100"
+                                    textColor="text-red-700"
+                                    division={division}
+                                />
+                                <div className="mt-1 pt-1.5 border-t border-gray-50">
+                                    <StatItem
+                                        label="Future"
+                                        countData={stats.future}
+                                        value={stats.future?.count || 0}
+                                        icon={Calendar}
+                                        color="border-indigo-100"
+                                        textColor="text-indigo-700"
+                                        division={division}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
                 );
             })}
             <Modal />
         </div>
     );
 }
-

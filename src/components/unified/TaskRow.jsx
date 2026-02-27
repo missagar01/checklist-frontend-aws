@@ -346,10 +346,10 @@ const TaskRow = memo(function TaskRow({
             ) : (
               <>
                 <label
-                  className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""
+                  className={`flex items-center gap-1.5 px-3 py-1.5 bg-blue-50/50 hover:bg-blue-100/50 border border-blue-200 rounded-md cursor-pointer text-blue-600 font-bold transition-all text-sm ${!isSelected ? "opacity-30 cursor-not-allowed" : "shadow-sm active:scale-95"
                     }`}
                 >
-                  <Upload className="h-4 w-4 mr-1" />
+                  <Upload className="h-4 w-4" />
                   <span>Upload</span>
                   <input
                     type="file"
@@ -646,10 +646,10 @@ const TaskRow = memo(function TaskRow({
         ) : (
           <>
             <label
-              className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""
+              className={`flex items-center gap-1.5 px-3 py-1.5 bg-blue-50/50 hover:bg-blue-100/50 border border-blue-200 rounded-md cursor-pointer text-blue-600 font-bold transition-all text-sm ${!isSelected ? "opacity-30 cursor-not-allowed" : "shadow-sm active:scale-95"
                 }`}
             >
-              <Upload className="h-4 w-4 mr-1" />
+              <Upload className="h-4 w-4" />
               <span>Upload</span>
               <input
                 type="file"
@@ -834,7 +834,7 @@ export const TaskCard = memo(function TaskCard({
               <select
                 value={rowData.doerName2 || task.assignedToSecondary || ""}
                 onChange={(e) => handleDataChange("doerName2", e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-1 py-0.5 text-[10px] font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400 mt-0.5"
+                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400 mt-0.5"
               >
                 <option value="">Select...</option>
                 {DOER2_OPTIONS.map((opt) => (
@@ -892,7 +892,7 @@ export const TaskCard = memo(function TaskCard({
                   disabled={!isSelected}
                   value={rowData.soundStatus || ""}
                   onChange={(e) => handleDataChange("soundStatus", e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-1 py-0.5 text-[10px] disabled:bg-gray-50 mt-0.5"
+                  className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-xs disabled:bg-gray-50 mt-0.5"
                 >
                   <option value="">Select</option>
                   <option value="Good">Good</option>
@@ -913,7 +913,7 @@ export const TaskCard = memo(function TaskCard({
                   disabled={!isSelected}
                   value={rowData.temperature || ""}
                   onChange={(e) => handleDataChange("temperature", e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-1 py-0.5 text-[10px] disabled:bg-gray-50 mt-0.5"
+                  className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-xs disabled:bg-gray-50 mt-0.5"
                 />
               )}
             </div>
@@ -943,7 +943,7 @@ export const TaskCard = memo(function TaskCard({
                   disabled={!isSelected}
                   value={rowData.status || ""}
                   onChange={(e) => handleDataChange("status", e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-2 py-0.5 text-[11px] font-bold disabled:bg-gray-50 focus:border-blue-400 mt-0.5"
+                  className="w-full border border-gray-300 rounded-md px-2 py-2 text-sm font-bold disabled:bg-gray-50 focus:border-blue-400 mt-0.5 shadow-sm"
                 >
                   <option value="">Select Status</option>
                   <option value="Yes">Yes / हाँ</option>
@@ -967,9 +967,9 @@ export const TaskCard = memo(function TaskCard({
               {!isCompleted && !isHousekeepingPendingEditable && !(isAdminRole && task.sourceSystem === "housekeeping") && (
                 <div className="flex-shrink-0">
                   <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight block">Image</span>
-                  <label className={`flex items-center gap-1.5 px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded-md cursor-pointer border border-gray-200 mt-0.5 ${!isSelected && "opacity-50 cursor-not-allowed"}`}>
-                    <Upload className="h-3 w-3 text-blue-600" />
-                    <span className="text-[10px] font-bold text-blue-600">
+                  <label className={`flex items-center gap-2 px-4 py-2 bg-blue-50/50 hover:bg-blue-100/50 rounded-md cursor-pointer border border-blue-200 mt-1 shadow-sm transition-all ${!isSelected ? "opacity-30 cursor-not-allowed" : "active:scale-95"}`}>
+                    <Upload className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-black text-blue-600 uppercase tracking-tight">
                       {uploadedImage ? "Change" : "Upload"}
                     </span>
                     <input
@@ -1007,7 +1007,7 @@ export const TaskCard = memo(function TaskCard({
                 placeholder="Enter remark here..."
                 value={rowData.remarks || ""}
                 onChange={(e) => handleDataChange("remarks", e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400 mt-0.5"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 mt-0.5 shadow-sm"
                 disabled={!isSelected}
               />
             ) : (

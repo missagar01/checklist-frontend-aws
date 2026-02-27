@@ -391,7 +391,6 @@ export const countUpcomingTaskApi = async (dashboardType, staffFilter = "all", d
   const res = await axiosInstance.get(url);
   return res.data;
 };
-
 export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", startDate = "", endDate = "") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
@@ -402,4 +401,25 @@ export const countNotDoneTaskApi = async (dashboardType, staffFilter = "all", de
 
   const res = await axiosInstance.get(url);
   return res.data;
+};
+
+export const getDivisionWiseTaskCountsApi = async (startDate = "", endDate = "") => {
+  try {
+    const role = localStorage.getItem("role");
+    const username = localStorage.getItem("user-name");
+
+    const params = new URLSearchParams({
+      role,
+      username,
+      startDate,
+      endDate
+    });
+
+    const url = `${BASE_URL}/division-wise-counts?${params.toString()}`;
+    const res = await axiosInstance.get(url);
+    return res.data;
+  } catch (err) {
+    console.error("Division Wise Counts API Error:", err);
+    return {};
+  }
 };

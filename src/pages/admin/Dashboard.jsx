@@ -13,6 +13,7 @@ import StaffTasksTable from "./dashboard/StaffTaskTable.jsx"
 // Add these imports at the top with other imports
 import MaintenanceDashboard from "./MaintenanceDashboardNew.jsx"
 import HousekeepingDashboard from "./housekeppingDashboard.jsx"
+import DivisionWiseCards from "./dashboard/DivisionWiseCards.jsx"
 
 // Add this state variable with other state declarations
 import {
@@ -1108,6 +1109,20 @@ export default function AdminDashboard() {
               dashboardType={dashboardType}
               dateRange={dateRangeProp}
             />
+
+            {userRole === "admin" && username === "AAKASH AGRAWAL" && (
+              <>
+                <div className="flex items-center gap-4 my-8">
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                  <h2 className="text-lg font-bold text-gray-400 uppercase tracking-[0.2em]">
+                    Division wise Analysis
+                  </h2>
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                </div>
+
+                <DivisionWiseCards dateRange={dateRangeProp} userRole={userRole} username={username} />
+              </>
+            )}
 
             <TaskNavigationTabs
               taskView={taskView}

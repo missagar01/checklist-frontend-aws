@@ -14,7 +14,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
     const fetchCounts = async () => {
         // Only fetch if AAKASH AGRAWAL or division hod
-        if (!(username === 'AAKASH AGRAWAL' || isDivisionHod)) return;
+        if (!(username === 'AAKASH AGRAWAL' || isDivisionHod || username === 'Sheelesh Marele')) return;
 
         setLoading(true);
         try {
@@ -261,9 +261,9 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
                                         return (
                                             <div key={idx} className="bg-gray-50/50 p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm transition-all hover:bg-white hover:border-red-100 group flex flex-col gap-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[13px] sm:text-sm font-black text-gray-800 uppercase tracking-tight truncate max-w-[50%] group-hover:text-red-600 transition-colors">{dept}</span>
-                                                    <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <div className="flex justify-between items-start gap-3">
+                                                    <span className="text-[13px] sm:text-sm font-black text-gray-800 uppercase tracking-tight group-hover:text-red-600 transition-colors pt-0.5">{dept}</span>
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                                                         <div className="flex items-center gap-1">
                                                             <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase leading-none tracking-tight">Score</span>
                                                             <span className={`px-2 sm:px-3 py-0.5 sm:py-1 inline-flex text-[11px] sm:text-xs leading-none font-[1000] rounded-full border shadow-sm ${scoreBgColor} ${scoreTextColor} border-opacity-50`}>
@@ -302,7 +302,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
         );
     };
 
-    if (!(username === 'AAKASH AGRAWAL' || isDivisionHod)) return null;
+    if (!(username === 'AAKASH AGRAWAL' || isDivisionHod || username === 'Sheelesh Marele')) return null;
 
     if (loading) {
         return (
@@ -321,7 +321,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
     let divisions = Object.keys(divisionCounts).sort();
 
-    if (isDivisionHod && division && username !== 'AAKASH AGRAWAL') {
+    if (isDivisionHod && division && username !== 'AAKASH AGRAWAL' && username !== 'Sheelesh Marele') {
         divisions = divisions.filter(d =>
             d.toLowerCase().includes(division.toLowerCase()) ||
             division.toLowerCase().includes(d.toLowerCase())

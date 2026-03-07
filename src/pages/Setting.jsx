@@ -261,8 +261,6 @@ const Setting = () => {
         password: "",
         phone: "",
         employee_id: "",
-        division: "",
-        designation: "",
         department: "", // Single selection for department column
         departments: [], // Change from single department to array
         givenBy: "",
@@ -301,8 +299,6 @@ const Setting = () => {
             password: userForm.password?.trim() || "",
             phone: userForm.phone?.trim() || "",
             employee_id: userForm.employee_id?.trim() || "",
-            division: userForm.division?.trim() || "",
-            designation: userForm.designation?.trim() || "",
             role: userForm.role || "user",
             status: userForm.status || "active",
             user_access: departmentsString, // Join array into comma-separated string
@@ -436,8 +432,6 @@ const Setting = () => {
             email_id: userForm.email?.trim() || "",
             number: userForm.phone?.trim() || "",
             employee_id: userForm.employee_id?.trim() || "",
-            division: userForm.division?.trim() || "",
-            designation: userForm.designation?.trim() || "",
             role: userForm.role || "user",
             status: userForm.status || "active",
             user_access: departmentsString, // Join array into comma-separated string
@@ -745,16 +739,6 @@ const Setting = () => {
         return [];
     }, [department]);
 
-    // Get unique divisions from user data
-    const availableDivisions = React.useMemo(() => {
-        if (userData && Array.isArray(userData)) {
-            return [...new Set(userData.map((user) => user.division))]
-                .filter((div) => div && String(div).trim() !== "")
-                .sort();
-        }
-        return [];
-    }, [userData]);
-
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (showDeptDropdown && !event.target.closest(".relative")) {
@@ -815,8 +799,6 @@ const Setting = () => {
             password: "", // Leave empty initially, user can change if needed
             phone: user.number || "",
             employee_id: user.employee_id || "",
-            division: user.division || "",
-            designation: user.designation || "",
             department: user.department || "",
             departments: user.user_access
                 ? user.user_access
@@ -864,8 +846,6 @@ const Setting = () => {
             password: "",
             phone: "",
             employee_id: "",
-            division: "",
-            designation: "",
             department: "",
             departments: [], // Reset to empty array
             givenBy: "",
@@ -1352,12 +1332,12 @@ const Setting = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        {/* <th
+                                        <th
                                             scope="col"
                                             className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                         >
-                                            Verify Access
-                                        </th> */}
+                                            Actions
+                                        </th>
                                         <th
                                             scope="col"
                                             className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -1407,18 +1387,13 @@ const Setting = () => {
                                         >
                                             Role
                                         </th>
-                                        <th
+                                        {/* <th
                                             scope="col"
                                             className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                         >
                                             Page Access
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                        >
-                                            Actions
-                                        </th>
+                                        </th> */}
+
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -1443,19 +1418,30 @@ const Setting = () => {
                                                     key={user?.id || index}
                                                     className="hover:bg-gray-50"
                                                 >
-                                                    {/* <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                                        <select
-                                                            value={user?.verify_access || ""}
-                                                            onChange={(e) =>
-                                                                handleVerifyAccessChange(user.id, e.target.value)
-                                                            }
-                                                            className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                                                        >
-                                                            <option value="">Select</option>
-                                                            <option value="hod">HOD</option>
-                                                            <option value="manager">Manager</option>
-                                                        </select>
-                                                    </td> */}
+                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <div className="flex space-x-1 sm:space-x-2 justify-end">
+                                                            <button
+                                                                onClick={() => handleEditUser(user?.id)}
+                                                                className="text-blue-600 hover:text-blue-900"
+                                                                title="Edit User"
+                                                            >
+                                                                <Edit
+                                                                    size={16}
+                                                                    className="sm:w-[18px] sm:h-[18px]"
+                                                                />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteUser(user?.id)}
+                                                                className="text-red-600 hover:text-red-900"
+                                                                title="Delete User"
+                                                            >
+                                                                <Trash2
+                                                                    size={16}
+                                                                    className="sm:w-[18px] sm:h-[18px]"
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                                                         <div className="text-xs sm:text-sm text-gray-900">
                                                             {user?.employee_id || "N/A"}
@@ -1464,16 +1450,6 @@ const Setting = () => {
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                                                         <div className="text-xs sm:text-sm font-medium text-gray-900">
                                                             {user?.user_name}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-xs sm:text-sm text-gray-900">
-                                                            {user?.division || "N/A"}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-xs sm:text-sm text-gray-900">
-                                                            {user?.designation || "N/A"}
                                                         </div>
                                                     </td>
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -1512,8 +1488,8 @@ const Setting = () => {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-xs sm:text-sm text-gray-900 truncate max-w-[120px] sm:max-w-none">
+                                                    <td className="px-3 sm:px-6 py-4 whitespace-normal">
+                                                        <div className="text-xs sm:text-sm text-gray-900">
                                                             {user?.email_id}
                                                         </div>
                                                     </td>
@@ -1523,9 +1499,9 @@ const Setting = () => {
                                                         </div>
                                                     </td>
 
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-xs sm:text-sm text-gray-900 truncate max-w-[100px] sm:max-w-none">
-                                                            {user?.user_access || "N/A"}
+                                                    <td className="px-3 sm:px-6 py-4 whitespace-normal">
+                                                        <div className="text-xs sm:text-sm text-gray-900 break-words">
+                                                            {user?.department || "N/A"}
                                                         </div>
                                                     </td>
                                                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -1554,7 +1530,7 @@ const Setting = () => {
                                                             {user?.role}
                                                         </span>
                                                     </td>
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                                    {/* <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                                                         <span
                                                             className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(
                                                                 user?.role
@@ -1562,31 +1538,8 @@ const Setting = () => {
                                                         >
                                                             {user?.page_access}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                        <div className="flex space-x-1 sm:space-x-2 justify-end">
-                                                            <button
-                                                                onClick={() => handleEditUser(user?.id)}
-                                                                className="text-blue-600 hover:text-blue-900"
-                                                                title="Edit User"
-                                                            >
-                                                                <Edit
-                                                                    size={16}
-                                                                    className="sm:w-[18px] sm:h-[18px]"
-                                                                />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteUser(user?.id)}
-                                                                className="text-red-600 hover:text-red-900"
-                                                                title="Delete User"
-                                                            >
-                                                                <Trash2
-                                                                    size={16}
-                                                                    className="sm:w-[18px] sm:h-[18px]"
-                                                                />
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                    </td> */}
+
                                                 </tr>
                                             ))
                                     ) : (
@@ -2000,47 +1953,6 @@ const Setting = () => {
                                                     onChange={handleUserInputChange}
                                                     className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     placeholder="Enter Employee ID"
-                                                />
-                                            </div>
-
-                                            <div className="sm:col-span-2 lg:col-span-1">
-                                                <label
-                                                    htmlFor="division"
-                                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                                >
-                                                    Division
-                                                </label>
-                                                <select
-                                                    id="division"
-                                                    name="division"
-                                                    value={userForm.division}
-                                                    onChange={handleUserInputChange}
-                                                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                >
-                                                    <option value="">Select Division</option>
-                                                    {availableDivisions.map((div) => (
-                                                        <option key={div} value={div}>
-                                                            {div}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <div className="sm:col-span-2 lg:col-span-1">
-                                                <label
-                                                    htmlFor="designation"
-                                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                                >
-                                                    Designation
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    name="designation"
-                                                    id="designation"
-                                                    value={userForm.designation}
-                                                    onChange={handleUserInputChange}
-                                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="Enter Designation"
                                                 />
                                             </div>
 

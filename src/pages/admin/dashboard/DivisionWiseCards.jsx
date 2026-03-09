@@ -14,7 +14,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
     const fetchCounts = async () => {
         // Only fetch if AAKASH AGRAWAL or division hod
-        if (!(username === 'AAKASH AGRAWAL' || isDivisionHod)) return;
+        if (!(username === 'AAKASH AGRAWAL' || isDivisionHod || username === 'Sheelesh Marele')) return;
 
         setLoading(true);
         try {
@@ -261,9 +261,9 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
                                         return (
                                             <div key={idx} className="bg-gray-50/50 p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm transition-all hover:bg-white hover:border-red-100 group flex flex-col gap-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-[13px] sm:text-sm font-black text-gray-800 uppercase tracking-tight truncate max-w-[50%] group-hover:text-red-600 transition-colors">{dept}</span>
-                                                    <div className="flex items-center gap-1.5 sm:gap-2">
+                                                <div className="flex justify-between items-start gap-3">
+                                                    <span className="text-[13px] sm:text-sm font-black text-gray-800 uppercase tracking-tight group-hover:text-red-600 transition-colors pt-0.5">{dept}</span>
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                                                         <div className="flex items-center gap-1">
                                                             <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase leading-none tracking-tight">Score</span>
                                                             <span className={`px-2 sm:px-3 py-0.5 sm:py-1 inline-flex text-[11px] sm:text-xs leading-none font-[1000] rounded-full border shadow-sm ${scoreBgColor} ${scoreTextColor} border-opacity-50`}>
@@ -302,7 +302,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
         );
     };
 
-    if (!(username === 'AAKASH AGRAWAL' || isDivisionHod)) return null;
+    if (!(username === 'AAKASH AGRAWAL' || isDivisionHod || username === 'Sheelesh Marele')) return null;
 
     if (loading) {
         return (
@@ -321,7 +321,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
     let divisions = Object.keys(divisionCounts).sort();
 
-    if (isDivisionHod && division && username !== 'AAKASH AGRAWAL') {
+    if (isDivisionHod && division && username !== 'AAKASH AGRAWAL' && username !== 'Sheelesh Marele') {
         divisions = divisions.filter(d =>
             d.toLowerCase().includes(division.toLowerCase()) ||
             division.toLowerCase().includes(d.toLowerCase())
@@ -355,6 +355,30 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
                 if (dashboardTotal === 0 && (stats.future?.count || 0) === 0) return null;
 
+                const calculateDivisionAvgScore = (divisionStats) => {
+                    if (!divisionStats?.total?.departments) return 0;
+                    const depts = Object.values(divisionStats.total.departments);
+                    if (depts.length === 0) return 0;
+
+                    const totalScoreSum = depts.reduce((acc, d) => acc + (d.scores?.total_score || 0), 0);
+                    return Math.round(totalScoreSum / depts.length);
+                };
+
+                const divisionScore = calculateDivisionAvgScore(stats);
+
+                // Style score
+                let scoreBgColor = "bg-red-500";
+                let scoreBorderColor = "border-red-600";
+                let scoreTextColor = "text-white";
+
+                if (divisionScore >= -20) {
+                    scoreBgColor = "bg-emerald-500";
+                    scoreBorderColor = "border-emerald-600";
+                } else if (divisionScore >= -50) {
+                    scoreBgColor = "bg-amber-500";
+                    scoreBorderColor = "border-amber-600";
+                }
+
                 return (
                     <motion.div
                         key={division}
@@ -364,12 +388,18 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
                     >
                         {/* Hero Header Area */}
                         <div className="flex items-center justify-between mb-4 sm:mb-5 border-b border-gray-50 pb-3 sm:pb-4">
-                            <h3 className="text-base sm:text-lg font-[1000] text-gray-900 uppercase tracking-widest leading-none truncate max-w-[50%]">
+                            <h3 className="text-base sm:text-lg font-[1000] text-gray-900 uppercase tracking-widest leading-none truncate max-w-[40%]">
                                 {division}
                             </h3>
-                            <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-900 px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-lg border border-gray-800">
-                                <ListTodo className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-400" />
-                                <span className="text-[10px] sm:text-xs font-black text-white uppercase tracking-tighter">Total: {dashboardTotal}</span>
+                            <div className="flex items-center gap-2">
+                                <div className={`flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-lg border ${scoreBorderColor} ${scoreBgColor}`}>
+                                    <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                                    <span className={`text-[10px] sm:text-xs font-black uppercase tracking-tighter ${scoreTextColor}`}>Score: {divisionScore}%</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-900 px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-lg border border-gray-800">
+                                    <ListTodo className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-400" />
+                                    <span className="text-[10px] sm:text-xs font-black text-white uppercase tracking-tighter">Total: {dashboardTotal}</span>
+                                </div>
                             </div>
                         </div>
 

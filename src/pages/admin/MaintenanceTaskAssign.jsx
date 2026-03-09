@@ -1229,7 +1229,7 @@ function AssignTask() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center">
+                  {/* <div className="flex justify-between items-center">
                     <div className="flex-1">
                       <h1 className="text-[1.2rem] text-blue-600">
                         Require Attachment
@@ -1250,7 +1250,7 @@ function AssignTask() {
                           }`}
                       ></div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

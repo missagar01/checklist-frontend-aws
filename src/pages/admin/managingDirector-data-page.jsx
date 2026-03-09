@@ -1,19 +1,19 @@
 //PURAB Tasks Page
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { CheckCircle2, Upload, X, Search, History, ArrowLeft } from "lucide-react"
+import { CheckCircle2, X, Search, History, ArrowLeft } from "lucide-react"
 import AdminLayout from "../../components/layout/AdminLayout"
 
 // Configuration object - Move all configurations here
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbz47q4SiLvJJom8dRGteqjhufs0Iui4rYTLMeTYqOgY_MFrS0C0o0XkRCPzAOdEeg4jqg/exec",
-  
+
   // Google Drive folder ID for file uploads
   DRIVE_FOLDER_ID: "1IENpXhLEgB7lI8VAMc0qPIqtQgBcPDcM",
-  
+
   // Sheet name to work with
   SHEET_NAME: "PURAB",
-  
+
   // Page configuration
   PAGE_CONFIG: {
     title: "PURAB Tasks",
@@ -117,10 +117,10 @@ function AccountDataPage() {
   const filteredAccountData = useMemo(() => {
     const filtered = searchTerm
       ? accountData.filter((account) =>
-          Object.values(account).some(
-            (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
-          ),
-        )
+        Object.values(account).some(
+          (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
+      )
       : accountData
 
     return filtered.sort(sortDateWise)
@@ -131,8 +131,8 @@ function AccountDataPage() {
       .filter((item) => {
         const matchesSearch = searchTerm
           ? Object.values(item).some(
-              (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
-            )
+            (value) => value && value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+          )
           : true
 
         const matchesMember = selectedMembers.length > 0 ? selectedMembers.includes(item["col4"]) : true
@@ -173,12 +173,12 @@ function AccountDataPage() {
     const memberStats =
       selectedMembers.length > 0
         ? selectedMembers.reduce((stats, member) => {
-            const memberTasks = historyData.filter((task) => task["col4"] === member).length
-            return {
-              ...stats,
-              [member]: memberTasks,
-            }
-          }, {})
+          const memberTasks = historyData.filter((task) => task["col4"] === member).length
+          return {
+            ...stats,
+            [member]: memberTasks,
+          }
+        }, {})
         : {}
     const filteredTotal = filteredHistoryData.length
 
@@ -369,10 +369,10 @@ function AccountDataPage() {
   // Fixed checkbox handlers with better state management
   const handleSelectItem = useCallback((id, isChecked) => {
     console.log(`Checkbox action: ${id} -> ${isChecked}`)
-   
+
     setSelectedItems((prev) => {
       const newSelected = new Set(prev)
-     
+
       if (isChecked) {
         newSelected.add(id)
       } else {
@@ -389,7 +389,7 @@ function AccountDataPage() {
           return newRemarksData
         })
       }
-     
+
       console.log(`Updated selection: ${Array.from(newSelected)}`)
       return newSelected
     })
@@ -419,22 +419,6 @@ function AccountDataPage() {
     }
   }, [filteredAccountData])
 
-  const handleImageUpload = async (id, e) => {
-    const file = e.target.files[0]
-    if (!file) return
-   
-    console.log(`Image upload for: ${id}`)
-    setAccountData((prev) => prev.map((item) => (item._id === id ? { ...item, image: file } : item)))
-  }
-
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = (error) => reject(error)
-    })
-  }
 
   const toggleHistory = () => {
     setShowHistory((prev) => !prev)
@@ -443,7 +427,7 @@ function AccountDataPage() {
 
   const handleSubmit = async () => {
     const selectedItemsArray = Array.from(selectedItems)
-   
+
     if (selectedItemsArray.length === 0) {
       alert("Please select at least one item to submit")
       return
@@ -460,18 +444,6 @@ function AccountDataPage() {
       return
     }
 
-    const missingRequiredImages = selectedItemsArray.filter((id) => {
-      const item = accountData.find((account) => account._id === id)
-      const requiresAttachment = item["col9"] && item["col9"].toUpperCase() === "YES"
-      return requiresAttachment && !item.image
-    })
-
-    if (missingRequiredImages.length > 0) {
-      alert(
-        `Please upload images for all required attachments. ${missingRequiredImages.length} item(s) are missing required images.`,
-      )
-      return
-    }
 
     setIsSubmitting(true)
 
@@ -483,47 +455,13 @@ function AccountDataPage() {
         selectedItemsArray.map(async (id) => {
           const item = accountData.find((account) => account._id === id)
 
-          console.log(`Preparing submission for item:`, {
-            id: id,
-            taskId: item["col1"],
-            rowIndex: item._rowIndex,
-            expectedTaskId: item._taskId
-          })
-
-          let imageUrl = ""
-
-          if (item.image instanceof File) {
-            try {
-              const base64Data = await fileToBase64(item.image)
-
-              const uploadFormData = new FormData()
-              uploadFormData.append("action", "uploadFile")
-              uploadFormData.append("base64Data", base64Data)
-              uploadFormData.append("fileName", `task_${item["col1"]}_${Date.now()}.${item.image.name.split('.').pop()}`)
-              uploadFormData.append("mimeType", item.image.type)
-              uploadFormData.append("folderId", CONFIG.DRIVE_FOLDER_ID)
-
-              const uploadResponse = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                method: "POST",
-                body: uploadFormData,
-              })
-
-              const uploadResult = await uploadResponse.json()
-              if (uploadResult.success) {
-                imageUrl = uploadResult.fileUrl
-              }
-            } catch (uploadError) {
-              console.error("Error uploading image:", uploadError)
-            }
-          }
-
           return {
             taskId: item["col1"],
             rowIndex: item._rowIndex,
             actualDate: todayFormatted,
             status: additionalData[id] || "",
             remarks: remarksData[id] || "",
-            imageUrl: imageUrl,
+            imageUrl: "",
           }
         }),
       )
@@ -544,7 +482,7 @@ function AccountDataPage() {
 
       if (result.success) {
         setAccountData((prev) =>
-          prev.map((item) => (selectedItems.has(item._id) ? { ...item, status: "completed", image: null } : item)),
+          prev.map((item) => (selectedItems.has(item._id) ? { ...item, status: "completed" } : item)),
         )
 
         setSuccessMessage(
@@ -771,8 +709,7 @@ function AccountDataPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Require Attachment</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50">Actual Date</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-50">Remarks</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attachment</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -826,25 +763,6 @@ function AccountDataPage() {
                               {history["col13"] || "—"}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {history["col14"] ? (
-                              <a
-                                href={history["col14"]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline flex items-center"
-                              >
-                                <img
-                                  src={history["col14"] || "/api/placeholder/32/32"}
-                                  alt="Attachment"
-                                  className="h-8 w-8 object-cover rounded-md mr-2"
-                                />
-                                View
-                              </a>
-                            ) : (
-                              <span className="text-gray-400">No attachment</span>
-                            )}
-                          </td>
                         </tr>
                       ))
                     ) : (
@@ -885,7 +803,6 @@ function AccountDataPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Require Attachment</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Upload Image</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -964,53 +881,6 @@ function AccountDataPage() {
                               onChange={(e) => setRemarksData((prev) => ({ ...prev, [account._id]: e.target.value }))}
                               className="border rounded-md px-2 py-1 w-full border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap bg-green-50">
-                            {account.image ? (
-                              <div className="flex items-center">
-                                <img
-                                  src={
-                                    typeof account.image === "string" ? account.image : URL.createObjectURL(account.image)
-                                  }
-                                  alt="Receipt"
-                                  className="h-10 w-10 object-cover rounded-md mr-2"
-                                />
-                                <div className="flex flex-col">
-                                  <span className="text-xs text-gray-500">
-                                    {account.image instanceof File ? account.image.name : "Uploaded Receipt"}
-                                  </span>
-                                  {account.image instanceof File ? (
-                                    <span className="text-xs text-green-600">Ready to upload</span>
-                                  ) : (
-                                    <button
-                                      className="text-xs text-purple-600 hover:text-purple-800"
-                                      onClick={() => window.open(account.image, "_blank")}
-                                    >
-                                      View Full Image
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <label
-                                className={`flex items-center cursor-pointer ${account["col9"]?.toUpperCase() === "YES" ? "text-red-600 font-medium" : "text-purple-600"} hover:text-purple-800`}
-                              >
-                                <Upload className="h-4 w-4 mr-1" />
-                                <span className="text-xs">
-                                  {account["col9"]?.toUpperCase() === "YES" ? "Required Upload" : "Upload Receipt Image"}
-                                  {account["col9"]?.toUpperCase() === "YES" && (
-                                    <span className="text-red-500 ml-1">*</span>
-                                  )}
-                                </span>
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*"
-                                  onChange={(e) => handleImageUpload(account._id, e)}
-                                  disabled={!isSelected}
-                                />
-                              </label>
-                            )}
                           </td>
                         </tr>
                       )

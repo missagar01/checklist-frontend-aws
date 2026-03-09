@@ -1,12 +1,11 @@
 "use client"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { 
-  CheckCircle2, 
-  Upload, 
-  X, 
-  Search, 
-  History, 
-  ArrowLeft, 
+import {
+  CheckCircle2,
+  X,
+  Search,
+  History,
+  ArrowLeft,
   Filter,
   AlertTriangle,
   CheckCircle,
@@ -15,7 +14,7 @@ import {
 } from "lucide-react"
 import AdminLayout from "../../components/layout/AdminLayout"
 import { useDispatch, useSelector } from "react-redux"
-import { 
+import {
   fetchPendingMaintenanceTasks,
   fetchCompletedMaintenanceTasks,
   updateMultipleMaintenanceTasks,
@@ -43,7 +42,7 @@ function MaintenanceDataPage() {
   const [remarksData, setRemarksData] = useState({})
   const [showHistory, setShowHistory] = useState(false)
   const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false)
-  
+
   // Filters
   const [selectedMachines, setSelectedMachines] = useState([])
   const [selectedPersonnel, setSelectedPersonnel] = useState([])
@@ -52,95 +51,94 @@ function MaintenanceDataPage() {
   const [selectedTaskType, setSelectedTaskType] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  
+
   const [userRole, setUserRole] = useState("")
   const [username, setUsername] = useState("")
   const [isMobile, setIsMobile] = useState(false)
-  const [uploadedImages, setUploadedImages] = useState({})
 
   const dispatch = useDispatch()
-  
+
   // SAFE SELECTOR with default values
   const maintenanceState = useSelector((state) => state.maintenance)
-  
+
   // Provide default values if maintenanceState is undefined
-  const { 
-    tasks = [], 
-    history = [], 
-    machineNames = [], 
-    assignedPersonnel = [], 
+  const {
+    tasks = [],
+    history = [],
+    machineNames = [],
+    assignedPersonnel = [],
     statistics = null,
-    loading = false, 
-    hasMore = true, 
+    loading = false,
+    hasMore = true,
     currentPage = 1,
     hasMoreHistory = true,
-    currentPageHistory = 1 
+    currentPageHistory = 1
   } = maintenanceState || {}
 
   const tableContainerRef = useRef(null)
   const historyTableContainerRef = useRef(null)
 
   // Initialize
-//   useEffect(() => {
-//     const checkMobile = () => {
-//       setIsMobile(window.innerWidth < 768)
-//     }
-//     checkMobile()
-//     window.addEventListener('resize', checkMobile)
+  //   useEffect(() => {
+  //     const checkMobile = () => {
+  //       setIsMobile(window.innerWidth < 768)
+  //     }
+  //     checkMobile()
+  //     window.addEventListener('resize', checkMobile)
 
-//     const role = localStorage.getItem("role")
-//     const user = localStorage.getItem("username")
-//     setUserRole(role || "")
-//     setUsername(user || "")
+  //     const role = localStorage.getItem("role")
+  //     const user = localStorage.getItem("username")
+  //     setUserRole(role || "")
+  //     setUsername(user || "")
 
-//     // Check if maintenance slice is available
-//     if (maintenanceState) {
-//       // Load initial data
-//       dispatch(fetchPendingMaintenanceTasks({ page: 1, userId: userRole === "user" ? user : null }))
-//       dispatch(fetchUniqueMachineNames())
-//       dispatch(fetchUniqueAssignedPersonnel())
-//       dispatch(fetchMaintenanceStatistics())
-//     } else {
-//       console.error("Maintenance slice not found in Redux store")
-//       setError("Maintenance module not initialized. Please check store configuration.")
-//     }
+  //     // Check if maintenance slice is available
+  //     if (maintenanceState) {
+  //       // Load initial data
+  //       dispatch(fetchPendingMaintenanceTasks({ page: 1, userId: userRole === "user" ? user : null }))
+  //       dispatch(fetchUniqueMachineNames())
+  //       dispatch(fetchUniqueAssignedPersonnel())
+  //       dispatch(fetchMaintenanceStatistics())
+  //     } else {
+  //       console.error("Maintenance slice not found in Redux store")
+  //       setError("Maintenance module not initialized. Please check store configuration.")
+  //     }
 
-//     return () => {
-//       window.removeEventListener('resize', checkMobile)
-//     }
-//   }, [dispatch, userRole, maintenanceState])
+  //     return () => {
+  //       window.removeEventListener('resize', checkMobile)
+  //     }
+  //   }, [dispatch, userRole, maintenanceState])
 
-useEffect(() => {
-  const checkMobile = () => {
-    setIsMobile(window.innerWidth < 768)
-  }
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
 
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
 
-  // const role = localStorage.getItem("role")
-  // const user = localStorage.getItem("username")
+    // const role = localStorage.getItem("role")
+    // const user = localStorage.getItem("username")
 
-  const role = localStorage.getItem("role")
-const user = localStorage.getItem("user-name")   // <-- FIXED
+    const role = localStorage.getItem("role")
+    const user = localStorage.getItem("user-name")   // <-- FIXED
 
 
-  setUserRole(role || "")
-  setUsername(user || "")
+    setUserRole(role || "")
+    setUsername(user || "")
 
-  dispatch(fetchPendingMaintenanceTasks({ 
-    page: 1, 
-    userId: role === "user" ? user : null 
-  }))
+    dispatch(fetchPendingMaintenanceTasks({
+      page: 1,
+      userId: role === "user" ? user : null
+    }))
 
-  dispatch(fetchUniqueMachineNames())
-  dispatch(fetchUniqueAssignedPersonnel())
-  dispatch(fetchMaintenanceStatistics())
+    dispatch(fetchUniqueMachineNames())
+    dispatch(fetchUniqueAssignedPersonnel())
+    dispatch(fetchMaintenanceStatistics())
 
-  return () => {
-    window.removeEventListener('resize', checkMobile)
-  }
-}, [])   // <--- ONLY RUN ONCE
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+    }
+  }, [])   // <--- ONLY RUN ONCE
 
 
   // Handle scroll for pending tasks
@@ -152,12 +150,12 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
 
     if (isNearBottom && !loading) {
       const nextPage = currentPage + 1
-      dispatch(fetchPendingMaintenanceTasks({ 
-        page: nextPage, 
+      dispatch(fetchPendingMaintenanceTasks({
+        page: nextPage,
         // userId: userRole === "user" ? username : null 
         userId: localStorage.getItem("role") === "user"
-  ? localStorage.getItem("user-name")
-  : null
+          ? localStorage.getItem("user-name")
+          : null
 
       }))
     }
@@ -217,7 +215,7 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
   // Get status badge color
   const getStatusBadge = (status) => {
     if (!status) return "bg-gray-100 text-gray-800"
-    
+
     switch (status.toLowerCase()) {
       case 'completed':
         return "bg-green-100 text-green-800"
@@ -239,7 +237,7 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
   // Get priority badge
   const getPriorityBadge = (priority) => {
     if (!priority) return <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs font-medium">N/A</span>
-    
+
     switch (priority.toLowerCase()) {
       case 'high':
         return <span className="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">High</span>
@@ -269,11 +267,11 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
 
     return tasks.filter(task => {
       if (!task) return false
-      
+
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
-        const matchesSearch = 
+        const matchesSearch =
           task.task_description?.toLowerCase().includes(searchLower) ||
           task.machine_name?.toLowerCase().includes(searchLower) ||
           task.serial_no?.toLowerCase().includes(searchLower) ||
@@ -335,18 +333,18 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
   const toggleHistory = () => {
     setShowHistory(prev => !prev)
     resetFilters()
-    
+
     if (!showHistory) {
       // Load history when switching to history view
       dispatch(fetchCompletedMaintenanceTasks({ page: 1, filters: getHistoryFilters() }))
     } else {
       // Load pending tasks when switching back
-      dispatch(fetchPendingMaintenanceTasks({ 
-        page: 1, 
+      dispatch(fetchPendingMaintenanceTasks({
+        page: 1,
         // userId: userRole === "user" ? username : null 
         userId: localStorage.getItem("role") === "user"
-  ? localStorage.getItem("user-name")
-  : null
+          ? localStorage.getItem("user-name")
+          : null
 
       }))
     }
@@ -395,20 +393,6 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
     }
   }
 
-  // Handle image upload
-  const handleImageUpload = (id, e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    const previewUrl = URL.createObjectURL(file)
-    setUploadedImages(prev => ({
-      ...prev,
-      [id]: {
-        file,
-        previewUrl
-      }
-    }))
-  }
 
   // Convert file to base64
   const fileToBase64 = (file) => {
@@ -421,80 +405,68 @@ const user = localStorage.getItem("user-name")   // <-- FIXED
   }
 
   // Main submit function
-// Main submit function
-// Main submit function
-const handleSubmit = async () => {
-  const selectedItemsArray = Array.from(selectedItems)
-  if (selectedItemsArray.length === 0) {
-    alert("Please select at least one task to submit")
-    return
-  }
+  // Main submit function
+  // Main submit function
+  const handleSubmit = async () => {
+    const selectedItemsArray = Array.from(selectedItems)
+    if (selectedItemsArray.length === 0) {
+      alert("Please select at least one task to submit")
+      return
+    }
 
-  // Validate required fields
-  const missingStatus = selectedItemsArray.filter(id => {
-    const status = additionalData[id]?.status
-    return !status || status === ""
-  })
-
-  if (missingStatus.length > 0) {
-    alert("Please select status for all selected tasks")
-    return
-  }
-
-  // Prepare submission data
-  const submissionData = await Promise.all(
-    selectedItemsArray.map(async (id) => {
-      const taskData = additionalData[id] || {}
-      const imageData = uploadedImages[id]
-
-      let imageBase64 = null
-      if (imageData?.file) {
-        try {
-          imageBase64 = await fileToBase64(imageData.file)
-        } catch (error) {
-          console.error("Error converting image to base64:", error)
-        }
-      }
-
-      return {
-  taskId: id,
-  status: taskData.status,
-  sound_status: taskData.soundStatus || "",
-  temperature_status: taskData.temperature || "",
-  remarks: remarksData[id] || "",
-  image: imageBase64,
-  actual_date: taskData.status === "Yes" 
-      ? new Date().toISOString().split('T')[0] 
-      : null
-}
-
+    // Validate required fields
+    const missingStatus = selectedItemsArray.filter(id => {
+      const status = additionalData[id]?.status
+      return !status || status === ""
     })
-  )
 
-  setIsSubmitting(true)
+    if (missingStatus.length > 0) {
+      alert("Please select status for all selected tasks")
+      return
+    }
 
-  try {
-    await dispatch(updateMultipleMaintenanceTasks(submissionData)).unwrap()
+    // Prepare submission data
+    const submissionData = await Promise.all(
+      selectedItemsArray.map(async (id) => {
+        const taskData = additionalData[id] || {}
 
-    setSuccessMessage(`Successfully updated ${selectedItemsArray.length} maintenance tasks!`)
-    
-    // Reset selections
-    setSelectedItems(new Set())
-    setAdditionalData({})
-    setRemarksData({})
-    setUploadedImages({})
+        return {
+          taskId: id,
+          status: taskData.status,
+          sound_status: taskData.soundStatus || "",
+          temperature_status: taskData.temperature || "",
+          remarks: remarksData[id] || "",
+          actual_date: taskData.status === "Yes"
+            ? new Date().toISOString().split('T')[0]
+            : null
+        }
 
-    // Refresh data
-    dispatch(fetchPendingMaintenanceTasks({ 
-      page: 1, 
-      userId: userRole === "user" ? username : null 
-    }))
-  } catch (error) {
-    setError(`Failed to update tasks: ${error.message || error}`)
-  } finally {
-    setIsSubmitting(false)
+      })
+    )
+
+    setIsSubmitting(true)
+
+    try {
+      await dispatch(updateMultipleMaintenanceTasks(submissionData)).unwrap()
+
+      setSuccessMessage(`Successfully updated ${selectedItemsArray.length} maintenance tasks!`)
+
+      // Reset selections
+      setSelectedItems(new Set())
+      setAdditionalData({})
+      setRemarksData({})
+
+      // Refresh data
+      dispatch(fetchPendingMaintenanceTasks({
+        page: 1,
+        userId: userRole === "user" ? username : null
+      }))
+    } catch (error) {
+      setError(`Failed to update tasks: ${error.message || error}`)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-}
 
   // Statistics display component
   const StatisticsDisplay = () => {
@@ -513,7 +485,7 @@ const handleSubmit = async () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="bg-green-100 p-2 rounded-lg mr-3">
@@ -525,7 +497,7 @@ const handleSubmit = async () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="bg-yellow-100 p-2 rounded-lg mr-3">
@@ -537,7 +509,7 @@ const handleSubmit = async () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="bg-red-100 p-2 rounded-lg mr-3">
@@ -566,7 +538,7 @@ const handleSubmit = async () => {
               <li>Maintenance slice registration</li>
               <li>API endpoints</li>
             </ol>
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
@@ -585,7 +557,7 @@ const handleSubmit = async () => {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-blue-700">
             {showHistory ? CONFIG.PAGE_CONFIG.historyTitle : CONFIG.PAGE_CONFIG.title}
           </h1>
-          
+
           {/* Statistics */}
           {!showHistory && <StatisticsDisplay />}
 
@@ -601,7 +573,7 @@ const handleSubmit = async () => {
                 className="w-full pl-10 pr-4 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               />
             </div>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={toggleHistory}
@@ -621,7 +593,7 @@ const handleSubmit = async () => {
                   </div>
                 )}
               </button>
-              
+
               {!showHistory && (
                 <button
                   onClick={handleSubmit}
@@ -645,7 +617,7 @@ const handleSubmit = async () => {
               <Filter className="h-4 w-4 mr-2 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Filters</span>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Machine Filter */}
               <div>
@@ -661,7 +633,7 @@ const handleSubmit = async () => {
                   ))}
                 </select>
               </div>
-              
+
               {/* Personnel Filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Assigned To</label>
@@ -676,7 +648,7 @@ const handleSubmit = async () => {
                   ))}
                 </select>
               </div>
-              
+
               {/* Status Filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
@@ -691,7 +663,7 @@ const handleSubmit = async () => {
                   <option value="No">No</option>
                 </select>
               </div>
-              
+
               {/* Priority Filter */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
@@ -707,7 +679,7 @@ const handleSubmit = async () => {
                 </select>
               </div>
             </div>
-            
+
             {(selectedMachines.length > 0 || selectedPersonnel.length > 0 || selectedStatus || selectedPriority) && (
               <button
                 onClick={resetFilters}
@@ -757,279 +729,255 @@ const handleSubmit = async () => {
             </div>
           ) : showHistory ? (
             /* History Table */
-<div ref={historyTableContainerRef} className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-  <table className="min-w-full divide-y divide-gray-200">
-    <thead className="bg-gray-50 sticky top-0 z-10">
-      <tr>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Machine</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doer Name</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sound Status</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scheduled</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
-      </tr>
-    </thead>
-    <tbody className="bg-white divide-y divide-gray-200">
-      {filteredHistoryData.length > 0 ? (
-        filteredHistoryData.map((task, index) => (
-          <tr key={index} className="hover:bg-gray-50">
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm font-medium text-gray-900">{task.task_no || "—"}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{task.machine_name || "—"}</div>
-            </td>
+            <div ref={historyTableContainerRef} className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Machine</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doer Name</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sound Status</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scheduled</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredHistoryData.length > 0 ? (
+                    filteredHistoryData.map((task, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
                         <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{task.doer_name || "—"}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{task.serial_no || "—"}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900 max-w-xs truncate" title={task.task_description}>
-                {task.task_description || "—"}
-              </div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{task.assigned_to || "—"}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              {getPriorityBadge(task.priority)}
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">
-                {task.sound_status ? (
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    task.sound_status === 'Good' ? 'bg-green-100 text-green-800' :
-                    task.sound_status === 'Bad' ? 'bg-red-100 text-red-800' :
-                    task.sound_status === 'Need Repair' ? 'bg-orange-100 text-orange-800' :
-                    task.sound_status === 'OK' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {task.sound_status}
-                  </span>
-                ) : "—"}
-              </div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{task.temperature_status || "—"}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{formatDate(task.scheduled_date)}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900">{formatDate(task.completed_date)}</div>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(task.status)}`}>
-                {task.status || "—"}
-              </span>
-            </td>
-            <td className="px-2 sm:px-3 py-2 sm:py-4">
-              <div className="text-xs sm:text-sm text-gray-900 max-w-xs truncate" title={task.remarks}>
-                {task.remarks || "—"}
-              </div>
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan={12} className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm">
-            No maintenance history found
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+                          <div className="text-xs sm:text-sm font-medium text-gray-900">{task.task_no || "—"}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{task.machine_name || "—"}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{task.doer_name || "—"}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{task.serial_no || "—"}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900 max-w-xs truncate" title={task.task_description}>
+                            {task.task_description || "—"}
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{task.assigned_to || "—"}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          {getPriorityBadge(task.priority)}
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">
+                            {task.sound_status ? (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.sound_status === 'Good' ? 'bg-green-100 text-green-800' :
+                                task.sound_status === 'Bad' ? 'bg-red-100 text-red-800' :
+                                  task.sound_status === 'Need Repair' ? 'bg-orange-100 text-orange-800' :
+                                    task.sound_status === 'OK' ? 'bg-blue-100 text-blue-800' :
+                                      'bg-gray-100 text-gray-800'
+                                }`}>
+                                {task.sound_status}
+                              </span>
+                            ) : "—"}
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{task.temperature_status || "—"}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{formatDate(task.scheduled_date)}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900">{formatDate(task.completed_date)}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(task.status)}`}>
+                            {task.status || "—"}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-3 py-2 sm:py-4">
+                          <div className="text-xs sm:text-sm text-gray-900 max-w-xs truncate" title={task.remarks}>
+                            {task.remarks || "—"}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={13} className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm">
+                        No maintenance history found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           ) : (
             /* Pending Tasks Table */
-<div ref={tableContainerRef} className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
-  <table className="min-w-full divide-y divide-gray-200">
-    <thead className="bg-gray-50 sticky top-0 z-10">
-      <tr>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            checked={filteredTasks.length > 0 && selectedItems.size === filteredTasks.length}
-            onChange={handleSelectAllItems}
-          />
-        </th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Machine</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doer Name</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Status</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sound Status</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Update Status</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-      </tr>
-    </thead>
-    <tbody className="bg-white divide-y divide-gray-200">
-      {filteredTasks.length > 0 ? (
-        filteredTasks.map((task, index) => {
-          const isSelected = selectedItems.has(task.task_id)
-          
-          return (
-            <tr key={index} className={`${isSelected ? "bg-blue-50" : ""} hover:bg-gray-50`}>
-              <td className="px-2 sm:px-3 py-2 sm:py-4 w-12">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={isSelected}
-                  onChange={(e) => handleCheckboxClick(e, task.task_id)}
-                />
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <div className="text-xs sm:text-sm font-medium text-gray-900">{task.task_no || "—"}</div>
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <div className="text-xs sm:text-sm text-gray-900">
-                  {task.machine_name || "—"}
-                  {task.serial_no && <div className="text-xs text-gray-500">SN: {task.serial_no}</div>}
-                </div>
-              </td>
-               <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <div className="text-xs sm:text-sm text-gray-900">
-                  {task.doer_name || "—"}
-                </div>
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <div className="text-xs sm:text-sm text-gray-900 max-w-xs" title={task.task_description}>
-                  {task.task_description || "—"}
-                </div>
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                {getPriorityBadge(task.priority)}
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <div className="text-xs sm:text-sm text-gray-900">
-                  {formatDate(task.scheduled_date)}
-                </div>
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(task.status)}`}>
-                  {task.doer_department || "—"}
-                </span>
-              </td>
-              
-              {/* Sound Status Dropdown */}
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <select
-                  disabled={!isSelected}
-                  value={additionalData[task.task_id]?.soundStatus || ""}
-                  onChange={(e) => setAdditionalData(prev => ({ 
-                    ...prev, 
-                    [task.task_id]: {
-                      ...prev[task.task_id],
-                      soundStatus: e.target.value
-                    }
-                  }))}
-                  className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Sound Status</option>
-                  <option value="Good">Good</option>
-                  <option value="Bad">Bad</option>
-                  <option value="Need Repair">Need Repair</option>
-                  <option value="OK">OK</option>
-                </select>
-              </td>
-              
-              {/* Temperature Input */}
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <input
-                  type="text"
-                  placeholder="Enter temperature"
-                  disabled={!isSelected}
-                  value={additionalData[task.task_id]?.temperature || ""}
-                  onChange={(e) => setAdditionalData(prev => ({ 
-                    ...prev, 
-                    [task.task_id]: {
-                      ...prev[task.task_id],
-                      temperature: e.target.value
-                    }
-                  }))}
-                  className="border rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-              </td>
-              
-              {/* Update Status Dropdown */}
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <select
-                  disabled={!isSelected}
-                  value={additionalData[task.task_id]?.status || ""}
-                  onChange={(e) => setAdditionalData(prev => ({ 
-                    ...prev, 
-                    [task.task_id]: {
-                      ...prev[task.task_id],
-                      status: e.target.value
-                    }
-                  }))}
-                  className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Status</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-              </td>
-              
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <input
-                  type="text"
-                  placeholder="Enter remarks"
-                  disabled={!isSelected}
-                  value={remarksData[task.task_id] || ""}
-                  onChange={(e) => setRemarksData(prev => ({ ...prev, [task.task_id]: e.target.value }))}
-                  className="border rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-              </td>
-              <td className="px-2 sm:px-3 py-2 sm:py-4">
-                <label className={`flex items-center cursor-pointer text-blue-600 hover:text-blue-800 text-xs ${!isSelected ? "opacity-50 cursor-not-allowed" : ""}`}>
-                  <Upload className="h-4 w-4 mr-1" />
-                  <span>Upload</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(task.task_id, e)}
-                    disabled={!isSelected}
-                  />
-                </label>
-                {uploadedImages[task.task_id] && (
-                  <div className="mt-1">
-                    <img
-                      src={uploadedImages[task.task_id].previewUrl}
-                      alt="Uploaded"
-                      className="h-8 w-8 object-cover rounded"
-                    />
-                  </div>
-                )}
-              </td>
-            </tr>
-          )
-        })
-      ) : (
-        <tr>
-          <td colSpan={12} className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm">
-            No maintenance tasks found
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+            <div ref={tableContainerRef} className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={filteredTasks.length > 0 && selectedItems.size === filteredTasks.length}
+                        onChange={handleSelectAllItems}
+                      />
+                    </th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Machine</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doer Name</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Status</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sound Status</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperature</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Update Status</th>
+                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredTasks.length > 0 ? (
+                    filteredTasks.map((task, index) => {
+                      const isSelected = selectedItems.has(task.task_id)
+
+                      return (
+                        <tr key={index} className={`${isSelected ? "bg-blue-50" : ""} hover:bg-gray-50`}>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4 w-12">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              checked={isSelected}
+                              onChange={(e) => handleCheckboxClick(e, task.task_id)}
+                            />
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900">{task.task_no || "—"}</div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <div className="text-xs sm:text-sm text-gray-900">
+                              {task.machine_name || "—"}
+                              {task.serial_no && <div className="text-xs text-gray-500">SN: {task.serial_no}</div>}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <div className="text-xs sm:text-sm text-gray-900">
+                              {task.doer_name || "—"}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <div className="text-xs sm:text-sm text-gray-900 max-w-xs" title={task.task_description}>
+                              {task.task_description || "—"}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            {getPriorityBadge(task.priority)}
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <div className="text-xs sm:text-sm text-gray-900">
+                              {formatDate(task.scheduled_date)}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(task.status)}`}>
+                              {task.doer_department || "—"}
+                            </span>
+                          </td>
+
+                          {/* Sound Status Dropdown */}
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <select
+                              disabled={!isSelected}
+                              value={additionalData[task.task_id]?.soundStatus || ""}
+                              onChange={(e) => setAdditionalData(prev => ({
+                                ...prev,
+                                [task.task_id]: {
+                                  ...prev[task.task_id],
+                                  soundStatus: e.target.value
+                                }
+                              }))}
+                              className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                              <option value="">Select Sound Status</option>
+                              <option value="Good">Good</option>
+                              <option value="Bad">Bad</option>
+                              <option value="Need Repair">Need Repair</option>
+                              <option value="OK">OK</option>
+                            </select>
+                          </td>
+
+                          {/* Temperature Input */}
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <input
+                              type="text"
+                              placeholder="Enter temperature"
+                              disabled={!isSelected}
+                              value={additionalData[task.task_id]?.temperature || ""}
+                              onChange={(e) => setAdditionalData(prev => ({
+                                ...prev,
+                                [task.task_id]: {
+                                  ...prev[task.task_id],
+                                  temperature: e.target.value
+                                }
+                              }))}
+                              className="border rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            />
+                          </td>
+
+                          {/* Update Status Dropdown */}
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <select
+                              disabled={!isSelected}
+                              value={additionalData[task.task_id]?.status || ""}
+                              onChange={(e) => setAdditionalData(prev => ({
+                                ...prev,
+                                [task.task_id]: {
+                                  ...prev[task.task_id],
+                                  status: e.target.value
+                                }
+                              }))}
+                              className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                              <option value="">Select Status</option>
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </td>
+
+                          <td className="px-2 sm:px-3 py-2 sm:py-4">
+                            <input
+                              type="text"
+                              placeholder="Enter remarks"
+                              disabled={!isSelected}
+                              value={remarksData[task.task_id] || ""}
+                              onChange={(e) => setRemarksData(prev => ({ ...prev, [task.task_id]: e.target.value }))}
+                              className="border rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={12} className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm">
+                        No maintenance tasks found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

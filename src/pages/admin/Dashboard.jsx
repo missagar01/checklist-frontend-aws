@@ -1112,7 +1112,7 @@ export default function AdminDashboard() {
               dateRange={dateRangeProp}
             />
 
-            {(username === "AAKASH AGRAWAL" || (designation?.toLowerCase() === "division hod" && userRole?.toLowerCase() !== "admin")) && (
+            {(username === "AAKASH AGRAWAL" || username === "Sheelesh Marele" || (designation?.toLowerCase() === "division hod" && userRole?.toLowerCase() !== "admin")) && (
               <>
                 <div className="flex items-center gap-4 my-8">
                   <div className="flex-1 h-px bg-gray-200"></div>

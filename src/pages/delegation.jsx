@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   CheckCircle2,
-  Upload,
   X,
   Search,
   History,
@@ -52,7 +51,6 @@ function useDebounce(value, delay) {
 }
 
 function DelegationDataPage() {
-  const [uploadedImages, setUploadedImages] = useState({});
   const [accountData, setAccountData] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -422,15 +420,6 @@ function DelegationDataPage() {
     [delegation]
   );
 
-  const handleImageUpload = useCallback((id, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploadedImages((prev) => ({
-      ...prev,
-      [id]: file,
-    }));
-  }, []);
 
   const handleStatusChange = useCallback((id, value) => {
     setStatusData((prev) => ({ ...prev, [id]: value }));
@@ -648,16 +637,6 @@ function DelegationDataPage() {
       return;
     }
 
-    const missingRequiredImages = selectedItemsArray.filter((id) => {
-      const item = delegation.find((account) => account.task_id === id);
-      const requiresAttachment = item.require_attachment?.toUpperCase() === "YES";
-      return requiresAttachment && !uploadedImages[id] && !item.image;
-    });
-
-    if (missingRequiredImages.length > 0) {
-      alert(`Please upload images for required attachments. ${missingRequiredImages.length} item(s) missing images.`);
-      return;
-    }
 
     setIsSubmitting(true);
     setError(null);
@@ -665,39 +644,26 @@ function DelegationDataPage() {
     try {
       console.log('🔄 Starting submission process...');
 
-      // Convert to base64 - but check file sizes first
-      const selectedData = await Promise.all(
-        selectedItemsArray.map(async (id) => {
-          const item = delegation.find((x) => x.task_id === id);
-          const file = uploadedImages[id];
+      // Prepare data for submission
+      const selectedData = selectedItemsArray.map((id) => {
+        const item = delegation.find((x) => x.task_id === id);
 
-          let base64Image = null;
-          if (file) {
-            base64Image = await fileToBase64(file);   // Always correct base64
-          } else if (item.image) {
-            base64Image = null;   // Prevent backend confusion
-          }
-
-
-          return {
-            task_id: item.task_id,
-            given_by: item.given_by,
-            name: item.name,
-            task_description: item.task_description,
-            task_start_date: item.task_start_date,
-            planned_date: item.planned_date,
-            status: statusData[id] === "Done" ? "done" :
-              statusData[id] === "Extend date" ? "extend" : null,
-            next_extend_date: statusData[id] === "Extend date" ? nextTargetDate[id] : null,
-            reason: remarksData[id] || "",
-            image_base64: base64Image,
-          };
-        })
-      );
+        return {
+          task_id: item.task_id,
+          given_by: item.given_by,
+          name: item.name,
+          task_description: item.task_description,
+          task_start_date: item.task_start_date,
+          planned_date: item.planned_date,
+          status: statusData[id] === "Done" ? "done" :
+            statusData[id] === "Extend date" ? "extend" : null,
+          next_extend_date: statusData[id] === "Extend date" ? nextTargetDate[id] : null,
+          reason: remarksData[id] || "",
+        };
+      });
 
       console.log('📦 Data prepared for submission:', {
-        itemCount: selectedData.length,
-        hasImages: selectedData.some(item => item.image_base64)
+        itemCount: selectedData.length
       });
 
       const result = await dispatch(
@@ -714,7 +680,6 @@ function DelegationDataPage() {
         setRemarksData({});
         setNextTargetDate({});
         setStatusData({});
-        setUploadedImages({});
 
         // Refresh data after a short delay
         setTimeout(() => {
@@ -960,14 +925,6 @@ function DelegationDataPage() {
                         Remarks
                       </th>
                       <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                        Image
-                      </th>
-                      {userRole === "admin" && (
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                          User
-                        </th>
-                      )}
-                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Given By
                       </th>
                     </tr>
@@ -1023,39 +980,6 @@ function DelegationDataPage() {
                             </div>
                           </td>
                           <td className="px-3 sm:px-6 py-2 sm:py-4">
-                            {history.image_url ? (
-                              <a
-                                href={history.image_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline flex items-center"
-                              >
-                                <img
-                                  src={
-                                    history.image_url ||
-                                    "/api/placeholder/32/32"
-                                  }
-                                  alt="Attachment"
-                                  className="h-6 w-6 sm:h-8 sm:w-8 object-cover rounded-md mr-2 flex-shrink-0"
-                                />
-                                <span className="text-xs whitespace-normal break-words">
-                                  View
-                                </span>
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 text-xs">
-                                No file
-                              </span>
-                            )}
-                          </td>
-                          {userRole === "admin" && (
-                            <td className="px-3 sm:px-6 py-2 sm:py-4">
-                              <div className="text-xs sm:text-sm text-gray-900 whitespace-normal break-words">
-                                {history.name || "—"}
-                              </div>
-                            </td>
-                          )}
-                          <td className="px-3 sm:px-6 py-2 sm:py-4">
                             <div className="text-xs sm:text-sm text-gray-900 whitespace-normal break-words">
                               {history.given_by || "—"}
                             </div>
@@ -1065,7 +989,7 @@ function DelegationDataPage() {
                     ) : (
                       <tr>
                         <td
-                          colSpan={userRole === "admin" ? 9 : 8}
+                          colSpan={7}
                           className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm"
                         >
                           {searchTerm || startDate || endDate
@@ -1127,9 +1051,6 @@ function DelegationDataPage() {
                     </th>
                     <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] bg-purple-50">
                       Remarks
-                    </th>
-                    <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap bg-orange-50">
-                      Upload
                     </th>
                   </tr>
                 </thead>
@@ -1248,75 +1169,6 @@ function DelegationDataPage() {
                               className="border rounded-md px-2 py-1 w-full border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-xs sm:text-sm resize-none whitespace-normal"
                               rows="2"
                             />
-                          </td>
-                          <td className="px-2 sm:px-6 py-2 sm:py-4 bg-orange-50">
-                            {uploadedImages[account.task_id] ? (
-                              <div className="flex items-center">
-                                <img
-                                  src={URL.createObjectURL(
-                                    uploadedImages[account.task_id]
-                                  )}
-                                  alt="Receipt"
-                                  className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded-md mr-2 flex-shrink-0"
-                                />
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-xs text-gray-500 whitespace-normal break-words">
-                                    {uploadedImages[account.task_id].name}
-                                  </span>
-                                  <span className="text-xs text-green-600">
-                                    Ready
-                                  </span>
-                                </div>
-                              </div>
-                            ) : account.image ? (
-                              <div className="flex items-center">
-                                <img
-                                  src={account.image}
-                                  alt="Receipt"
-                                  className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded-md mr-2 flex-shrink-0"
-                                />
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-xs text-gray-500 whitespace-normal break-words">
-                                    Uploaded
-                                  </span>
-                                  <button
-                                    className="text-xs text-purple-600 hover:text-purple-800"
-                                    onClick={() =>
-                                      window.open(account.image, "_blank")
-                                    }
-                                  >
-                                    View
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <label
-                                htmlFor={`file-upload-${account.task_id}`}
-                                className={`flex items-center cursor-pointer ${account.require_attachment?.toUpperCase() ===
-                                  "YES"
-                                  ? "text-red-600 font-medium"
-                                  : "text-purple-600"
-                                  } hover:text-purple-800`}
-                              >
-                                <Upload className="h-4 w-4 mr-1 flex-shrink-0" />
-                                <span className="text-xs whitespace-normal break-words">
-                                  {account.require_attachment?.toUpperCase() ===
-                                    "YES"
-                                    ? "Required*"
-                                    : "Upload"}
-                                </span>
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*"
-                                  onChange={(e) =>
-                                    handleImageUpload(account.task_id, e)
-                                  }
-                                  disabled={!isSelected}
-                                  id={`file-upload-${account.task_id}`}
-                                />
-                              </label>
-                            )}
                           </td>
                         </tr>
                       );

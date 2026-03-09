@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { CheckCircle2, Upload, X, Search, History, ArrowLeft } from "lucide-react"
+import { CheckCircle2, X, Search, History, ArrowLeft } from "lucide-react"
 import AdminLayout from "../../components/layout/AdminLayout"
 import { useDispatch, useSelector } from "react-redux"
 import { checklistData, checklistHistoryData, updateChecklist } from "../../redux/slice/checklistSlice"
@@ -578,43 +578,6 @@ function AccountDataPage() {
     [filteredAccountData],
   )
 
-  const [uploadedImages, setUploadedImages] = useState({});
-
-  // Update the handleImageUpload function
-  const handleImageUpload = async (id, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Create a preview URL for the image
-    const previewUrl = URL.createObjectURL(file);
-
-    // Update the uploadedImages state
-    setUploadedImages(prev => ({
-      ...prev,
-      [id]: {
-        file,
-        previewUrl
-      }
-    }));
-
-    // Also update the accountData if needed
-    setAccountData(prev =>
-      prev.map(item =>
-        item.task_id === id
-          ? { ...item, image: file }
-          : item
-      )
-    );
-  };
-
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 
   const toggleHistory = () => {
@@ -697,96 +660,72 @@ const fileToBase64 = (file) => {
 
 
   // UPDATED: MAIN SUBMIT FUNCTION with date-time formatting
-const handleSubmit = async () => {
-  const selectedItemsArray = Array.from(selectedItems);
-  if (selectedItemsArray.length === 0) {
-    alert("Please select at least one item to submit");
-    return;
-  }
-
-  // NEW: Check if all selected items have status selected
-  const missingStatus = selectedItemsArray.filter((id) => {
-    const status = additionalData[id];
-    return !status || status === ""; 
-  });
-
-  if (missingStatus.length > 0) {
-    alert(`Please select status (Yes/No) for all selected tasks.`);
-    return;
-  }
-
-  // Check remarks for "No"
-  const missingRemarks = selectedItemsArray.filter((id) => {
-    const additionalStatus = additionalData[id];
-    const remarks = remarksData[id];
-    return additionalStatus === "No" && (!remarks || remarks.trim() === "");
-  });
-
-  if (missingRemarks.length > 0) {
-    alert(`Please provide remarks for items marked as "No".`);
-    return;
-  }
-
-  // Required images
-  const missingRequiredImages = selectedItemsArray.filter((id) => {
-    const item = checklist.find((acc) => acc.task_id === id);
-    const requiresAttachment = item.require_attachment?.toUpperCase() === "YES";
-    const hasImage = uploadedImages[id] || item.image;
-    const statusIsNo = additionalData[id] === "No";
-
-    return requiresAttachment && !hasImage && !statusIsNo;
-  });
-
-  if (missingRequiredImages.length > 0) {
-    alert(`Please upload images for all required attachments.`);
-    return;
-  }
-
-  setIsSubmitting(true);
-
-  // 🔥 FIXED: Convert image to BASE64
-const submissionData = await Promise.all(
-  selectedItemsArray.map(async (id) => {
-    const item = checklist.find((acc) => acc.task_id === id);
-    const imageData = uploadedImages[id];
-
-    let finalBase64Image = null;
-
-    if (imageData?.file) {
-      finalBase64Image = await fileToBase64(imageData.file); // <– FileReader se base64
+  const handleSubmit = async () => {
+    const selectedItemsArray = Array.from(selectedItems);
+    if (selectedItemsArray.length === 0) {
+      alert("Please select at least one item to submit");
+      return;
     }
 
-    return {
-      taskId: item.task_id,
-      status: additionalData[id] || "",
-      remarks: remarksData[id] || "",
-      image: finalBase64Image || item.image || null, // <– yahi backend ko milega
-    };
-  })
-);
+    // NEW: Check if all selected items have status selected
+    const missingStatus = selectedItemsArray.filter((id) => {
+      const status = additionalData[id];
+      return !status || status === "";
+    });
+
+    if (missingStatus.length > 0) {
+      alert(`Please select status (Yes/No) for all selected tasks.`);
+      return;
+    }
+
+    // Check remarks for "No"
+    const missingRemarks = selectedItemsArray.filter((id) => {
+      const additionalStatus = additionalData[id];
+      const remarks = remarksData[id];
+      return additionalStatus === "No" && (!remarks || remarks.trim() === "");
+    });
+
+    if (missingRemarks.length > 0) {
+      alert(`Please provide remarks for items marked as "No".`);
+      return;
+    }
 
 
-  console.log("Submission Data:", submissionData);
+    setIsSubmitting(true);
 
-  await dispatch(updateChecklist(submissionData));
+    // 🔥 FIXED: Convert image to BASE64
+    const submissionData = selectedItemsArray.map((id) => {
+      const item = checklist.find((acc) => acc.task_id === id);
 
-  setTimeout(() => {
-    setIsSubmitting(false);
-    setSuccessMessage(
-      `Successfully logged ${selectedItemsArray.length} task records!`
-    );
+      return {
+        taskId: item.task_id,
+        status: additionalData[id] || "",
+        remarks: remarksData[id] || "",
+        image: item.image || null,
+      };
+    });
 
-    // Reset
-    setSelectedItems(new Set());
-    setAdditionalData({});
-    setRemarksData({});
-    setUploadedImages({});
+
+    console.log("Submission Data:", submissionData);
+
+    await dispatch(updateChecklist(submissionData));
 
     setTimeout(() => {
-      window.location.reload();
-    }, 1000);
-  }, 1500);
-};
+      setIsSubmitting(false);
+      setSuccessMessage(
+        `Successfully logged ${selectedItemsArray.length} task records!`
+      );
+
+      // Reset
+      setSelectedItems(new Set());
+      setAdditionalData({});
+      setRemarksData({});
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }, 1500);
+  };
 
 
   // Convert Set to Array for display
@@ -1170,11 +1109,6 @@ const submissionData = await Promise.all(
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:text-blue-800 underline flex items-center break-words text-xs sm:text-sm"
                                   >
-                                    <img
-                                      src={history.image || "/placeholder.svg?height=32&width=32"}
-                                      alt="Attachment"
-                                      className="h-6 w-6 sm:h-8 sm:w-8 object-cover rounded-md mr-2 flex-shrink-0"
-                                    />
                                     <span className="break-words">View</span>
                                   </a>
                                 ) : (
@@ -1269,9 +1203,6 @@ const submissionData = await Promise.all(
                     </th>
                     <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                       Remarks
-                    </th>
-                    <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Upload Image
                     </th>
                   </tr>
                 </thead>
@@ -1379,65 +1310,22 @@ const submissionData = await Promise.all(
                               className="border rounded-md px-2 py-1 w-full border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-xs sm:text-sm break-words"
                             />
                           </td>
-                          <td className="px-2 sm:px-3 py-2 sm:py-4 bg-green-50">
-                            {uploadedImages[account.task_id] || account.image ? (
-                              <div className="flex items-center">
-                                <img
-                                  src={
-                                    uploadedImages[account.task_id]?.previewUrl ||
-                                    (typeof account.image === 'string' ? account.image : '')
-                                  }
-                                  alt="Receipt"
-                                  className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded-md mr-2 flex-shrink-0"
-                                />
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-xs text-gray-500 break-words">
-                                    {uploadedImages[account.task_id]?.file.name ||
-                                      (account.image instanceof File ? account.image.name : "Uploaded")}
-                                  </span>
-                                  {uploadedImages[account.task_id] ? (
-                                    <span className="text-xs text-green-600">Ready</span>
-                                  ) : (
-                                    <button
-                                      className="text-xs text-purple-600 hover:text-purple-800 break-words"
-                                      onClick={() => window.open(account.image, "_blank")}
-                                    >
-                                      View
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <label
-                                className={`flex items-center cursor-pointer ${account.require_attachment?.toUpperCase() === "YES" &&
-                                  additionalData[account.task_id] !== "No" // Only show as required if status is not "No"
-                                  ? "text-red-600 font-medium"
-                                  : "text-purple-600"
-                                  } hover:text-purple-800`}
-                              >
-                                <Upload className="h-4 w-4 mr-1 flex-shrink-0" />
-                                <span className="text-xs break-words">
-                                  {account.require_attachment?.toUpperCase() === "YES" &&
-                                    additionalData[account.task_id] !== "No"
-                                    ? "Required*"
-                                    : "Upload"}
-                                </span>
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*"
-                                  onChange={(e) => handleImageUpload(account.task_id, e)}
-                                  disabled={!isSelected}
-                                />
-                              </label>
-                            )}
+                          <td className="px-2 sm:px-3 py-2 sm:py-4 bg-orange-50 min-w-[120px]">
+                            <input
+                              type="text"
+                              placeholder="Enter remarks"
+                              disabled={!isSelected || !additionalData[account.task_id]}
+                              value={remarksData[account.task_id] || ""}
+                              onChange={(e) => setRemarksData((prev) => ({ ...prev, [account.task_id]: e.target.value }))}
+                              className="border rounded-md px-2 py-1 w-full border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-xs sm:text-sm break-words"
+                            />
                           </td>
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
-                      <td colSpan={13} className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm">
+                      <td colSpan={12} className="px-4 sm:px-6 py-4 text-center text-gray-500 text-xs sm:text-sm">
                         {searchTerm
                           ? "No tasks matching your search"
                           : "No pending tasks found for today, tomorrow, or past due dates"}

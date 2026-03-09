@@ -399,17 +399,16 @@ export default function UnifiedTaskPage() {
     }, [allTasks, checklistDepartments, maintenanceDepartments])
 
     // Handle HOD confirm for housekeeping tasks
-    const handleHODConfirm = useCallback(async (taskId, { remark = "", imageFile = null, doerName2 = "" }) => {
+    const handleHODConfirm = useCallback(async (taskId, { remark = "", doerName2 = "" }) => {
         try {
             const payload = {
                 taskId,
                 remark,
-                imageFile,
                 doerName2,
             };
 
-            // Only send hod if remark or image is present
-            if (remark || imageFile) {
+            // Only send hod if remark is present
+            if (remark) {
                 payload.hod = username;
             }
 
@@ -425,7 +424,7 @@ export default function UnifiedTaskPage() {
 
     // Handle task update
     const handleUpdateTask = useCallback(async (updateData) => {
-        const { taskId, sourceSystem, status, remarks, image, originalData } = updateData
+        const { taskId, sourceSystem, status, remarks, originalData } = updateData
 
         switch (sourceSystem) {
 
@@ -447,7 +446,6 @@ export default function UnifiedTaskPage() {
                     taskId,
                     status,
                     remarks,
-                    image: image ? await fileToBase64(image) : null,
                 }])).unwrap()
                 dispatch(fetchPendingMaintenanceTasks({
                     page: 1,
@@ -464,8 +462,8 @@ export default function UnifiedTaskPage() {
                     attachment: originalData?.attachment,
                 };
 
-                // Only send hod if remark or specialized update (like image/attachment) is present
-                if (remarks || updateData.imageFile || updateData.image) {
+                // Only send hod if remark is present
+                if (remarks) {
                     payload.hod = username;
                 }
 
@@ -527,7 +525,6 @@ export default function UnifiedTaskPage() {
                         sound_status: t.soundStatus || '',
                         temperature_status: t.temperature || '',
                         remarks: t.remarks || '',
-                        image: t.image,
                         actual_date: t.status === 'Yes'
                             ? new Date().toISOString().split('T')[0]
                             : null
@@ -550,12 +547,11 @@ export default function UnifiedTaskPage() {
                             const payload = {
                                 taskId: t.taskId,
                                 remark: t.remarks || '',
-                                imageFile: t.imageFile || null,
                                 doerName2: t.doerName2 || '',
                             };
 
-                            // Only send hod if remark or image is present
-                            if (t.remarks || t.imageFile || t.image) {
+                            // Only send hod if remark is present
+                            if (t.remarks) {
                                 payload.hod = username;
                             }
 
@@ -570,8 +566,8 @@ export default function UnifiedTaskPage() {
                                 attachment: t.originalData?.attachment,
                             };
 
-                            // Only send hod if remark or image is present
-                            if (t.remarks || t.image || t.imageFile) {
+                            // Only send hod if remark is present
+                            if (t.remarks) {
                                 payload.hod = username;
                             }
 
@@ -597,15 +593,6 @@ export default function UnifiedTaskPage() {
         }
     }, [dispatch, userRole, username, loadHousekeepingData])
 
-    // File to base64 helper
-    const fileToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.readAsDataURL(file)
-            reader.onload = () => resolve(reader.result)
-            reader.onerror = (error) => reject(error)
-        })
-    }
 
     // Handle page change for pagination
     const handlePageChange = useCallback(async (page, sourceSystem) => {

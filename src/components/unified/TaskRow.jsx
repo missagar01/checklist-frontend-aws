@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Upload, Eye, CheckCircle } from "lucide-react";
+import { Eye, CheckCircle, X } from "lucide-react";
 import { formatDateTime } from "../../utils/taskNormalizer";
 
 const DOER2_OPTIONS = [
@@ -30,8 +30,6 @@ const TaskRow = memo(function TaskRow({
   onView,
   rowData = {},
   onRowDataChange,
-  uploadedImage,
-  onImageUpload,
   isHistoryMode = false, // New prop to detect history/completed mode
   isHousekeepingOnly = false, // New prop to detect if showing only housekeeping tasks
   isMaintenanceOnly = false,
@@ -88,13 +86,6 @@ const TaskRow = memo(function TaskRow({
 
   const handleDataChange = (field, value) => {
     onRowDataChange?.(task.id, field, value);
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImageUpload?.(task.id, file);
-    }
   };
 
   // Get priority badge
@@ -338,66 +329,6 @@ const TaskRow = memo(function TaskRow({
             </span>
           )}
         </td>
-
-        {/* Image - Hide for user role pending tasks OR admin in housekeeping-only mode */}
-        {!isHousekeepingPendingEditable && !isHousekeepingOnly && (
-          <td className="px-2 sm:px-3 py-2 sm:py-4">
-            {isCompleted ? (
-              task.imageUrl ? (
-                <img
-                  src={task.imageUrl}
-                  alt="Attached"
-                  className="h-8 w-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onImageClick?.(task.imageUrl);
-                  }}
-                />
-              ) : (
-                <span className="text-xs text-gray-400">No image</span>
-              )
-            ) : (
-              <>
-                <label
-                  className={`flex items-center gap-1.5 px-3 py-1.5 bg-blue-50/50 hover:bg-blue-100/50 border border-blue-200 rounded-md cursor-pointer text-blue-600 font-bold transition-all text-sm ${!isSelected ? "opacity-30 cursor-not-allowed" : "shadow-sm active:scale-95"
-                    }`}
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Upload</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    disabled={!isSelected}
-                  />
-                </label>
-                {uploadedImage && (
-                  <div className="mt-1">
-                    <img
-                      src={uploadedImage.previewUrl}
-                      alt="Preview"
-                      className="h-8 w-8 object-cover rounded"
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </td>
-        )}
-
-        {/* View Details Button - Hide for user role pending tasks AND for admin in Housekeeping-only view */}
-        {!isHousekeepingPendingEditable && !(isAdminRole && isHousekeepingOnly) && (
-          <td className="px-2 sm:px-3 py-2 sm:py-4">
-            <button
-              onClick={handleViewClick}
-              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded transition-colors"
-              title="View Details"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          </td>
-        )}
       </tr >
     );
   }
@@ -651,49 +582,6 @@ const TaskRow = memo(function TaskRow({
         )}
       </td>
 
-      {/* Image - For completed: show if exists, for pending: show upload */}
-      <td className="px-2 sm:px-3 py-2 sm:py-4">
-        {isCompleted ? (
-          task.imageUrl ? (
-            <img
-              src={task.imageUrl}
-              alt="Attached"
-              className="h-8 w-8 object-cover rounded"
-            />
-          ) : (
-            <span className="text-xs text-gray-400">—</span>
-          )
-        ) : isAdminRole && task.sourceSystem === 'housekeeping' ? (
-          <span className="text-xs text-gray-400">—</span>
-        ) : (
-          <>
-            <label
-              className={`flex items-center gap-1.5 px-3 py-1.5 bg-blue-50/50 hover:bg-blue-100/50 border border-blue-200 rounded-md cursor-pointer text-blue-600 font-bold transition-all text-sm ${!isSelected ? "opacity-30 cursor-not-allowed" : "shadow-sm active:scale-95"
-                }`}
-            >
-              <Upload className="h-4 w-4" />
-              <span>Upload</span>
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageChange}
-                disabled={!isSelected}
-              />
-            </label>
-            {uploadedImage && (
-              <div className="mt-1">
-                <img
-                  src={uploadedImage.previewUrl}
-                  alt="Preview"
-                  className="h-8 w-8 object-cover rounded"
-                />
-              </div>
-            )}
-          </>
-        )}
-      </td>
-
       {/* View Details Button */}
       <td className="px-2 sm:px-3 py-2 sm:py-4">
         <button
@@ -715,8 +603,6 @@ export const TaskCard = memo(function TaskCard({
   onView,
   rowData = {},
   onRowDataChange,
-  uploadedImage,
-  onImageUpload,
   isHistoryMode = false,
   isHousekeepingOnly = false,
   isMaintenanceOnly = false,
@@ -765,13 +651,6 @@ export const TaskCard = memo(function TaskCard({
 
   const handleDataChange = (field, value) => {
     onRowDataChange?.(task.id, field, value);
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImageUpload?.(task.id, file);
-    }
   };
 
   const isSelectDisabled =
@@ -999,26 +878,8 @@ export const TaskCard = memo(function TaskCard({
               )}
             </div>
 
-            {/* Image Upload / Preview */}
+            {/* Image Upload / Preview removed */}
             <div className="flex items-center gap-2">
-              {!isCompleted && !isHousekeepingPendingEditable && !(isAdminRole && task.sourceSystem === "housekeeping") && (
-                <div className="flex-shrink-0">
-                  <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight block">Image</span>
-                  <label className={`flex items-center gap-2 px-4 py-2 bg-blue-50/50 hover:bg-blue-100/50 rounded-md cursor-pointer border border-blue-200 mt-1 shadow-sm transition-all ${!isSelected ? "opacity-30 cursor-not-allowed" : "active:scale-95"}`}>
-                    <Upload className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-black text-blue-600 uppercase tracking-tight">
-                      {uploadedImage ? "Change" : "Upload"}
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      disabled={!isSelected}
-                    />
-                  </label>
-                </div>
-              )}
 
               {/* Existing Image Preview */}
               {isCompleted && task.imageUrl && (
@@ -1054,22 +915,6 @@ export const TaskCard = memo(function TaskCard({
             )}
           </div>
 
-          {/* Uploaded Preview */}
-          {!isCompleted && uploadedImage && (
-            <div className="relative inline-block mt-2">
-              <img
-                src={uploadedImage.previewUrl}
-                alt="Preview"
-                className="h-16 w-auto rounded border border-gray-200 shadow-sm"
-              />
-              <button
-                onClick={() => handleDataChange("removeImage", true)}
-                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 shadow-md"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -1153,18 +998,6 @@ export function TaskTableHeader({
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Remarks
           </th>
-          {/* Image - Hide for user role OR admin in housekeeping-only mode */}
-          {normalizedRole !== "user" && !isHousekeepingOnly && (
-            <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Image
-            </th>
-          )}
-          {/* View - Hide for user role OR admin in housekeeping-only mode */}
-          {normalizedRole !== "user" && !isHousekeepingOnly && (
-            <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              View
-            </th>
-          )}
         </tr>
       </thead>
     );
@@ -1242,12 +1075,6 @@ export function TaskTableHeader({
         )}
         <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
           Remarks
-        </th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          Image
-        </th>
-        <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          View
         </th>
       </tr>
     </thead>

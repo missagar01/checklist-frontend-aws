@@ -7,8 +7,7 @@ import {
     CheckCircle,
     Paperclip,
     MessageSquare,
-    History,
-    Upload
+    History
 } from "lucide-react";
 import TaskSection, {
     Field,
@@ -37,7 +36,6 @@ export default function TaskDrawer({
 }) {
     const [remarks, setRemarks] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
-    const [uploadedImage, setUploadedImage] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Reset state when task changes
@@ -45,24 +43,9 @@ export default function TaskDrawer({
         if (task) {
             setRemarks(task.remarks !== '—' ? task.remarks : "");
             setSelectedStatus(task.originalStatus || "");
-            setUploadedImage(null);
         }
     }, [task?.id]);
 
-    const handleImageUpload = useCallback((e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const previewUrl = URL.createObjectURL(file);
-            setUploadedImage({ file, previewUrl });
-        }
-    }, []);
-
-    const clearImage = useCallback(() => {
-        if (uploadedImage?.previewUrl) {
-            URL.revokeObjectURL(uploadedImage.previewUrl);
-        }
-        setUploadedImage(null);
-    }, [uploadedImage]);
 
     const handleSubmit = useCallback(async () => {
         if (!task || !onUpdate) return;
@@ -74,7 +57,6 @@ export default function TaskDrawer({
                 sourceSystem: task.sourceSystem,
                 status: selectedStatus,
                 remarks,
-                image: uploadedImage?.file,
                 originalData: task.originalData,
             });
             onClose();
@@ -83,7 +65,7 @@ export default function TaskDrawer({
         } finally {
             setIsSubmitting(false);
         }
-    }, [task, selectedStatus, remarks, uploadedImage, onUpdate, onClose]);
+    }, [task, selectedStatus, remarks, onUpdate, onClose]);
 
 
     // Image Preview Modal State
@@ -223,7 +205,6 @@ export default function TaskDrawer({
                         </FieldGrid>
                     </TaskSection>
 
-                    {/* Section 5: Attachments */}
                     <TaskSection title="Attachments" icon={Paperclip} defaultOpen={false}>
                         <div className="space-y-3">
                             <Field label="Attachment Required" value={task.requireAttachment} />
@@ -248,41 +229,6 @@ export default function TaskDrawer({
                                             <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">Click to View</span>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Upload New Image */}
-                            {userRole === "admin" && (
-                                <div>
-                                    <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                                        Upload New Image
-                                    </dt>
-                                    {uploadedImage ? (
-                                        <div className="relative inline-block">
-                                            <img
-                                                src={uploadedImage.previewUrl}
-                                                alt="Preview"
-                                                className="h-32 w-auto object-cover rounded-md border border-gray-200"
-                                            />
-                                            <button
-                                                onClick={clearImage}
-                                                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                                            <Upload className="h-4 w-4 text-gray-400" />
-                                            <span className="text-sm text-gray-600">Click to upload</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                className="hidden"
-                                            />
-                                        </label>
-                                    )}
                                 </div>
                             )}
                         </div>

@@ -8,7 +8,6 @@ const UserTasks = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTasks, setSelectedTasks] = useState([])
   const [remarks, setRemarks] = useState({})
-  const [selectedFiles, setSelectedFiles] = useState({})
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
@@ -117,18 +116,6 @@ const UserTasks = () => {
     }
   }
 
-  const handleFileChange = (taskId, e) => {
-    const file = e.target.files?.[0] || null
-    setSelectedFiles((prev) => ({ ...prev, [taskId]: file }))
-    // Clear error if user selects a file
-    if (errors[taskId]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[taskId]
-        return newErrors
-      })
-    }
-  }
 
   const showToast = (message, type) => {
     setToast({ show: true, message, type })
@@ -146,10 +133,6 @@ const UserTasks = () => {
       const task = userTasks.find((t) => t.id === taskId)
       if (!task) continue
 
-      // Check if attachment is required but not provided
-      if (task.requireAttachment && !selectedFiles[taskId]) {
-        newErrors[taskId] = "This task requires an attachment. Please upload a file."
-      }
     }
 
     // If there are errors, show them and stop submission
@@ -267,13 +250,12 @@ const UserTasks = () => {
                 {filteredTasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`card ${task.completed ? "opacity-60" : ""} border-l-4 ${
-                      task.completed
+                    className={`card ${task.completed ? "opacity-60" : ""} border-l-4 ${task.completed
                         ? "border-l-green-500"
                         : selectedTasks.includes(task.id)
                           ? "border-l-blue-500"
                           : "border-l-gray-300"
-                    } transition-all hover:shadow-md`}
+                      } transition-all hover:shadow-md`}
                   >
                     <div className="p-4 pb-2 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-950 dark:to-teal-950 border-b border-green-200 dark:border-green-800">
                       <div className="flex items-center justify-between">
@@ -350,29 +332,6 @@ const UserTasks = () => {
                                 className="input border-green-200 dark:border-green-800"
                                 rows={3}
                               />
-                            </div>
-                            <div className="space-y-2">
-                              <label
-                                htmlFor={`file-${task.id}`}
-                                className={`block ${task.requireAttachment ? "text-amber-700 dark:text-amber-300 font-medium" : "text-green-700 dark:text-green-300"}`}
-                              >
-                                {task.requireAttachment ? "Upload Proof (Required)" : "Upload Proof (Optional)"}
-                              </label>
-                              <input
-                                id={`file-${task.id}`}
-                                type="file"
-                                onChange={(e) => handleFileChange(task.id, e)}
-                                className={`input ${
-                                  task.requireAttachment
-                                    ? "border-amber-300 dark:border-amber-700"
-                                    : "border-green-200 dark:border-green-800"
-                                }`}
-                              />
-                              {selectedFiles[task.id] && (
-                                <p className="text-xs text-green-600 dark:text-green-400">
-                                  Selected file: {selectedFiles[task.id]?.name}
-                                </p>
-                              )}
                             </div>
 
                             {errors[task.id] && (

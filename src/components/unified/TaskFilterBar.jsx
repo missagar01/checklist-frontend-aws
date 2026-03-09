@@ -16,8 +16,6 @@ export default function TaskFilterBar({
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [newTaskDescription, setNewTaskDescription] = useState("");
-    const [newTaskImage, setNewTaskImage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
 
     const {
         searchTerm = "",
@@ -300,51 +298,6 @@ export default function TaskFilterBar({
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px] resize-y"
                                     />
                                 </div>
-
-                                {/* Image Upload */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Attachment (Image)
-                                    </label>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors relative">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    setNewTaskImage(file);
-                                                    setImagePreview(URL.createObjectURL(file));
-                                                }
-                                            }}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        />
-                                        {imagePreview ? (
-                                            <div className="relative">
-                                                <img
-                                                    src={imagePreview}
-                                                    alt="Preview"
-                                                    className="max-h-40 mx-auto rounded-md object-contain"
-                                                />
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setNewTaskImage(null);
-                                                        setImagePreview(null);
-                                                    }}
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center text-gray-500">
-                                                <Upload className="h-8 w-8 mb-2 text-gray-400" />
-                                                <span className="text-sm">Click to upload image</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
 
                             <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
@@ -368,35 +321,13 @@ export default function TaskFilterBar({
                                             const department = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
                                             const userName = localStorage.getItem("user-name") || "";
 
-                                            // Helper to convert file to base64
-                                            const fileToBase64 = (file) => {
-                                                return new Promise((resolve, reject) => {
-                                                    const reader = new FileReader();
-                                                    reader.readAsDataURL(file);
-                                                    reader.onload = () => resolve(reader.result);
-                                                    reader.onerror = (error) => reject(error);
-                                                });
-                                            };
-
-                                            let imageBase64 = null;
-                                            if (newTaskImage) {
-                                                try {
-                                                    imageBase64 = await fileToBase64(newTaskImage);
-                                                } catch (error) {
-                                                    console.error("Error converting image:", error);
-                                                    alert("Failed to process image");
-                                                    setIsSubmitting(false);
-                                                    return;
-                                                }
-                                            }
-
                                             const payload = {
                                                 department,
                                                 given_by: userName,
                                                 name: userName,
                                                 task_description: newTaskDescription,
                                                 remark: "",
-                                                image: imageBase64,
+                                                image: null,
                                                 admin_done: null,
                                                 delay: null,
                                                 user_status_checklist: null
@@ -410,8 +341,6 @@ export default function TaskFilterBar({
                                                 // Success
                                                 setIsAddModalOpen(false);
                                                 setNewTaskDescription("");
-                                                setNewTaskImage(null);
-                                                setImagePreview(null);
                                                 if (onTaskAdded) {
                                                     onTaskAdded();
                                                 }

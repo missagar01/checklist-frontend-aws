@@ -219,7 +219,6 @@ export default function AssignTask() {
     description: "",
     frequency: "daily",
     enableReminders: true,
-    requireAttachment: false,
   });
 
 
@@ -434,7 +433,7 @@ export default function AssignTask() {
             status: "pending",
             frequency: formData.frequency,
             enableReminders: formData.enableReminders,
-            requireAttachment: formData.requireAttachment,
+            requireAttachment: false,
             division: formData.division, // NEW
           });
 
@@ -474,7 +473,6 @@ export default function AssignTask() {
         description: "",
         frequency: "daily",
         enableReminders: true,
-        requireAttachment: false,
       });
       setSelectedDate(null);
       setTime("09:00");
@@ -772,39 +770,11 @@ export default function AssignTask() {
                       }
                       className="sr-only peer"
                     />
-                    <div className="w-16 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                   </label>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="require-attachment"
-                    className="text-purple-700 font-medium"
-                  >
-                    Require Attachment
-                  </label>
-                  <p className="text-sm text-purple-600">
-                    User must upload a file when completing task
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <FileCheck className="h-4 w-4 text-purple-500" />
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      id="require-attachment"
-                      checked={formData.requireAttachment}
-                      onChange={(e) =>
-                        handleSwitchChange("requireAttachment", e)
-                      }
-                      className="sr-only peer"
-                    />
-                    <div className="w-16 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                  </label>
-                </div>
-              </div>
             </div>
 
             {/* Preview and Submit Buttons */}
@@ -867,12 +837,6 @@ export default function AssignTask() {
                                   <span className="inline-flex items-center text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
                                     <BellRing className="h-3 w-3 mr-1" />{" "}
                                     Reminders
-                                  </span>
-                                )}
-                                {task.requireAttachment && (
-                                  <span className="inline-flex items-center text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                                    <FileCheck className="h-3 w-3 mr-1" />{" "}
-                                    Attachment Required
                                   </span>
                                 )}
                               </div>

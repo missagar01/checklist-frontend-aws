@@ -112,10 +112,6 @@ export default function UnifiedTaskTable({
 
     // Inline editing state - like maintenance page
     const [rowData, setRowData] = useState({});  // { taskId: { status, soundStatus, temperature, remarks } }
-    const [uploadedImages, setUploadedImages] = useState({});  // { taskId: { file, previewUrl } }
-
-    // Image Preview Modal State (for viewing uploaded images in table)
-    const [previewImage, setPreviewImage] = useState(null);
 
     const tableContainerRef = useRef(null);
 
@@ -315,14 +311,6 @@ export default function UnifiedTaskTable({
                     delete newData[id];
                     return newData;
                 });
-                setUploadedImages(prevImages => {
-                    const newImages = { ...prevImages };
-                    if (newImages[id]?.previewUrl) {
-                        URL.revokeObjectURL(newImages[id].previewUrl);
-                    }
-                    delete newImages[id];
-                    return newImages;
-                });
             }
             return newSelected;
         });
@@ -385,12 +373,9 @@ export default function UnifiedTaskTable({
                     delete newData[id];
                     return newData;
                 });
-                if (uploadedImages[id]?.previewUrl) {
-                    URL.revokeObjectURL(uploadedImages[id].previewUrl);
-                }
             });
         }
-    }, [displayTasks, uploadedImages, userRole]);
+    }, [displayTasks, userRole]);
 
     // Handle inline row data changes
     const handleRowDataChange = useCallback((taskId, field, value) => {
@@ -411,7 +396,6 @@ export default function UnifiedTaskTable({
                     const currentRowData = prev[taskId] || {};
                     onHODConfirm(taskId, {
                         remark: currentRowData.remarks || "",
-                        imageFile: uploadedImages[taskId]?.file || null,
                         doerName2: currentRowData.doerName2 || ""
                     }).catch(error => {
                         console.error('HOD confirm failed:', error);
@@ -429,16 +413,8 @@ export default function UnifiedTaskTable({
 
             return updated;
         });
-    }, [filteredTasks, uploadedImages, onHODConfirm]);
+    }, [filteredTasks, onHODConfirm]);
 
-    // Handle image upload
-    const handleImageUpload = useCallback((taskId, file) => {
-        const previewUrl = URL.createObjectURL(file);
-        setUploadedImages(prev => ({
-            ...prev,
-            [taskId]: { file, previewUrl }
-        }));
-    }, []);
 
     // View task in drawer
     const handleViewTask = useCallback((task) => {
@@ -486,15 +462,6 @@ export default function UnifiedTaskTable({
     }, [selectedItems, isRowValid]);
 
 
-    // Convert file to base64
-    const fileToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
-    };
 
     // Main submit function - matches maintenance-data-page.jsx logic
     const handleBulkSubmit = useCallback(async () => {
@@ -603,35 +570,21 @@ export default function UnifiedTaskTable({
 
         try {
             // Prepare submission data for each task
-            const submissionData = await Promise.all(
-                selectedItemsArray.map(async (id) => {
-                    const task = filteredTasks.find(t => t.id === id);
-                    const taskRowData = rowData[id] || {};
-                    const imageData = uploadedImages[id];
+            const submissionData = selectedItemsArray.map((id) => {
+                const task = filteredTasks.find(t => t.id === id);
+                const taskRowData = rowData[id] || {};
 
-                    let imageBase64 = null;
-                    if (imageData?.file) {
-                        try {
-                            imageBase64 = await fileToBase64(imageData.file);
-                        } catch {
-                            // Error converting image
-                        }
-                    }
-
-                    return {
-                        taskId: id,
-                        sourceSystem: task?.sourceSystem,
-                        status: taskRowData.status,
-                        soundStatus: taskRowData.soundStatus || "",
-                        temperature: taskRowData.temperature || "",
-                        remarks: taskRowData.remarks || "",
-                        doerName2: taskRowData.doerName2 || "",  // Add doerName2 for housekeeping
-                        image: imageBase64,
-                        imageFile: imageData?.file || null,  // Add file object for confirmHousekeepingTask API
-                        originalData: task?.originalData,
-                    };
-                })
-            );
+                return {
+                    taskId: id,
+                    sourceSystem: task?.sourceSystem,
+                    status: taskRowData.status,
+                    soundStatus: taskRowData.soundStatus || "",
+                    temperature: taskRowData.temperature || "",
+                    remarks: taskRowData.remarks || "",
+                    doerName2: taskRowData.doerName2 || "",  // Add doerName2 for housekeeping
+                    originalData: task?.originalData,
+                };
+            });
 
             // Call the bulk submit handler
             if (onBulkSubmit) {
@@ -643,10 +596,6 @@ export default function UnifiedTaskTable({
             // Reset selections
             setSelectedItems(new Set());
             setRowData({});
-            Object.values(uploadedImages).forEach(img => {
-                if (img?.previewUrl) URL.revokeObjectURL(img.previewUrl);
-            });
-            setUploadedImages({});
 
         } catch (error) {
             setErrorMessage(`❌ Failed to update tasks: ${error.message || error}`);
@@ -657,7 +606,7 @@ export default function UnifiedTaskTable({
                 setErrorMessage("");
             }, 3000);
         }
-    }, [selectedItems, rowData, uploadedImages, filteredTasks, onBulkSubmit]);
+    }, [selectedItems, rowData, filteredTasks, onBulkSubmit]);
 
     return (
         <div className="space-y-4">
@@ -779,14 +728,11 @@ export default function UnifiedTaskTable({
                                                         onView={handleViewTask}
                                                         rowData={rowData[task.id] || {}}
                                                         onRowDataChange={handleRowDataChange}
-                                                        uploadedImage={uploadedImages[task.id]}
-                                                        onImageUpload={handleImageUpload}
                                                         isHistoryMode={filters.status === "Completed"}
                                                         isHousekeepingOnly={isHousekeepingOnly}
                                                         isMaintenanceOnly={isMaintenanceOnly}
                                                         seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
                                                         userRole={userRole}
-                                                        onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
                                                     />
                                                 );
                                             })
@@ -814,14 +760,11 @@ export default function UnifiedTaskTable({
                                                 onView={handleViewTask}
                                                 rowData={rowData[task.id] || {}}
                                                 onRowDataChange={handleRowDataChange}
-                                                uploadedImage={uploadedImages[task.id]}
-                                                onImageUpload={handleImageUpload}
                                                 isHistoryMode={filters.status === "Completed"}
                                                 isHousekeepingOnly={isHousekeepingOnly}
                                                 isMaintenanceOnly={isMaintenanceOnly}
                                                 seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
                                                 userRole={userRole}
-                                                onImageClick={(imageUrl) => setPreviewImage(imageUrl)}
                                             />
                                         );
                                     })
@@ -984,29 +927,6 @@ export default function UnifiedTaskTable({
                 onUpdate={onUpdateTask}
                 userRole={userRole}
             />
-
-            {/* Image Preview Modal */}
-            {previewImage && (
-                <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-                    onClick={() => setPreviewImage(null)}
-                >
-                    <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
-                        <img
-                            src={previewImage}
-                            alt="Preview"
-                            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                        <button
-                            className="absolute top-0 right-0 sm:-top-12 sm:-right-12 p-2 text-white hover:text-gray-300 transition-colors"
-                            onClick={() => setPreviewImage(null)}
-                        >
-                            <X className="w-8 h-8" />
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

@@ -32,8 +32,8 @@ function MisReportPage() {
     const ScoreBadge = ({ score }) => {
         const s = Number(score || 0);
         const bg = s >= -20 ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                 : s >= -50 ? 'bg-amber-100 text-amber-800 border-amber-200'
-                 : 'bg-red-100 text-red-800 border-red-200';
+            : s >= -50 ? 'bg-amber-100 text-amber-800 border-amber-200'
+                : 'bg-red-100 text-red-800 border-red-200';
         return (
             <span className={`px-3 py-1 rounded-full text-sm font-black border shadow-sm ${bg}`}>
                 {s.toFixed(1)}%
@@ -45,10 +45,10 @@ function MisReportPage() {
         if (!selectedStaff) return null;
         const s = selectedStaff;
         const total = s.totalTasks || 0;
-        const done  = s.completedTasks || 0;
+        const done = s.completedTasks || 0;
         const pending = s.pendingTasks || (total - done);
         const chartData = [
-            { name: 'Done',    value: done    },
+            { name: 'Done', value: done },
             { name: 'Pending', value: pending },
         ].filter(d => d.value > 0);
         const donePercent = total > 0 ? ((done / total) * 100).toFixed(1) : '0.0';
@@ -118,9 +118,9 @@ function MisReportPage() {
                                 {/* Right stats */}
                                 <div className="flex-1 space-y-2">
                                     {[
-                                        { label: 'Total',   value: total,   color: 'text-blue-600',    dot: 'bg-blue-500' },
-                                        { label: 'Done',    value: done,    color: 'text-emerald-600', dot: 'bg-emerald-500' },
-                                        { label: 'Pending', value: pending, color: 'text-amber-600',   dot: 'bg-amber-400' },
+                                        { label: 'Total', value: total, color: 'text-blue-600', dot: 'bg-blue-500' },
+                                        { label: 'Done', value: done, color: 'text-emerald-600', dot: 'bg-emerald-500' },
+                                        { label: 'Pending', value: pending, color: 'text-amber-600', dot: 'bg-amber-400' },
                                     ].map(({ label, value, color, dot }) => (
                                         <div key={label} className="flex items-center justify-between rounded-full bg-gray-50 border border-gray-100 shadow-sm py-1.5 px-3">
                                             <div className="flex items-center gap-2">
@@ -153,10 +153,10 @@ function MisReportPage() {
     const userDivision = localStorage.getItem("division") || ""
 
     // ── Permission Check ──────────────────────────────────────────────
-    const isAuthorized = 
-        userRole === "admin" || 
-        username === "AAKASH AGRAWAL" || 
-        userDesignation.toLowerCase() === "manager" || 
+    const isAuthorized =
+        userRole === "admin" ||
+        username === "AAKASH AGRAWAL" ||
+        userDesignation.toLowerCase() === "manager" ||
         userDesignation.toLowerCase() === "division hod";
 
     // Initialize filters based on role
@@ -450,9 +450,9 @@ function MisReportPage() {
                             <div className="flex-1 text-center md:text-left">
                                 <h1 className="text-xl md:text-2xl font-bold text-purple-700">Staff MIS Report</h1>
                                 <p className="text-xs md:text-sm text-gray-600 mt-1">
-                                    {userDesignation.toLowerCase() === "manager" ? `Performance for Department: ${userDepartment}` : 
-                                     userDesignation.toLowerCase() === "division hod" ? `Performance for Division: ${userDivision}` : 
-                                     "Staff Performance Scoring (Checklist, Maintenance & Housekeeping)"}
+                                    {userDesignation.toLowerCase() === "manager" ? `Performance for Department: ${userDepartment}` :
+                                        userDesignation.toLowerCase() === "division hod" ? `Performance for Division: ${userDivision}` :
+                                            "Staff Performance Scoring (Checklist, Maintenance & Housekeeping)"}
                                 </p>
                             </div>
 
@@ -686,7 +686,7 @@ function MisReportPage() {
                                                             <td className="px-3 py-2 text-right">
                                                                 {renderScore(staff.completion_score || 0)}
                                                             </td>
-                                                            </tr>
+                                                        </tr>
                                                     ))}
                                                 </tbody>
                                             </table>

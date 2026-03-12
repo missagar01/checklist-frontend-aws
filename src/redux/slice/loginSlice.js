@@ -21,7 +21,11 @@ const syncLegacyKeys = (data) => {
     'division': data.division || "",
   };
   Object.entries(keys).forEach(([key, value]) => {
-    if (value) localStorage.setItem(key, value);
+    if (value) {
+      localStorage.setItem(key, value);
+    } else {
+      localStorage.removeItem(key);
+    }
   });
 };
 
@@ -81,10 +85,14 @@ const loginSlice = createSlice({
       state.token = null;
       state.isLoggedIn = false;
       state.error = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('user-pass');
-      localStorage.removeItem('user_pass');
+      // List all sensitive keys to clear on logout
+      const keysToClear = [
+        'token', 'userData', 'user-pass', 'user_pass', 'user-name', 'user_id', 
+        'role', 'email_id', 'user_access', 'userAccess', 'user_access1', 
+        'userAccess1', 'page_access', 'system_access', 'designation', 'division',
+        'verify_access', 'verify_access_dept'
+      ];
+      keysToClear.forEach(key => localStorage.removeItem(key));
     }
   },
   extraReducers: (builder) => {

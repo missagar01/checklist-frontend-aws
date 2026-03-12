@@ -269,16 +269,34 @@ const Setting = () => {
         user_access1: "", // Text input for multiple comma-separated values
         systemAccess: [],
         pageAccess: [],
+        division: "", // Added division field
     });
+
+    const [divisionOptions, setDivisionOptions] = useState([]); // State for available divisions
 
     const [deptForm, setDeptForm] = useState({
         name: "",
         givenBy: "",
+        division: "",
     });
+
+    const fetchDivisions = async () => {
+        try {
+            const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+            const res = await fetch(`${BACKEND_URL}/assign-task/divisions`);
+            const result = await res.json();
+            if (Array.isArray(result)) {
+                setDivisionOptions(result);
+            }
+        } catch (err) {
+            console.error("Division fetch error:", err);
+        }
+    };
 
     useEffect(() => {
         dispatch(userDetails());
         dispatch(departmentDetails()); // Fetch departments on mount
+        fetchDivisions(); // Fetch divisions on mount
     }, [dispatch]);
 
     // In your handleAddUser function:
@@ -321,6 +339,7 @@ const Setting = () => {
             page_access: Array.isArray(userForm.pageAccess)
                 ? userForm.pageAccess.join(",")
                 : "",
+            division: userForm.division || "", // Added division
         };
 
         // Validate required fields
@@ -451,6 +470,7 @@ const Setting = () => {
             page_access: Array.isArray(userForm.pageAccess)
                 ? userForm.pageAccess.join(",")
                 : "",
+            division: userForm.division || "", // Added division
         };
 
         // Only include password if it's not empty
@@ -540,6 +560,7 @@ const Setting = () => {
         const newDept = {
             name: deptForm.name.trim(),
             givenBy: deptForm.givenBy?.trim() || null,
+            division: deptForm.division || null,
         };
 
         try {
@@ -608,6 +629,7 @@ const Setting = () => {
         const updatedDept = {
             department: deptForm.name.trim(),
             given_by: deptForm.givenBy?.trim() || null,
+            division: deptForm.division || null,
         };
 
         try {
@@ -670,6 +692,14 @@ const Setting = () => {
                 .map((option) => option.value);
 
             setUserForm((prev) => ({ ...prev, [name]: selectedValues }));
+        } else if (name === "division") {
+            // When division changes, reset department and departments access
+            setUserForm((prev) => ({
+                ...prev,
+                [name]: value,
+                department: "",
+                departments: [],
+            }));
         } else {
             setUserForm((prev) => ({ ...prev, [name]: value }));
         }
@@ -732,12 +762,21 @@ const Setting = () => {
     // Get unique departments from department data
     const availableDepartments = React.useMemo(() => {
         if (department && department.length > 0) {
-            return [...new Set(department.map((dept) => dept.department))]
+            let filteredDepts = department;
+
+            // If user has selected a division, filter departments by that division
+            if (userForm.division) {
+                filteredDepts = department.filter(
+                    (dept) => dept.division === userForm.division
+                );
+            }
+
+            return [...new Set(filteredDepts.map((dept) => dept.department))]
                 .filter((deptName) => deptName && deptName.trim() !== "")
                 .sort();
         }
         return [];
-    }, [department]);
+    }, [department, userForm.division]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -819,6 +858,7 @@ const Setting = () => {
                     .map((item) => item.trim())
                     .filter(Boolean)
                 : [],
+            division: user.division || "", // Populating division field
         });
         setCurrentUserId(userId);
         setIsEditing(true);
@@ -833,6 +873,7 @@ const Setting = () => {
             setDeptForm({
                 name: dept.department || "",
                 givenBy: dept.given_by || "",
+                division: dept.division || "",
             });
             setCurrentDeptId(deptId);
             setShowDeptModal(true);
@@ -854,6 +895,7 @@ const Setting = () => {
             user_access1: "", // Reset user_access1 to empty string
             systemAccess: [],
             pageAccess: [],
+            division: "", // Resetting division field
         });
         setIsEditing(false);
         setCurrentUserId(null);
@@ -874,6 +916,7 @@ const Setting = () => {
         setDeptForm({
             name: "",
             givenBy: "",
+            division: "",
         });
         setCurrentDeptId(null);
         setIsDeptUpdating(false);
@@ -1956,45 +1999,26 @@ const Setting = () => {
                                                 />
                                             </div>
 
-                                            <div className="sm:col-span-2 lg:col-span-3">
-                                                <label
-                                                    htmlFor="user_access1"
-                                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                                >
-                                                    User Access 1 (Comma-separated values)
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    name="user_access1"
-                                                    id="user_access1"
-                                                    value={userForm.user_access1}
-                                                    onChange={handleUserInputChange}
-                                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="Enter values separated by commas (e.g., value1, value2, value3)"
-                                                />
-                                                <p className="mt-1 text-xs text-gray-500">
-                                                    Enter multiple values separated by commas. Database
-                                                    supports long text.
-                                                </p>
-                                            </div>
-
                                             <div className="sm:col-span-2 lg:col-span-1">
                                                 <label
-                                                    htmlFor="role"
+                                                    htmlFor="division"
                                                     className="block text-sm font-medium text-gray-700 mb-1"
                                                 >
-                                                    Role
+                                                    Division
                                                 </label>
                                                 <select
-                                                    id="role"
-                                                    name="role"
-                                                    value={userForm.role}
+                                                    id="division"
+                                                    name="division"
+                                                    value={userForm.division}
                                                     onChange={handleUserInputChange}
                                                     className="w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 >
-                                                    <option value="user">User</option>
-                                                    <option value="admin">Admin</option>
-                                                    <option value="manager">Manager</option>
+                                                    <option value="">Select Division</option>
+                                                    {divisionOptions.map((div) => (
+                                                        <option key={div} value={div}>
+                                                            {div}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
 
@@ -2021,6 +2045,49 @@ const Setting = () => {
                                                     ))}
                                                 </select>
                                             </div>
+                                            <div className="sm:col-span-2 lg:col-span-1">
+                                                <label
+                                                    htmlFor="role"
+                                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                                >
+                                                    Role
+                                                </label>
+                                                <select
+                                                    id="role"
+                                                    name="role"
+                                                    value={userForm.role}
+                                                    onChange={handleUserInputChange}
+                                                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                >
+                                                    <option value="user">User</option>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="manager">Manager</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="sm:col-span-2 lg:col-span-3">
+                                                <label
+                                                    htmlFor="user_access1"
+                                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                                >
+                                                    User Access 1 (Comma-separated values)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="user_access1"
+                                                    id="user_access1"
+                                                    value={userForm.user_access1}
+                                                    onChange={handleUserInputChange}
+                                                    className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="Enter values separated by commas (e.g., value1, value2, value3)"
+                                                />
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    Enter multiple values separated by commas. Database
+                                                    supports long text.
+                                                </p>
+                                            </div>
+
+
 
                                             <div className="sm:col-span-2 lg:col-span-3">
                                                 <label
@@ -2470,6 +2537,28 @@ const Setting = () => {
                                                     className="w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     placeholder="Enter Given By"
                                                 />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    htmlFor="division"
+                                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                                >
+                                                    Division
+                                                </label>
+                                                <select
+                                                    id="division"
+                                                    name="division"
+                                                    value={deptForm.division}
+                                                    onChange={handleDeptInputChange}
+                                                    className="w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                >
+                                                    <option value="">Select Division</option>
+                                                    {divisionOptions.map((div) => (
+                                                        <option key={div} value={div}>
+                                                            {div}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
 

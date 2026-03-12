@@ -56,6 +56,8 @@ const LoginPage = () => {
       Object.entries(dataToStore).forEach(([key, value]) => {
         if (value) {
           localStorage.setItem(key, value)
+        } else {
+          localStorage.removeItem(key)
         }
       })
 

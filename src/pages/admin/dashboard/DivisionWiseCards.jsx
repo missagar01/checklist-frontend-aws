@@ -10,11 +10,11 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
     const [modalData, setModalData] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const isDivisionHod = designation?.toLowerCase() === "division hod" && userRole?.toLowerCase() !== "admin";
+    const isAuthorized = username === 'AAKASH AGRAWAL' || username === 'Sheelesh Marele' || designation?.toLowerCase() === "division hod";
 
     const fetchCounts = async () => {
         // Only fetch if AAKASH AGRAWAL or division hod
-        if (!(username === 'AAKASH AGRAWAL' || isDivisionHod || username === 'Sheelesh Marele')) return;
+        if (!isAuthorized) return;
 
         setLoading(true);
         try {
@@ -299,7 +299,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
         );
     };
 
-    if (!(username === 'AAKASH AGRAWAL' || isDivisionHod || username === 'Sheelesh Marele')) return null;
+    if (!isAuthorized) return null;
 
     if (loading) {
         return (
@@ -318,7 +318,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
 
     let divisions = Object.keys(divisionCounts).sort();
 
-    if (isDivisionHod && division && username !== 'AAKASH AGRAWAL' && username !== 'Sheelesh Marele') {
+    if (designation?.toLowerCase() === "division hod" && division && username !== 'AAKASH AGRAWAL' && username !== 'Sheelesh Marele') {
         divisions = divisions.filter(d =>
             d.toLowerCase().includes(division.toLowerCase()) ||
             division.toLowerCase().includes(d.toLowerCase())

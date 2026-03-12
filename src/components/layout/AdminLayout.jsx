@@ -152,7 +152,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
         icon: CheckSquare,
         active: location.pathname.includes("/dashboard/mis-report"),
         pageKey: "mis-report",
-        showFor: ["admin"],
+        showFor: ["admin", "user"],
       },
       {
         href: "/dashboard/setting",

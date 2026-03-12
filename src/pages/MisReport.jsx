@@ -3,10 +3,14 @@
 import { useState, useEffect, useCallback } from "react"
 import { fetchStaffTasksDataApi, exportAllStaffTasksApi, getStaffTasksCountApi, getUniqueDepartmentsApi } from "../redux/api/dashboardApi"
 import AdminLayout from '../components/layout/AdminLayout';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
+import { XCircle, BarChart3 } from 'lucide-react';
 
 function MisReportPage() {
     const [dashboardStaffFilter, setDashboardStaffFilter] = useState("all")
     const [departmentFilter, setDepartmentFilter] = useState("all")
+    const [divisionFilter, setDivisionFilter] = useState("all")
     const [selectedMonthYear, setSelectedMonthYear] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const [staffMembers, setStaffMembers] = useState([])
@@ -19,10 +23,152 @@ function MisReportPage() {
     const [monthYearOptions, setMonthYearOptions] = useState([])
     const [searchQuery, setSearchQuery] = useState("")
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
+    const [selectedStaff, setSelectedStaff] = useState(null)
     const itemsPerPage = 50
+
+    // ── Staff Detail Modal ──────────────────────────────────────────
+    const CHART_COLORS = { Done: '#10b981', Pending: '#94a3b8' };
+
+    const ScoreBadge = ({ score }) => {
+        const s = Number(score || 0);
+        const bg = s >= -20 ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                 : s >= -50 ? 'bg-amber-100 text-amber-800 border-amber-200'
+                 : 'bg-red-100 text-red-800 border-red-200';
+        return (
+            <span className={`px-3 py-1 rounded-full text-sm font-black border shadow-sm ${bg}`}>
+                {s.toFixed(1)}%
+            </span>
+        );
+    };
+
+    const StaffModal = () => {
+        if (!selectedStaff) return null;
+        const s = selectedStaff;
+        const total = s.totalTasks || 0;
+        const done  = s.completedTasks || 0;
+        const pending = s.pendingTasks || (total - done);
+        const chartData = [
+            { name: 'Done',    value: done    },
+            { name: 'Pending', value: pending },
+        ].filter(d => d.value > 0);
+        const donePercent = total > 0 ? ((done / total) * 100).toFixed(1) : '0.0';
+
+        return (
+            <AnimatePresence>
+                <div
+                    className="fixed inset-0 z-[999] flex items-center justify-center p-3 bg-black/50 backdrop-blur-[4px]"
+                    onClick={() => setSelectedStaff(null)}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="px-5 py-4 bg-gradient-to-r from-[#c41e3a]/10 to-transparent border-b border-gray-100 flex items-start justify-between">
+                            <div>
+                                <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-0.5">{s.division || 'N/A'}</p>
+                                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight mb-1">{s.department || 'N/A'}</p>
+                                <h3 className="text-base font-[1000] text-gray-900 uppercase tracking-tight leading-tight">{s.name}</h3>
+                                <p className="text-[10px] text-gray-400 font-medium mt-0.5">{s.employee_id || ''}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedStaff(null)}
+                                className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors mt-1"
+                            >
+                                <XCircle className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5">
+                            {/* Donut Chart + Score */}
+                            <div className="flex items-center justify-between gap-4 mb-5">
+                                <div className="relative h-36 w-36 flex-shrink-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={chartData.length > 0 ? chartData : [{ name: 'None', value: 1 }]}
+                                                cx="50%" cy="50%"
+                                                innerRadius={40} outerRadius={62}
+                                                paddingAngle={3}
+                                                dataKey="value"
+                                                stroke="none"
+                                            >
+                                                {(chartData.length > 0 ? chartData : [{ name: 'None' }]).map((entry, idx) => (
+                                                    <Cell
+                                                        key={idx}
+                                                        fill={CHART_COLORS[entry.name] || '#e5e7eb'}
+                                                        className="outline-none"
+                                                    />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(v, n) => [`${v} tasks`, n]} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Done</span>
+                                        <span className="text-xl font-black text-gray-800">{donePercent}%</span>
+                                    </div>
+                                </div>
+
+                                {/* Right stats */}
+                                <div className="flex-1 space-y-2">
+                                    {[
+                                        { label: 'Total',   value: total,   color: 'text-blue-600',    dot: 'bg-blue-500' },
+                                        { label: 'Done',    value: done,    color: 'text-emerald-600', dot: 'bg-emerald-500' },
+                                        { label: 'Pending', value: pending, color: 'text-amber-600',   dot: 'bg-amber-400' },
+                                    ].map(({ label, value, color, dot }) => (
+                                        <div key={label} className="flex items-center justify-between rounded-full bg-gray-50 border border-gray-100 shadow-sm py-1.5 px-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`h-2 w-2 rounded-full flex-shrink-0 ${dot}`} />
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">{label}</span>
+                                            </div>
+                                            <span className={`text-sm font-black tabular-nums ${color}`}>{value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Score row */}
+                            <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
+                                <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Completion Score</span>
+                                <ScoreBadge score={s.completion_score} />
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </AnimatePresence>
+        );
+    };
+    // ── End Staff Detail Modal ──────────────────────────────────────
 
     const userRole = localStorage.getItem("role")
     const username = localStorage.getItem("user-name")
+    const userDesignation = localStorage.getItem("designation") || ""
+    const userDepartment = localStorage.getItem("department") || ""
+    const userDivision = localStorage.getItem("division") || ""
+
+    // ── Permission Check ──────────────────────────────────────────────
+    const isAuthorized = 
+        userRole === "admin" || 
+        username === "AAKASH AGRAWAL" || 
+        userDesignation.toLowerCase() === "manager" || 
+        userDesignation.toLowerCase() === "division hod";
+
+    // Initialize filters based on role
+    useEffect(() => {
+        if (!isAuthorized) return;
+
+        if (userDesignation.toLowerCase() === "manager") {
+            setDepartmentFilter(userDepartment);
+        } else if (userDesignation.toLowerCase() === "division hod") {
+            setDivisionFilter(userDivision);
+        }
+    }, [userDesignation, userDepartment, userDivision, isAuthorized]);
 
     // Generate month-year options (last 12 months + current month)
     const generateMonthYearOptions = useCallback(() => {
@@ -80,7 +226,7 @@ function MisReportPage() {
         setStaffMembers([])
         setFilteredStaffMembers([])
         setTotalStaffCount(0)
-    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, debouncedSearchQuery])
+    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery])
 
     // Debounce search query
     useEffect(() => {
@@ -105,6 +251,7 @@ function MisReportPage() {
                 itemsPerPage,
                 selectedMonthYear,
                 departmentFilter,
+                divisionFilter,
                 debouncedSearchQuery
             )
 
@@ -113,7 +260,7 @@ function MisReportPage() {
                 setTotalStaffCount(data[0].total_count)
             } else {
                 // Fallback: fetch count separately
-                const staffCount = await getStaffTasksCountApi("checklist", dashboardStaffFilter, departmentFilter, debouncedSearchQuery)
+                const staffCount = await getStaffTasksCountApi("checklist", dashboardStaffFilter, departmentFilter, divisionFilter, debouncedSearchQuery)
                 setTotalStaffCount(staffCount)
             }
 
@@ -136,7 +283,7 @@ function MisReportPage() {
     // Initial load when component mounts or dependencies change
     useEffect(() => {
         loadStaffData(currentPage)
-    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, debouncedSearchQuery, currentPage])
+    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, currentPage])
 
     // Calculate total pages
     const totalPages = Math.ceil(totalStaffCount / itemsPerPage)
@@ -175,7 +322,7 @@ function MisReportPage() {
     useEffect(() => {
         const fetchAvailableStaff = async () => {
             try {
-                const data = await fetchStaffTasksDataApi("checklist", "all", 1, 100, "", departmentFilter)
+                const data = await fetchStaffTasksDataApi("checklist", "all", 1, 100, "", departmentFilter, divisionFilter)
                 const uniqueStaff = [...new Set(data.map(staff => staff.name).filter(Boolean))]
 
                 if (userRole !== "admin" && username) {
@@ -203,7 +350,8 @@ function MisReportPage() {
                 "checklist",
                 dashboardStaffFilter,
                 selectedMonthYear,
-                departmentFilter
+                departmentFilter,
+                divisionFilter
             )
 
             const allData = response.data || []
@@ -218,13 +366,12 @@ function MisReportPage() {
                 "Seq No.",
                 "Name",
                 "Employee ID",
+                "Division",
                 "Department",
                 "Total Tasks",
                 "Completed",
-                "Done on Time",
-                "Completion Score",
-                "On-Time Score",
-                "Total Score"
+                "Pending",
+                "Completion Score"
             ]
 
             const csvRows = [
@@ -233,13 +380,12 @@ function MisReportPage() {
                     index + 1,
                     `"${staff.name || ''}"`,
                     `"${staff.employee_id || 'N/A'}"`,
+                    `"${staff.division || 'N/A'}"`,
                     `"${staff.department || 'N/A'}"`,
                     staff.totalTasks || 0,
                     staff.completedTasks || 0,
-                    staff.doneOnTime || 0,
-                    Number(staff.completion_score || 0).toFixed(2),
-                    Number(staff.ontime_score || 0).toFixed(2),
-                    Number(staff.total_score || staff.totalScore || 0).toFixed(2)
+                    staff.pendingTasks || 0,
+                    Number(staff.completion_score || 0).toFixed(2)
                 ].join(','))
             ]
 
@@ -303,7 +449,11 @@ function MisReportPage() {
                             {/* Title Section */}
                             <div className="flex-1 text-center md:text-left">
                                 <h1 className="text-xl md:text-2xl font-bold text-purple-700">Staff MIS Report</h1>
-                                <p className="text-xs md:text-sm text-gray-600 mt-1">Staff Performance Scoring (Checklist, Maintenance & Housekeeping)</p>
+                                <p className="text-xs md:text-sm text-gray-600 mt-1">
+                                    {userDesignation.toLowerCase() === "manager" ? `Performance for Department: ${userDepartment}` : 
+                                     userDesignation.toLowerCase() === "division hod" ? `Performance for Division: ${userDivision}` : 
+                                     "Staff Performance Scoring (Checklist, Maintenance & Housekeeping)"}
+                                </p>
                             </div>
 
                             {/* Download Button */}
@@ -343,20 +493,26 @@ function MisReportPage() {
                                 />
                             </div>
 
-                            {/* Department Filter */}
+                            {/* Department Filter - Only show for Admin or HOD */}
                             <div className="w-full">
-                                <select
-                                    value={departmentFilter}
-                                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                                    className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
-                                >
-                                    <option value="all">All Departments</option>
-                                    {availableDepartments.map((dept) => (
-                                        <option key={dept} value={dept}>
-                                            {dept}
-                                        </option>
-                                    ))}
-                                </select>
+                                {userDesignation.toLowerCase() === "manager" ? (
+                                    <div className="w-full rounded-md border border-purple-200 p-2 bg-gray-50 text-gray-500 text-sm italic">
+                                        Dept: {userDepartment}
+                                    </div>
+                                ) : (
+                                    <select
+                                        value={departmentFilter}
+                                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                                        className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                                    >
+                                        <option value="all">All Departments</option>
+                                        {availableDepartments.map((dept) => (
+                                            <option key={dept} value={dept}>
+                                                {dept}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
 
                             {/* Month Filter */}
@@ -390,6 +546,15 @@ function MisReportPage() {
                                     ))}
                                 </select>
                             </div>
+
+                            {/* Division Display (HOD only) */}
+                            {userDesignation.toLowerCase() === "division hod" && (
+                                <div className="w-full lg:col-start-1 lg:row-start-2">
+                                    <div className="w-full rounded-md border border-blue-200 p-2 bg-blue-50 text-blue-700 text-sm italic font-medium">
+                                        Division: {userDivision}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -446,7 +611,17 @@ function MisReportPage() {
 
                             {staffMembers.length === 0 && !isLoading ? (
                                 <div className="text-center p-8 text-gray-500">
-                                    {searchQuery ? (
+                                    {!isAuthorized ? (
+                                        <div className="animate-in fade-in slide-in-from-top-4 duration-700">
+                                            <div className="flex justify-center mb-4">
+                                                <XCircle className="h-16 w-16 text-red-500 opacity-50" />
+                                            </div>
+                                            <h2 className="text-xl font-bold text-gray-800">Access Restricted</h2>
+                                            <p className="max-w-xs mx-auto mt-2 text-sm">
+                                                The MIS Report page is only available for Managers, Division HODs, and Administrators.
+                                            </p>
+                                        </div>
+                                    ) : searchQuery ? (
                                         <div>
                                             <p>No staff members found matching "{searchQuery}"</p>
                                             <p className="text-sm mt-2">Try adjusting your search terms</p>
@@ -454,11 +629,23 @@ function MisReportPage() {
                                     ) : (
                                         <div>
                                             <p>No staff data found.</p>
-                                            {(departmentFilter !== "all" || selectedMonthYear || dashboardStaffFilter !== "all") && (
+                                            {(departmentFilter !== "all" || divisionFilter !== "all" || selectedMonthYear || dashboardStaffFilter !== "all") && (
                                                 <p className="text-sm mt-2">Try adjusting your filters to see more results.</p>
                                             )}
                                         </div>
                                     )}
+                                </div>
+                            ) : !isAuthorized ? (
+                                <div className="text-center p-12 bg-white rounded-2xl">
+                                    <div className="flex justify-center mb-6">
+                                        <div className="p-4 bg-red-50 rounded-full">
+                                            <XCircle className="h-16 w-16 text-red-500" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Access Denied</h2>
+                                    <p className="max-w-md mx-auto mt-4 text-gray-500 font-medium">
+                                        This report contains sensitive performance data and is restricted to Managers, Division HODs and Higher Management.
+                                    </p>
                                 </div>
                             ) : (
                                 <>
@@ -471,52 +658,35 @@ function MisReportPage() {
                                             <table className="min-w-full divide-y divide-gray-100">
                                                 <thead className="bg-[#c41e3a] sticky top-0 z-10">
                                                     <tr>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">#</th>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Name</th>
+                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Division</th>
                                                         <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Dept</th>
+                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Name</th>
                                                         <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Total</th>
                                                         <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Done</th>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">On Time</th>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Completion Score</th>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">On-Time Score</th>
-                                                        <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-tight">Total Score</th>
+                                                        <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-tight">Score</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="bg-white divide-y divide-gray-50">
                                                     {staffMembers.map((staff, index) => (
-                                                        <tr key={`${staff.name}-${index}`} className="hover:bg-red-50/5 transition-colors border-l-2 border-transparent hover:border-[#c41e3a]">
-                                                            <td className="px-3 py-2 text-[13px] font-bold text-gray-600">
-                                                                {(currentPage - 1) * itemsPerPage + index + 1}
-                                                            </td>
-                                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                                <div>
-                                                                    <div className="text-[13px] font-bold text-gray-800">{staff.name}</div>
-                                                                    <div className="text-[11px] text-gray-400 font-medium">{staff.email}</div>
-                                                                </div>
+                                                        <tr key={`${staff.name}-${index}`} onClick={() => setSelectedStaff(staff)} className="hover:bg-red-50/5 transition-colors border-l-2 border-transparent hover:border-[#c41e3a] cursor-pointer active:scale-[0.99]">
+                                                            <td className="px-3 py-2">
+                                                                <div className="text-[11px] font-bold text-purple-600 uppercase tracking-tighter">{staff.division || 'N/A'}</div>
                                                             </td>
                                                             <td className="px-3 py-2">
                                                                 <div className="text-[11px] font-bold text-indigo-600 uppercase tracking-tighter">{staff.department || 'N/A'}</div>
                                                             </td>
+                                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                                <div>
+                                                                    <div className="text-[13px] font-bold text-gray-800">{staff.name}</div>
+                                                                    <div className="text-[11px] text-gray-400 font-medium">{staff.employee_id || 'N/A'}</div>
+                                                                </div>
+                                                            </td>
                                                             <td className="px-3 py-2 text-[13px] font-bold text-blue-600">{staff.totalTasks || 0}</td>
                                                             <td className="px-3 py-2 text-[13px] font-bold text-emerald-600">{staff.completedTasks || 0}</td>
-                                                            <td className="px-3 py-2 text-[13px] font-bold text-gray-600">
-                                                                {staff.doneOnTime || 0}
-                                                                {staff.completedTasks > 0 && (
-                                                                    <span className="text-[10px] text-gray-400 ml-1 font-medium">
-                                                                        ({Math.round((staff.doneOnTime / staff.completedTasks) * 100)}%)
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-3 py-2 text-left">
+                                                            <td className="px-3 py-2 text-right">
                                                                 {renderScore(staff.completion_score || 0)}
                                                             </td>
-                                                            <td className="px-3 py-2 text-left">
-                                                                {renderScore(staff.ontime_score || 0)}
-                                                            </td>
-                                                            <td className="px-3 py-2 text-right">
-                                                                {renderScore(staff.total_score || staff.totalScore || 0)}
-                                                            </td>
-                                                        </tr>
+                                                            </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
@@ -525,7 +695,7 @@ function MisReportPage() {
                                         {/* Mobile Card View */}
                                         <div className="sm:hidden space-y-2 bg-gray-50/50 p-2">
                                             {staffMembers.map((staff, index) => (
-                                                <div key={`${staff.name}-${index}`} className="p-2.5 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-[#c41e3a] transition-all active:scale-[0.98]">
+                                                <div key={`${staff.name}-${index}`} onClick={() => setSelectedStaff(staff)} className="p-2.5 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-[#c41e3a] transition-all active:scale-[0.98] cursor-pointer">
                                                     <div className="flex items-start gap-2 mb-2">
                                                         <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-[#c41e3a]/10 text-[#c41e3a] text-[10px] font-black rounded-md border border-[#c41e3a]/20">
                                                             {(currentPage - 1) * itemsPerPage + index + 1}
@@ -533,7 +703,10 @@ function MisReportPage() {
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex justify-between items-start gap-2">
                                                                 <h4 className="text-[14px] font-bold text-gray-800 leading-tight">{staff.name}</h4>
-                                                                {renderScore(staff.total_score || staff.totalScore || 0)}
+                                                                {renderScore(staff.completion_score || 0)}
+                                                            </div>
+                                                            <div className="text-[10px] font-bold text-purple-600 uppercase tracking-tighter mt-0.5">
+                                                                {staff.division || "N/A"}
                                                             </div>
                                                             <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter mt-0.5">
                                                                 {staff.department || "N/A"}
@@ -541,7 +714,7 @@ function MisReportPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-3 gap-2 pl-7 mt-2">
+                                                    <div className="grid grid-cols-2 gap-2 pl-7 mt-2">
                                                         <div className="flex flex-col">
                                                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Total</span>
                                                             <span className="text-[12px] font-black text-blue-600">{staff.totalTasks || 0}</span>
@@ -550,26 +723,11 @@ function MisReportPage() {
                                                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Done</span>
                                                             <span className="text-[12px] font-black text-emerald-600">{staff.completedTasks || 0}</span>
                                                         </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">On Time</span>
-                                                            <div className="flex items-baseline gap-1">
-                                                                <span className="text-[12px] font-black text-gray-700">{staff.doneOnTime || 0}</span>
-                                                                {staff.completedTasks > 0 && (
-                                                                    <span className="text-[9px] text-gray-400 font-bold">
-                                                                        {Math.round((staff.doneOnTime / staff.completedTasks) * 100)}%
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-2 pl-7 mt-2 border-t border-gray-50 pt-2">
                                                         <div className="flex flex-col">
                                                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Completion Score</span>
                                                             <div className="mt-1">{renderScore(staff.completion_score || 0)}</div>
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">On-Time Score</span>
-                                                            <div className="mt-1">{renderScore(staff.ontime_score || 0)}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -633,6 +791,7 @@ function MisReportPage() {
                     </div>
                 </div>
             </div>
+            {selectedStaff && <StaffModal />}
         </AdminLayout>
     );
 }

@@ -161,7 +161,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
         <motion.div
             whileTap={{ scale: 0.96 }}
             onClick={() => openBreakdownModal(division, label, countData, Icon, color, textColor, divisionStats)}
-            className={`flex items-center justify-between rounded-full bg-white border border-gray-100 shadow-sm transition-all hover:shadow cursor-pointer py-1 px-3 mb-1.5 sm:py-1.5 sm:px-4 sm:mb-2`}
+            className={`flex items-center justify-between rounded-full bg-white border border-gray-100 shadow-sm transition-all hover:shadow cursor-pointer py-1 px-2 mb-1.5 sm:py-1.5 sm:px-3 sm:mb-2`}
         >
             <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-hidden">
                 <div className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full flex-shrink-0`} style={{ backgroundColor: STAT_COLORS[label] || '#94a3b8' }} />
@@ -225,38 +225,29 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
                             ) : (
                                 <div className="space-y-2 sm:space-y-3">
                                     {sortedDepts.map(([dept, data], idx) => {
-                                        // Calculate Score Here
+                                        // Calculate Score: (completed / total * 100) - 100
                                         let deptTotalTasks = 0;
                                         let deptCompletedTasks = 0;
-                                        let deptDoneOnTime = 0;
 
                                         if (modalData.divisionStats) {
                                             deptTotalTasks = modalData.divisionStats.total?.departments?.[dept]?.total || 0;
                                             deptCompletedTasks = modalData.divisionStats.completed?.departments?.[dept]?.total || 0;
-                                            deptDoneOnTime = modalData.divisionStats.done_on_time?.departments?.[dept]?.total || 0;
                                         }
 
-                                        let completionScore = 0;
-                                        let ontimeScore = 0;
-                                        let totalScore = 0;
+                                        const totalScore = deptTotalTasks > 0
+                                            ? Math.max(parseFloat(((deptCompletedTasks / deptTotalTasks) * 100 - 100).toFixed(2)), -100)
+                                            : 0;
 
-                                        if (modalData.divisionStats?.total?.departments?.[dept]?.scores) {
-                                            const scores = modalData.divisionStats.total.departments[dept].scores;
-                                            completionScore = scores.completion_score;
-                                            ontimeScore = scores.ontime_score;
-                                            totalScore = scores.total_score;
-                                        }
-
-                                        // Style score
-                                        let scoreBgColor = "bg-red-100";
-                                        let scoreTextColor = "text-red-800";
+                                        // Style score same as division card header
+                                        let scoreBgColor = "bg-red-500";
+                                        let scoreBorderColor = "border-red-600";
 
                                         if (totalScore >= -20) {
-                                            scoreBgColor = "bg-green-100";
-                                            scoreTextColor = "text-green-800";
+                                            scoreBgColor = "bg-emerald-500";
+                                            scoreBorderColor = "border-emerald-600";
                                         } else if (totalScore >= -50) {
-                                            scoreBgColor = "bg-yellow-100";
-                                            scoreTextColor = "text-yellow-800";
+                                            scoreBgColor = "bg-amber-500";
+                                            scoreBorderColor = "border-amber-600";
                                         }
 
                                         return (
@@ -264,10 +255,16 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
                                                 <div className="flex justify-between items-start gap-3">
                                                     <span className="text-[13px] sm:text-sm font-black text-gray-800 uppercase tracking-tight group-hover:text-red-600 transition-colors pt-0.5">{dept}</span>
                                                     <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-[10px] sm:text-[11px] font-black text-gray-400 uppercase leading-none tracking-tight">Score</span>
-                                                            <span className={`px-2 sm:px-3 py-0.5 sm:py-1 inline-flex text-[11px] sm:text-xs leading-none font-[1000] rounded-full border shadow-sm ${scoreBgColor} ${scoreTextColor} border-opacity-50`}>
+                                                        <div className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-xl shadow-lg border ${scoreBorderColor} ${scoreBgColor}`}>
+                                                            <BarChart3 className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
+                                                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-tighter text-white">
                                                                 {totalScore}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-xl shadow-inner bg-slate-100 border border-slate-200">
+                                                            <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase leading-none tracking-tight">Total</span>
+                                                            <span className="text-[10px] sm:text-xs font-black text-slate-700 leading-none">
+                                                                {deptTotalTasks}
                                                             </span>
                                                         </div>
                                                         <span className="text-[11px] sm:text-xs font-[1000] text-red-600 bg-red-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-red-100 shadow-sm flex items-center justify-center">
@@ -356,12 +353,13 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
                 if (dashboardTotal === 0 && (stats.future?.count || 0) === 0) return null;
 
                 const calculateDivisionAvgScore = (divisionStats) => {
-                    if (!divisionStats?.total?.departments) return 0;
-                    const depts = Object.values(divisionStats.total.departments);
-                    if (depts.length === 0) return 0;
-
-                    const totalScoreSum = depts.reduce((acc, d) => acc + (d.scores?.total_score || 0), 0);
-                    return Math.round(totalScoreSum / depts.length);
+                    const totalTasks = divisionStats?.total?.count || 0;
+                    const completedTasks = divisionStats?.completed?.count || 0;
+                    if (totalTasks === 0) return 0;
+                    return Math.max(
+                        parseFloat(((completedTasks / totalTasks) * 100 - 100).toFixed(2)),
+                        -100
+                    );
                 };
 
                 const divisionScore = calculateDivisionAvgScore(stats);
@@ -411,7 +409,7 @@ export default function DivisionWiseCards({ dateRange, userRole, username, desig
                             </div>
 
                             {/* Right Side: High-Clarity Status Chips */}
-                            <div className="w-[120px] sm:w-[160px] flex flex-col justify-center flex-shrink-0">
+                            <div className="w-[130px] sm:w-[190px] flex flex-col justify-center flex-shrink-0">
                                 <StatItem
                                     label="Done"
                                     countData={stats.completed}

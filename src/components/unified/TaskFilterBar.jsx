@@ -319,10 +319,12 @@ export default function TaskFilterBar({
                                         try {
                                             // Fetch user details
                                             const department = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
+                                            const division = localStorage.getItem("division") || "";
                                             const userName = localStorage.getItem("user-name") || "";
 
                                             const payload = {
                                                 department,
+                                                division,
                                                 given_by: userName,
                                                 name: userName,
                                                 task_description: newTaskDescription,

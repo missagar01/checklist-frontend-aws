@@ -1110,6 +1110,9 @@ export default function AdminDashboard() {
               notDoneTasks={displayStats.notDoneTasks}
               dashboardType={dashboardType}
               dateRange={dateRangeProp}
+              username={username}
+              userRole={userRole}
+              designation={designation}
             />
 
             {(username === "AAKASH AGRAWAL" || username === "Sheelesh Marele" || (designation?.toLowerCase() === "division hod" && userRole?.toLowerCase() !== "admin")) && (

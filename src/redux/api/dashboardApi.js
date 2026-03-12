@@ -7,9 +7,24 @@ const BASE_URL1 = "/staff-tasks";
 // GLOBAL ROLE HELPER — har API me repeat na karna pade isliye function
 // ---------------------------------------------------------------------
 const getFinalStaffFilter = (inputFilter) => {
-  const role = localStorage.getItem("role");
+  const role = (localStorage.getItem("role") || "").toLowerCase();
   const username = localStorage.getItem("user-name");
+  const designation = (localStorage.getItem("designation") || "").trim().toLowerCase();
 
+  // 🔓 Permission Override: Admins, special users, HODs, and Managers can see "all" or any specific staff
+  if (
+    role === "admin" || 
+    role === "superadmin" ||
+    (username && username.toUpperCase() === "AAKASH AGRAWAL") || 
+    designation === "manager" || 
+    designation === "division hod" ||
+    designation.includes("hod")
+  ) {
+    if (!inputFilter || inputFilter === "all") return "all";
+    return inputFilter;
+  }
+
+  // 🔒 Regular users (and others) are locked to their own tasks
   if (role === "user") return username;
   if (!inputFilter || inputFilter === "all") return "all";
 
@@ -175,6 +190,7 @@ export const fetchStaffTasksDataApi = async (
   limit = 50,
   monthYear = "",
   departmentFilter = "all",
+  divisionFilter = "all",
   search = ""
 ) => {
   staffFilter = getFinalStaffFilter(staffFilter);
@@ -196,6 +212,11 @@ export const fetchStaffTasksDataApi = async (
     params.append('departmentFilter', departmentFilter);
   }
 
+  // Add divisionFilter if provided
+  if (divisionFilter && divisionFilter !== "all") {
+    params.append('divisionFilter', divisionFilter);
+  }
+
   // Add search if provided
   if (search) {
     params.append('search', search);
@@ -213,7 +234,8 @@ export const exportAllStaffTasksApi = async (
   dashboardType,
   staffFilter = "all",
   monthYear = "",
-  departmentFilter = "all"
+  departmentFilter = "all",
+  divisionFilter = "all"
 ) => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
@@ -232,6 +254,11 @@ export const exportAllStaffTasksApi = async (
     params.append('departmentFilter', departmentFilter);
   }
 
+  // Add divisionFilter if provided
+  if (divisionFilter && divisionFilter !== "all") {
+    params.append('divisionFilter', divisionFilter);
+  }
+
   const res = await axiosInstance.get(
     `${BASE_URL1}/tasks/export?${params.toString()}`
   );
@@ -239,13 +266,14 @@ export const exportAllStaffTasksApi = async (
   return res.data;
 };
 
-export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", search = "") => {
+export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", divisionFilter = "all", search = "") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
   const params = new URLSearchParams({
     dashboardType,
     staffFilter,
     departmentFilter,
+    divisionFilter,
     search
   });
 

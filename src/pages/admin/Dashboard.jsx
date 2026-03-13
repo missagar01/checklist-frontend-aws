@@ -111,10 +111,10 @@ export default function AdminDashboard() {
     const role = localStorage.getItem("role");
     const username = localStorage.getItem("user-name");
 
-    if (role === "user") {
+    if (role && role.toLowerCase() !== "admin" && role.toLowerCase() !== "superadmin") {
       setDashboardStaffFilter(username);
       setFilterStaff(username);
-      setDepartmentFilter("all");        // user cannot filter department
+      setDepartmentFilter("all");        // non-admin cannot filter department by default
     }
   }, []);
 
@@ -908,7 +908,11 @@ export default function AdminDashboard() {
 
   // Reset dashboard staff filter when dashboard type changes
   useEffect(() => {
-    setDashboardStaffFilter("all")
+    if (userRole && userRole.toLowerCase() !== "admin" && userRole.toLowerCase() !== "superadmin") {
+      setDashboardStaffFilter(username)
+    } else {
+      setDashboardStaffFilter("all")
+    }
     setDepartmentFilter("all")
     setCurrentPage(1)
     setHasMoreData(true)

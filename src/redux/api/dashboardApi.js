@@ -308,8 +308,8 @@ export const getStaffTaskSummaryApi = async (dashboardType, departmentFilter = "
 };
 
 // ---------------------------------------------------------------------
-export const getUniqueDepartmentsApi = async () => {
-  const res = await axiosInstance.get(`${BASE_URL}/departments`);
+export const getUniqueDepartmentsApi = async (division) => {
+  const res = await axiosInstance.get(`${BASE_URL}/departments`, { params: { division } });
   return res.data;
 };
 

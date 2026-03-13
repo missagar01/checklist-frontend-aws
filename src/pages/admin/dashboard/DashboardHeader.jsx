@@ -76,7 +76,7 @@ export default function DashboardHeader({
   return (
     <div className="flex flex-col lg:flex-row justify-between gap-4 lg:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6">
       <div className="flex items-center justify-between lg:justify-start gap-4">
-        {userRole === "admin" && (
+        {(userRole === "admin" || userRole === "superadmin") && (
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
               {/* <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Total System</span> */}
@@ -101,7 +101,7 @@ export default function DashboardHeader({
 
       <div className="grid grid-cols-2 gap-2 lg:flex lg:items-center lg:gap-2">
         {/* Date Range Filter */}
-        {userRole === "admin" && (
+        {(userRole === "admin" || userRole === "superadmin") && (
           <div className="relative">
             <button
               onClick={() => setShowDateRangePicker(!showDateRangePicker)}
@@ -174,7 +174,7 @@ export default function DashboardHeader({
         />
 
         {/* Department Filter - Only show for checklist */}
-        {dashboardType === "checklist" && userRole === "admin" && (
+        {dashboardType === "checklist" && (userRole === "admin" || userRole === "superadmin") && (
           <CustomDropdown
             value={departmentFilter}
             onChange={setDepartmentFilter}
@@ -188,7 +188,7 @@ export default function DashboardHeader({
         )}
 
         {/* Dashboard Staff Filter */}
-        {userRole === "admin" ? (
+        {(userRole === "admin" || userRole === "superadmin") ? (
           <CustomDropdown
             value={dashboardStaffFilter}
             onChange={setDashboardStaffFilter}

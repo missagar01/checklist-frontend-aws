@@ -8,9 +8,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { XCircle, BarChart3 } from 'lucide-react';
 
 function MisReportPage() {
-    const [dashboardStaffFilter, setDashboardStaffFilter] = useState("all")
-    const [departmentFilter, setDepartmentFilter] = useState("all")
-    const [divisionFilter, setDivisionFilter] = useState("all")
+    const userRole = (localStorage.getItem("role") || "").toLowerCase().trim()
+    const username = (localStorage.getItem("user-name") || "").trim()
+    const userDesignation = (localStorage.getItem("designation") || "").toLowerCase().trim()
+    const userDepartment = (localStorage.getItem("department") || "").trim()
+    const userDivision = (localStorage.getItem("division") || "").trim()
+
+    const [dashboardStaffFilter, setDashboardStaffFilter] = useState(() => {
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        if (isAdmin || userDesignation.includes("hod") || userDesignation.includes("manager")) return "all";
+        return username || "all";
+    })
+    const [departmentFilter, setDepartmentFilter] = useState(() => {
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        if (isAdmin || userDesignation.includes("division hod")) return "all";
+        if (userDesignation.includes("manager")) return (userDepartment && userDepartment !== "all") ? userDepartment : "all";
+        return "all";
+    })
+    const [divisionFilter, setDivisionFilter] = useState(() => {
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        if (isAdmin) return "all";
+        if (userDesignation.includes("manager") || userDesignation.includes("division hod")) return (userDivision && userDivision !== "all") ? userDivision : "all";
+        return "all";
+    })
     const [selectedMonthYear, setSelectedMonthYear] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const [staffMembers, setStaffMembers] = useState([])
@@ -25,6 +45,50 @@ function MisReportPage() {
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
     const [selectedStaff, setSelectedStaff] = useState(null)
     const itemsPerPage = 50
+
+    // Debugging logs to verify filters
+    useEffect(() => {
+        console.log("MIS Report - User Auth Info:", {
+            role: userRole,
+            username: username,
+            designation: userDesignation,
+            dept: userDepartment,
+            division: userDivision
+        });
+        console.log("MIS Report - Initialized Filters:", {
+            staffFilter: dashboardStaffFilter,
+            deptFilter: departmentFilter,
+            divFilter: divisionFilter
+        });
+    }, []);
+
+    // ── Additional Safety Filter Initialization ─────────────────────
+    useEffect(() => {
+        const isAdmin = userRole === "admin" || userRole === "superadmin";
+        if (isAdmin) return;
+
+        // If Manager and filters are still "all", force them
+        if (userDesignation.includes("manager")) {
+            if (divisionFilter === "all" && userDivision && userDivision !== "all") {
+                setDivisionFilter(userDivision);
+            }
+            if (departmentFilter === "all" && userDepartment && userDepartment !== "all") {
+                setDepartmentFilter(userDepartment);
+            }
+        }
+        // If HOD and filters are still "all", force division
+        else if (userDesignation.includes("division hod")) {
+            if (divisionFilter === "all" && userDivision && userDivision !== "all") {
+                setDivisionFilter(userDivision);
+            }
+        }
+        // If regular user and staff filter is still "all", force self
+        else if (userRole === "user") {
+            if (dashboardStaffFilter === "all" && username) {
+                setDashboardStaffFilter(username);
+            }
+        }
+    }, [userRole, userDesignation, userDivision, userDepartment, username]);
 
     // ── Staff Detail Modal ──────────────────────────────────────────
     const CHART_COLORS = { Done: '#10b981', Pending: '#94a3b8' };
@@ -146,29 +210,9 @@ function MisReportPage() {
     };
     // ── End Staff Detail Modal ──────────────────────────────────────
 
-    const userRole = localStorage.getItem("role")
-    const username = localStorage.getItem("user-name")
-    const userDesignation = localStorage.getItem("designation") || ""
-    const userDepartment = localStorage.getItem("department") || ""
-    const userDivision = localStorage.getItem("division") || ""
-
     // ── Permission Check ──────────────────────────────────────────────
-    const isAuthorized =
-        userRole === "admin" ||
-        username === "AAKASH AGRAWAL" ||
-        userDesignation.toLowerCase() === "manager" ||
-        userDesignation.toLowerCase() === "division hod";
+    const isAuthorized = true; // Access is now handled by AdminLayout, we just control visibility here
 
-    // Initialize filters based on role
-    useEffect(() => {
-        if (!isAuthorized) return;
-
-        if (userDesignation.toLowerCase() === "manager") {
-            setDepartmentFilter(userDepartment);
-        } else if (userDesignation.toLowerCase() === "division hod") {
-            setDivisionFilter(userDivision);
-        }
-    }, [userDesignation, userDepartment, userDivision, isAuthorized]);
 
     // Generate month-year options (last 12 months + current month)
     const generateMonthYearOptions = useCallback(() => {
@@ -206,11 +250,17 @@ function MisReportPage() {
         generateMonthYearOptions()
     }, [generateMonthYearOptions])
 
-    // Fetch departments on mount
+    // Fetch departments on mount or when user info changes
     useEffect(() => {
         const fetchDepartments = async () => {
             try {
-                const departments = await getUniqueDepartmentsApi()
+                // If user is a DIVISION HOD, restrict the departments to their division
+                const isAdmin = userRole === "admin" || userRole === "superadmin";
+                const isHod = userDesignation.toLowerCase().includes("division hod");
+
+                // For HOD, we only want departments in their division. 
+                // For Admin, we want all. 
+                const departments = await getUniqueDepartmentsApi(isAdmin ? "all" : (isHod ? userDivision : "all"))
                 setAvailableDepartments(departments || [])
             } catch (error) {
                 console.error('Error fetching departments:', error)
@@ -218,7 +268,7 @@ function MisReportPage() {
             }
         }
         fetchDepartments()
-    }, [])
+    }, [userRole, userDesignation, userDivision])
 
     // Reset pagination when filters change
     useEffect(() => {
@@ -238,7 +288,6 @@ function MisReportPage() {
 
     // Load staff data from server using scoring API
     const loadStaffData = useCallback(async (page = 1) => {
-        if (isLoading) return;
 
         try {
             setIsLoading(true)
@@ -278,7 +327,7 @@ function MisReportPage() {
         } finally {
             setIsLoading(false)
         }
-    }, [dashboardStaffFilter, departmentFilter, selectedMonthYear, debouncedSearchQuery, isLoading])
+    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, isLoading])
 
     // Initial load when component mounts or dependencies change
     useEffect(() => {
@@ -338,7 +387,7 @@ function MisReportPage() {
         }
 
         fetchAvailableStaff()
-    }, [userRole, username, departmentFilter])
+    }, [userRole, username, departmentFilter, divisionFilter])
 
     // CSV Download Function - Downloads ALL data across all pages
     const downloadCSV = async () => {
@@ -495,9 +544,11 @@ function MisReportPage() {
 
                             {/* Department Filter - Only show for Admin or HOD */}
                             <div className="w-full">
-                                {userDesignation.toLowerCase() === "manager" ? (
+                                {userRole === "user" &&
+                                    !(userDesignation.toLowerCase().trim().includes("division hod") ||
+                                        userDesignation.toLowerCase().trim() === "division hod") ? (
                                     <div className="w-full rounded-md border border-purple-200 p-2 bg-gray-50 text-gray-500 text-sm italic">
-                                        Dept: {userDepartment}
+                                        Dept: {departmentFilter === "all" ? (userDepartment || "N/A") : departmentFilter}
                                     </div>
                                 ) : (
                                     <select
@@ -533,18 +584,26 @@ function MisReportPage() {
 
                             {/* Staff Filter */}
                             <div className="w-full">
-                                <select
-                                    value={dashboardStaffFilter}
-                                    onChange={(e) => setDashboardStaffFilter(e.target.value)}
-                                    className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
-                                >
-                                    <option value="all">All Staff</option>
-                                    {availableStaff.map((staff) => (
-                                        <option key={staff} value={staff}>
-                                            {staff}
-                                        </option>
-                                    ))}
-                                </select>
+                                {userRole === "user" &&
+                                    !userDesignation.toLowerCase().trim().includes("manager") &&
+                                    !userDesignation.toLowerCase().trim().includes("hod") ? (
+                                    <div className="w-full rounded-md border border-purple-200 p-2 bg-gray-50 text-gray-500 text-sm italic">
+                                        Staff: {username}
+                                    </div>
+                                ) : (
+                                    <select
+                                        value={dashboardStaffFilter}
+                                        onChange={(e) => setDashboardStaffFilter(e.target.value)}
+                                        className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                                    >
+                                        <option value="all">All Staff</option>
+                                        {availableStaff.map((staff) => (
+                                            <option key={staff} value={staff}>
+                                                {staff}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
 
                             {/* Division Display (HOD only) */}

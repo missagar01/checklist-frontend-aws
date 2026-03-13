@@ -6,7 +6,7 @@ import { LoginCredentialsApi } from '../api/loginApi';
 const syncLegacyKeys = (data) => {
   if (!data) return;
   const keys = {
-    'user-name': data.user_name || data.username || "",
+    'user-name': data.user_name || data.username || data.name || "",
     'user_id': data.id || data.user_id || "",
     'role': data.role || "",
     'email_id': data.email_id || data.email || "",
@@ -17,8 +17,10 @@ const syncLegacyKeys = (data) => {
     'userAccess1': data.user_access1 || "",
     'page_access': data.page_access || "",
     'system_access': data.system_access || "",
-    'designation': data.designation || "",
-    'division': data.division || "",
+    'designation': data.designation || data.user_designation || "",
+    'division': data.division || data.user_division || "",
+    'department': data.department || data.dept || data.user_department || "",
+    'department_id': data.department_id || data.dept_id || "",
   };
   Object.entries(keys).forEach(([key, value]) => {
     if (value) {
@@ -90,7 +92,7 @@ const loginSlice = createSlice({
         'token', 'userData', 'user-pass', 'user_pass', 'user-name', 'user_id', 
         'role', 'email_id', 'user_access', 'userAccess', 'user_access1', 
         'userAccess1', 'page_access', 'system_access', 'designation', 'division',
-        'verify_access', 'verify_access_dept'
+        'department', 'department_id', 'verify_access', 'verify_access_dept'
       ];
       keysToClear.forEach(key => localStorage.removeItem(key));
     }

@@ -27,8 +27,8 @@ export default function StaffTasksTable({
   const ScoreBadge = ({ score }) => {
     const s = Number(score || 0);
     const bg = s >= -20 ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-             : s >= -50 ? "bg-amber-100 text-amber-800 border-amber-200"
-             : "bg-red-100 text-red-800 border-red-200";
+      : s >= -50 ? "bg-amber-100 text-amber-800 border-amber-200"
+        : "bg-red-100 text-red-800 border-red-200";
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-black border shadow-sm ${bg}`}>
         {s.toFixed(1)}%
@@ -40,14 +40,14 @@ export default function StaffTasksTable({
     if (!selectedStaff) return null;
     const s = selectedStaff;
     const total = Number(s.totalTasks || 0);
-    const done  = Number(s.completedTasks || 0);
+    const done = Number(s.completedTasks || 0);
     const pending = total - done;
 
     const chartData = [
-      { name: "Done",    value: done    },
+      { name: "Done", value: done },
       { name: "Pending", value: pending },
     ].filter(d => d.value > 0);
-    
+
     const donePercent = total > 0 ? ((done / total) * 100).toFixed(1) : "0.0";
 
     return (
@@ -115,9 +115,9 @@ export default function StaffTasksTable({
                 {/* Vertical stats */}
                 <div className="flex-1 space-y-2.5">
                   {[
-                    { label: "Total",   value: total,   color: "text-blue-600",    dot: "bg-blue-500" },
-                    { label: "Done",    value: done,    color: "text-emerald-600", dot: "bg-emerald-500" },
-                    { label: "Pending", value: pending, color: "text-amber-600",   dot: "bg-amber-400" },
+                    { label: "Total", value: total, color: "text-blue-600", dot: "bg-blue-500" },
+                    { label: "Done", value: done, color: "text-emerald-600", dot: "bg-emerald-500" },
+                    { label: "Pending", value: pending, color: "text-amber-600", dot: "bg-amber-400" },
                   ].map(({ label, value, color, dot }) => (
                     <div key={label} className="flex items-center justify-between rounded-full bg-gray-50 border border-gray-100 shadow-sm py-2 px-4 transition-all hover:bg-white hover:shadow">
                       <div className="flex items-center gap-2.5">
@@ -136,8 +136,8 @@ export default function StaffTasksTable({
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 mb-2">Category Breakdown</p>
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { id: 'checklist',    label: 'Checklist',    color: 'bg-purple-500', text: 'text-purple-600' },
-                    { id: 'maintenance',  label: 'Maintenance',  color: 'bg-emerald-500', text: 'text-emerald-600' },
+                    { id: 'checklist', label: 'Checklist', color: 'bg-purple-500', text: 'text-purple-600' },
+                    { id: 'maintenance', label: 'Maintenance', color: 'bg-emerald-500', text: 'text-emerald-600' },
                     { id: 'housekeeping', label: 'Housekeeping', color: 'bg-orange-500', text: 'text-orange-600' }
                   ].map(cat => {
                     const data = s.breakdown?.[cat.id] || { total: 0, done: 0 };
@@ -166,7 +166,7 @@ export default function StaffTasksTable({
                 </div>
               </div>
 
-                            {/* Score bar */}
+              {/* Score bar */}
               <div className="flex items-center justify-between bg-gray-900 rounded-[20px] px-5 py-3.5 shadow-xl border border-gray-800">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-red-500" />
@@ -235,10 +235,19 @@ export default function StaffTasksTable({
     try {
       setIsLoadingMore(true)
 
+      const role = localStorage.getItem("role")
+      const loggedInUsername = localStorage.getItem("user-name")
+      
+      let finalStaffFilter = dashboardStaffFilter
+      if ((!finalStaffFilter || finalStaffFilter === "all") && 
+          role && role.toLowerCase() !== "admin" && role.toLowerCase() !== "superadmin") {
+        finalStaffFilter = loggedInUsername
+      }
+
       // Fetch staff data with their task summaries
       const data = await fetchStaffTasksDataApi(
         dashboardType,
-        dashboardStaffFilter,
+        finalStaffFilter,
         page,
         itemsPerPage,
         selectedMonthYear, // Pass monthYear parameter
@@ -247,7 +256,7 @@ export default function StaffTasksTable({
 
       // Get total counts for both staff with tasks and total users
       if (page === 1) {
-        const staffCount = await getStaffTasksCountApi(dashboardType, dashboardStaffFilter, departmentFilter);
+        const staffCount = await getStaffTasksCountApi(dashboardType, finalStaffFilter, departmentFilter);
         setTotalStaffCount(staffCount)
       }
 
@@ -464,7 +473,7 @@ export default function StaffTasksTable({
                       {renderOnTimeScore(staff.onTimeScore || 0)}
                     </div>
                     <div className="text-[10px] font-bold text-purple-600 uppercase tracking-tighter mt-0.5">
-                        {staff.division || 'N/A'}
+                      {staff.division || 'N/A'}
                     </div>
                     <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter mt-0.5">
                       {staff.department || "N/A"}

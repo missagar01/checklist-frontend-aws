@@ -15,7 +15,7 @@ const getFinalStaffFilter = (inputFilter) => {
   if (
     role === "admin" || 
     role === "superadmin" ||
-    (username && username.toUpperCase() === "AAKASH AGRAWAL") || 
+    (username && (username.toUpperCase() === "AAKASH AGRAWAL" || username.toLowerCase() === "admin")) || 
     designation === "manager" || 
     designation === "division hod" ||
     designation.includes("hod")

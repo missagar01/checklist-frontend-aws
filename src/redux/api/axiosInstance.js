@@ -40,7 +40,7 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response && [401, 403].includes(error.response.status)) {
       // Token expired or unauthorized
       localStorage.clear();
       window.location.href = "/login";

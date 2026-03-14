@@ -48,21 +48,6 @@ function MisReportPage() {
     const [sortOrder, setSortOrder] = useState("asc")
     const itemsPerPage = 50
 
-    // Debugging logs to verify filters
-    useEffect(() => {
-        console.log("MIS Report - User Auth Info:", {
-            role: userRole,
-            username: username,
-            designation: userDesignation,
-            dept: userDepartment,
-            division: userDivision
-        });
-        console.log("MIS Report - Initialized Filters:", {
-            staffFilter: dashboardStaffFilter,
-            deptFilter: departmentFilter,
-            divFilter: divisionFilter
-        });
-    }, []);
 
     // ── Additional Safety Filter Initialization ─────────────────────
     useEffect(() => {
@@ -719,6 +704,7 @@ function MisReportPage() {
                                         {/* Desktop Table View */}
                                         <div className="hidden sm:block overflow-x-auto">
                                             <table className="min-w-full divide-y divide-gray-100">
+                                                <thead>
                                                     <tr className="bg-[#c41e3a] sticky top-0 z-10">
                                                         <th 
                                                             className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight cursor-pointer hover:bg-[#a81a32] transition-colors"
@@ -759,6 +745,7 @@ function MisReportPage() {
                                                             Score {sortBy === 'score' && (sortOrder === 'asc' ? '↑' : '↓')}
                                                         </th>
                                                     </tr>
+                                                </thead>
                                                 <tbody className="bg-white divide-y divide-gray-50">
                                                     {staffMembers.map((staff, index) => (
                                                         <tr key={`${staff.name}-${index}`} onClick={() => setSelectedStaff(staff)} className="hover:bg-red-50/5 transition-colors border-l-2 border-transparent hover:border-[#c41e3a] cursor-pointer active:scale-[0.99]">

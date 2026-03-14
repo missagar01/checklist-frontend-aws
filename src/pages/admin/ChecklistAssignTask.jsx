@@ -248,7 +248,11 @@ export default function AssignTask() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "division") {
+      setFormData((prev) => ({ ...prev, [name]: value, department: "" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSwitchChange = (name, e) => {
@@ -550,11 +554,13 @@ export default function AssignTask() {
                 className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
               >
                 <option value="">Select Division</option>
-                {division.map((divName, index) => (
-                  <option key={index} value={divName}>
-                    {divName}
-                  </option>
-                ))}
+                {division
+                  .filter(divName => divName && divName !== "null" && divName !== "NULL")
+                  .map((divName, index) => (
+                    <option key={index} value={divName}>
+                      {divName}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -575,11 +581,13 @@ export default function AssignTask() {
                 className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
               >
                 <option value="">Select Department</option>
-                {department.map((deptName, index) => (
-                  <option key={index} value={deptName}>
-                    {deptName}
-                  </option>
-                ))}
+                {department
+                  .filter(d => d && d.division === formData.division)
+                  .map((deptObj, index) => (
+                    <option key={index} value={deptObj.department}>
+                      {deptObj.department}
+                    </option>
+                  ))}
               </select>
             </div>
 

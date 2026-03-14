@@ -33,6 +33,7 @@ export default function StatisticsCards({
   // Permission check for detailed breakdown click (only Admin and AAKASH AGRAWAL)
   const canClickBreakdown =
     username === "AAKASH AGRAWAL" ||
+    username === "admin" ||
     userRole?.toLowerCase() === "admin";
 
   useEffect(() => {

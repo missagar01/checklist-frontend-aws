@@ -64,14 +64,16 @@ export default function AssignTask() {
         const res = await fetch(`${BACKEND_URL}/assign-task/divisions`);
         const result = await res.json();
         if (Array.isArray(result)) {
-          setDivisionOptions(result);
+          // Filter out null/empty divisions
+          const validDivisions = result.filter(d => d && d !== "null" && d !== "NULL");
+          setDivisionOptions(validDivisions);
         }
       } catch (err) {
         console.error("Division fetch error:", err);
       }
     };
     fetchDivisions();
-  }, [dispatch]);
+  }, [dispatch, BACKEND_URL]);
 
   // Process locations
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function AssignTask() {
         const loc = item?.location || item;
         return typeof loc === 'string' ? loc.trim() : null;
       })
-      .filter(Boolean);
+      .filter(loc => loc && loc !== "null" && loc !== "NULL"); // Filter out nulls
     setLocationOptions(Array.from(new Set(locationValues)).sort());
   }, [locations]);
 
@@ -115,7 +117,7 @@ export default function AssignTask() {
 
     const userMap = (Array.isArray(userDepartmentsData) ? userDepartmentsData : []).reduce((acc, entry) => {
       const dept = (entry?.department || "").trim();
-      if (!dept) return acc;
+      if (!dept || dept.toLowerCase() === 'null') return acc;
       const name = entry?.user_name || "";
       acc[dept] = acc[dept] || [];
       if (name && !acc[dept].includes(name)) {
@@ -143,11 +145,26 @@ export default function AssignTask() {
 
   const isUser = userRole.toLowerCase() === "user";
   const filteredDepartments = useMemo(() => {
-    const base = isUser && userDepartments.length > 0
+    let base = isUser && userDepartments.length > 0
       ? userDepartments
       : departmentOptions;
+
+    // Remove null/empty departments
+    base = base.filter(d => d && d !== "null" && d !== "NULL");
+
+    // Filter by selected division if not user role
+    if (!isUser && selectedDivision) {
+      // Find departments belonging to the selected division from userDepartmentsData
+      const deptsInDivision = (Array.isArray(userDepartmentsData) ? userDepartmentsData : [])
+        .filter(entry => entry.division === selectedDivision)
+        .map(entry => (entry.department || "").trim())
+        .filter(Boolean);
+      
+      base = base.filter(dept => deptsInDivision.includes(dept));
+    }
+
     return Array.from(new Set(base));
-  }, [userDepartments, isUser, departmentOptions]);
+  }, [userDepartments, isUser, departmentOptions, selectedDivision, userDepartmentsData]);
 
   const handleLocationChange = (value) => {
     setFormData((prev) => ({
@@ -256,7 +273,7 @@ export default function AssignTask() {
 
   // Get given by options - hardcoded values only
   const givenByOptionsList = useMemo(() => {
-    return ["AAKASH AGRAWAL", "SHEELESH MARELE", "AJIT KUMAR GUPTA"];
+    return ["AAKASH AGRAWAL", "SHEELESH MARELE", "AJIT KUMAR GUPTA", "ADMIN"];
   }, []);
 
   // Get doer names from Redux or fallback
@@ -272,7 +289,7 @@ export default function AssignTask() {
           return null;
         })
         .filter(Boolean)
-        .filter(item => typeof item === 'string' && item.length > 0);
+        .filter(item => typeof item === 'string' && item.length > 0 && item.toLowerCase() !== 'null');
     }
     return ["Housekeeping Staff", "Company Reja"];
   }, [doerNames]);
@@ -325,7 +342,11 @@ export default function AssignTask() {
                 <label className="text-sm font-medium text-gray-700">Division <span className="text-red-500">*</span></label>
                 <select
                   value={selectedDivision}
-                  onChange={(e) => setSelectedDivision(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedDivision(e.target.value);
+                    // Reset department and location when division changes
+                    setFormData(prev => ({ ...prev, department: "", location: "" }));
+                  }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                   required
                 >

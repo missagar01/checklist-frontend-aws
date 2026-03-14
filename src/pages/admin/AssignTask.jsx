@@ -544,11 +544,14 @@ export default function AssignTask() {
                   className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
                   <option value="">Select Department</option>
-                  {department.map((deptName, index) => (
-                    <option key={index} value={deptName}>
-                      {deptName}
-                    </option>
-                  ))}
+                  {department.map((deptObj, index) => {
+                    const deptName = typeof deptObj === 'string' ? deptObj : deptObj.department;
+                    return (
+                      <option key={index} value={deptName}>
+                        {deptName}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

@@ -167,9 +167,13 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
     ];
 
     const filteredRoutes = allRoutes.filter((route) => {
+      // Strictly grant full access ONLY to 'admin' and 'AAKASH AGRAWAL'
+      if (username === "admin" || username === "AAKASH AGRAWAL") return true;
+
       const hasRolePermission = route.showFor.includes(userRole);
       if (!hasRolePermission) return false;
-      if (!route.requiresPageAccess) return true;
+
+      // For all other users (even roles like admin/superadmin), strictly follow page_access column
       const routeKeys = [route.pageKey, ...(route.pageKeyAliases || [])].map((key) => key.toLowerCase());
       return routeKeys.some((key) => accessiblePagesSet.has(key));
     });

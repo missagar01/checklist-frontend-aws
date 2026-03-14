@@ -548,28 +548,20 @@ export default function UnifiedTaskPage() {
                                 taskId: t.taskId,
                                 remark: t.remarks || '',
                                 doerName2: t.doerName2 || '',
+                                hod: username, // Always send current user as HOD
                             };
-
-                            // Only send hod if remark is present
-                            if (t.remarks) {
-                                payload.hod = username;
-                            }
 
                             return dispatch(confirmHousekeepingTask(payload)).unwrap();
                         } else {
                             // Admin role: use submitHousekeepingTasks API for confirmed tasks
                             const payload = {
                                 task_id: t.taskId,
-                                status: t.status,
+                                status: t.status || 'Yes',
                                 remark: t.remarks || '',
                                 doer_name2: t.doerName2 || '',
+                                hod: t.originalData?.hod || username, // Preserve existing HOD if available
                                 attachment: t.originalData?.attachment,
                             };
-
-                            // Only send hod if remark is present
-                            if (t.remarks) {
-                                payload.hod = username;
-                            }
 
                             return dispatch(submitHousekeepingTasks([payload])).unwrap();
                         }

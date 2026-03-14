@@ -181,9 +181,9 @@ export const fetchHousekeepingHistoryTasks = createAsyncThunk(
 // Confirm Task
 export const confirmHousekeepingTask = createAsyncThunk(
   "housekeeping/confirmTask",
-  async ({ taskId, remark = "", imageFile = null, doerName2 = "", hod = "" }, { rejectWithValue }) => {
+  async ({ taskId, remark = "", imageFile = null, doerName2 = "", hod = "", status = "" }, { rejectWithValue }) => {
     try {
-      const response = await confirmHousekeepingTaskAPI(taskId, remark, imageFile, doerName2, hod);
+      const response = await confirmHousekeepingTaskAPI(taskId, remark, imageFile, doerName2, hod, status);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || error.message);

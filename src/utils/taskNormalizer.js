@@ -10,21 +10,32 @@
 const STATUS_MAP = {
     // Checklist statuses
     'Yes': 'Completed',
-    'No': 'Not Done',
+    'No': 'Pending', // Default for unsubmitted (if submission_date is null)
     'Pending': 'Pending',
 
     // Maintenance statuses
     'completed': 'Completed',
     'in progress': 'In Progress',
     'pending': 'Pending',
+    'no': 'Pending', // Lowercase fallback for maintenance/checklist
+    'yes': 'Completed', // Lowercase fallback
 
     // Generic fallback
     'confirmed': 'Confirmed',
 };
 
-const getUnifiedStatus = (status) => {
+const getUnifiedStatus = (status, isHistory = false) => {
     if (!status) return 'Pending';
-    const normalized = STATUS_MAP[status] || STATUS_MAP[status.toLowerCase()];
+    
+    // Normalize mapping
+    const normalized = STATUS_MAP[status] || STATUS_MAP[status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()] || STATUS_MAP[status.toLowerCase()];
+    
+    // If we're in history mode and status is 'Pending' or 'No', it's actually 'Not Done' 
+    // unless it was explicitly completed.
+    if (isHistory && (normalized === 'Pending' || status.toLowerCase() === 'no')) {
+        return 'Not Done';
+    }
+    
     return normalized || status;
 };
 
@@ -128,16 +139,19 @@ export const normalizeChecklistTask = (task, isHistory = false) => {
     // Determine final status
     // If it's from history source (isHistory=true), force it to 'Completed' (unless it was explicitly 'No'/'Not Done')
     let rawStatus = task.status || 'Pending';
-    let unifiedStatus = getUnifiedStatus(rawStatus);
+    let unifiedStatus = getUnifiedStatus(rawStatus, isHistory);
 
     if (isHistory || task.submission_date) {
-        // If it was explicitly 'No', we might want to keep that distinction
-        if (rawStatus === 'No' || rawStatus === 'Not Done') {
+        // If it was explicitly 'No', we might want to keep that distinction in history
+        if (rawStatus.toLowerCase() === 'no' || rawStatus.toLowerCase() === 'not done') {
             unifiedStatus = 'Not Done';
         } else {
             unifiedStatus = 'Completed';
             rawStatus = 'Completed';
         }
+    } else {
+        // Not history AND no submission date -> always Pending
+        unifiedStatus = 'Pending';
     }
 
     return {
@@ -195,7 +209,7 @@ export const normalizeChecklistTask = (task, isHistory = false) => {
 // =============================================================================
 // MAINTENANCE TASK NORMALIZER
 // =============================================================================
-export const normalizeMaintenanceTask = (task) => {
+export const normalizeMaintenanceTask = (task, isHistory = false) => {
     if (!task) return null;
 
     return {
@@ -214,7 +228,7 @@ export const normalizeMaintenanceTask = (task) => {
         assignedToSecondary: task.doer_name2 || '—',
         dueDate: task.scheduled_date || task.task_start_date,
         dueDateFormatted: formatDate(task.scheduled_date || task.task_start_date),
-        status: getUnifiedStatus(task.status),
+        status: getUnifiedStatus(task.status, isHistory || !!(task.completed_date || task.actual_date)),
         originalStatus: task.status || 'Pending',
         priority: normalizePriority(task.priority),
         taskType: task.task_type || '—',
@@ -258,7 +272,7 @@ export const normalizeMaintenanceTask = (task) => {
 // =============================================================================
 // HOUSEKEEPING TASK NORMALIZER
 // =============================================================================
-export const normalizeHousekeepingTask = (task) => {
+export const normalizeHousekeepingTask = (task, isHistory = false) => {
     if (!task) return null;
 
     return {
@@ -274,7 +288,7 @@ export const normalizeHousekeepingTask = (task) => {
         assignedToSecondary: task.doer_name2 || '—',
         dueDate: task.task_start_date || task.task_date || task.date || task.scheduled_date,
         // dueDateFormatted: formatDate(task.task_start_date || task.task_date || task.date || task.scheduled_date),
-        status: getUnifiedStatus(task.status),
+        status: getUnifiedStatus(task.status, isHistory || !!task.submission_date),
         originalStatus: task.status || 'Pending',
         priority: normalizePriority(task.priority),
 
@@ -323,12 +337,12 @@ export const normalizeAllTasks = (checklistTasks = [], maintenanceTasks = [], ho
 
     // Normalize Maintenance tasks
     const normalizedMaintenance = maintenanceTasks
-        .map(normalizeMaintenanceTask)
+        .map(task => normalizeMaintenanceTask(task, isHistory))
         .filter(task => task !== null);
 
     // Normalize Housekeeping tasks
     const normalizedHousekeeping = housekeepingTasks
-        .map(normalizeHousekeepingTask)
+        .map(task => normalizeHousekeepingTask(task, isHistory))
         .filter(task => task !== null);
 
     // Combine all

@@ -44,6 +44,8 @@ function MisReportPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
     const [selectedStaff, setSelectedStaff] = useState(null)
+    const [sortBy, setSortBy] = useState("score")
+    const [sortOrder, setSortOrder] = useState("asc")
     const itemsPerPage = 50
 
     // Debugging logs to verify filters
@@ -276,7 +278,7 @@ function MisReportPage() {
         setStaffMembers([])
         setFilteredStaffMembers([])
         setTotalStaffCount(0)
-    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery])
+    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, sortBy, sortOrder])
 
     // Debounce search query
     useEffect(() => {
@@ -301,7 +303,9 @@ function MisReportPage() {
                 selectedMonthYear,
                 departmentFilter,
                 divisionFilter,
-                debouncedSearchQuery
+                debouncedSearchQuery,
+                sortBy,
+                sortOrder
             )
 
             // Get total count from first item or fetch separately
@@ -327,12 +331,12 @@ function MisReportPage() {
         } finally {
             setIsLoading(false)
         }
-    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, isLoading])
+    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, sortBy, sortOrder])
 
     // Initial load when component mounts or dependencies change
     useEffect(() => {
         loadStaffData(currentPage)
-    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, currentPage])
+    }, [dashboardStaffFilter, departmentFilter, divisionFilter, selectedMonthYear, debouncedSearchQuery, currentPage, sortBy, sortOrder])
 
     // Calculate total pages
     const totalPages = Math.ceil(totalStaffCount / itemsPerPage)
@@ -715,16 +719,46 @@ function MisReportPage() {
                                         {/* Desktop Table View */}
                                         <div className="hidden sm:block overflow-x-auto">
                                             <table className="min-w-full divide-y divide-gray-100">
-                                                <thead className="bg-[#c41e3a] sticky top-0 z-10">
-                                                    <tr>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Division</th>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Dept</th>
-                                                        <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Name</th>
+                                                    <tr className="bg-[#c41e3a] sticky top-0 z-10">
+                                                        <th 
+                                                            className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight cursor-pointer hover:bg-[#a81a32] transition-colors"
+                                                            onClick={() => {
+                                                                if (sortBy === 'division') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                                                else { setSortBy('division'); setSortOrder('asc'); }
+                                                            }}
+                                                        >
+                                                            Division {sortBy === 'division' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                                        </th>
+                                                        <th 
+                                                            className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight cursor-pointer hover:bg-[#a81a32] transition-colors"
+                                                            onClick={() => {
+                                                                if (sortBy === 'department') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                                                else { setSortBy('department'); setSortOrder('asc'); }
+                                                            }}
+                                                        >
+                                                            Dept {sortBy === 'department' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                                        </th>
+                                                        <th 
+                                                            className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight cursor-pointer hover:bg-[#a81a32] transition-colors"
+                                                            onClick={() => {
+                                                                if (sortBy === 'name') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                                                else { setSortBy('name'); setSortOrder('asc'); }
+                                                            }}
+                                                        >
+                                                            Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                                        </th>
                                                         <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Total</th>
                                                         <th className="px-3 py-2 text-left text-xs font-bold text-white uppercase tracking-tight">Done</th>
-                                                        <th className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-tight">Score</th>
+                                                        <th 
+                                                            className="px-3 py-2 text-right text-xs font-bold text-white uppercase tracking-tight cursor-pointer hover:bg-[#a81a32] transition-colors"
+                                                            onClick={() => {
+                                                                if (sortBy === 'score') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                                                else { setSortBy('score'); setSortOrder('asc'); }
+                                                            }}
+                                                        >
+                                                            Score {sortBy === 'score' && (sortOrder === 'asc' ? '↑' : '↓')}
+                                                        </th>
                                                     </tr>
-                                                </thead>
                                                 <tbody className="bg-white divide-y divide-gray-50">
                                                     {staffMembers.map((staff, index) => (
                                                         <tr key={`${staff.name}-${index}`} onClick={() => setSelectedStaff(staff)} className="hover:bg-red-50/5 transition-colors border-l-2 border-transparent hover:border-[#c41e3a] cursor-pointer active:scale-[0.99]">

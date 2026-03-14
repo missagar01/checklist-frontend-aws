@@ -191,7 +191,9 @@ export const fetchStaffTasksDataApi = async (
   monthYear = "",
   departmentFilter = "all",
   divisionFilter = "all",
-  search = ""
+  search = "",
+  sortBy = "name",
+  sortOrder = "asc"
 ) => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
@@ -199,7 +201,9 @@ export const fetchStaffTasksDataApi = async (
     dashboardType,
     staffFilter,
     page,
-    limit
+    limit,
+    sortBy,
+    sortOrder
   });
 
   // Add monthYear if provided
@@ -266,7 +270,7 @@ export const exportAllStaffTasksApi = async (
   return res.data;
 };
 
-export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", divisionFilter = "all", search = "") => {
+export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", departmentFilter = "all", divisionFilter = "all", search = "", sortBy = "name", sortOrder = "asc") => {
   staffFilter = getFinalStaffFilter(staffFilter);
 
   const params = new URLSearchParams({
@@ -274,7 +278,9 @@ export const getStaffTasksCountApi = async (dashboardType, staffFilter = "all", 
     staffFilter,
     departmentFilter,
     divisionFilter,
-    search
+    search,
+    sortBy,
+    sortOrder
   });
 
   const res = await axiosInstance.get(
@@ -362,7 +368,11 @@ export const getChecklistDateRangeCountApi = async (
   endDate,
   staffFilter = "all",
   departmentFilter = "all",
-  statusFilter = "all"
+  statusFilter = "all",
+  divisionFilter = "all",
+  search = "",
+  sortBy = "name",
+  sortOrder = "asc"
 ) => {
   try {
     const role = localStorage.getItem("role");
@@ -377,7 +387,11 @@ export const getChecklistDateRangeCountApi = async (
       departmentFilter,
       statusFilter,
       role,
-      username
+      username,
+      divisionFilter,
+      search,
+      sortBy,
+      sortOrder
     });
 
     const url = `${BASE_URL}/checklist/date-range/count?${params.toString()}`;

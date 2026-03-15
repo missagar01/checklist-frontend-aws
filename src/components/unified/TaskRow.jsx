@@ -35,6 +35,7 @@ const TaskRow = memo(function TaskRow({
   isMaintenanceOnly = false,
   seqNo = 0, // Sequence number for housekeeping table
   userRole = "admin", // User role to show DOER2 select box for user role
+  loggedInUser = "",
 }) {
   // Determine if this is a completed task (from history)
   const isCompleted =
@@ -47,12 +48,13 @@ const TaskRow = memo(function TaskRow({
   const isUserRole = normalizedRole === "user";
   const isAdminRole = normalizedRole === "admin";
   const isHousekeepingPendingEditable =
-    isUserRole &&
     task.sourceSystem === "housekeeping" &&
     !isCompleted &&
-    task.originalData?.attachment !== "confirmed" &&
-    task.confirmedByHOD !== "Confirmed" &&
-    task.confirmedByHOD !== "confirmed";
+    ((isUserRole &&
+      task.originalData?.attachment !== "confirmed" &&
+      task.confirmedByHOD !== "Confirmed" &&
+      task.confirmedByHOD !== "confirmed") ||
+      loggedInUser.trim().toLowerCase() === "htuleshwar verma");
   const shouldShowChecklistRemarkInput =
     isUserRole && task.sourceSystem === "checklist" && !isCompleted;
 
@@ -169,28 +171,28 @@ const TaskRow = memo(function TaskRow({
           ) : (
             <input
               type="checkbox"
-              className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(
-                userRole?.toLowerCase() === "user"
-                  ? task.originalData?.attachment === "confirmed" ||
-                  task.confirmedByHOD === "Confirmed" ||
-                  task.confirmedByHOD === "confirmed"
+              className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(task.sourceSystem === "housekeeping" &&
+                (userRole?.toLowerCase() === "user"
+                  ? (task.originalData?.attachment === "confirmed" ||
+                    task.confirmedByHOD === "Confirmed" ||
+                    task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
-                  task.confirmedByHOD !== "confirmed"
-              )
+                  task.confirmedByHOD !== "confirmed"))
                 ? "opacity-50 cursor-not-allowed"
                 : ""
                 }`}
               checked={isSelected}
               onChange={handleCheckboxClick}
               disabled={
-                userRole?.toLowerCase() === "user"
-                  ? task.originalData?.attachment === "confirmed" ||
-                  task.confirmedByHOD === "Confirmed" ||
-                  task.confirmedByHOD === "confirmed"
+                task.sourceSystem === "housekeeping" &&
+                (userRole?.toLowerCase() === "user"
+                  ? (task.originalData?.attachment === "confirmed" ||
+                    task.confirmedByHOD === "Confirmed" ||
+                    task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
-                  task.confirmedByHOD !== "confirmed"
+                  task.confirmedByHOD !== "confirmed")
               }
             />
           )}
@@ -283,24 +285,19 @@ const TaskRow = memo(function TaskRow({
           </div>
         </td>
 
-        {/* Status - Hide for user role pending tasks OR admin in housekeeping-only mode */}
-        {!isHousekeepingPendingEditable && !isHousekeepingOnly && (
+        {/* Status - Show for Step 2 (Admin or Htuleshwar Verma) */}
+        {!isHousekeepingPendingEditable && (
           <td className="px-2 sm:px-3 py-2 sm:py-4">
             {isCompleted ? (
               <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
                 ✅ {task.originalStatus || "Yes"}
               </span>
+            ) : (isAdminRole || loggedInUser.trim().toLowerCase() === "htuleshwar verma") ? (
+              <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                ✅ {rowData.status || "Yes"}
+              </span>
             ) : (
-              <select
-                disabled={!isSelected}
-                value={rowData.status || ""}
-                onChange={(e) => handleDataChange("status", e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Select..</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
+              <span className="text-gray-500 text-xs">Waiting Confirm</span>
             )}
           </td>
         )}
@@ -348,14 +345,14 @@ const TaskRow = memo(function TaskRow({
             type="checkbox"
             className={`h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${(task.sourceSystem === "housekeeping" &&
               (userRole?.toLowerCase() === "user"
-                ? task.originalData?.attachment === "confirmed" ||
-                task.confirmedByHOD === "Confirmed" ||
-                task.confirmedByHOD === "confirmed"
+                ? (task.originalData?.attachment === "confirmed" ||
+                  task.confirmedByHOD === "Confirmed" ||
+                  task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
                 : task.originalData?.attachment !== "confirmed" &&
                 task.confirmedByHOD !== "Confirmed" &&
                 task.confirmedByHOD !== "confirmed")) ||
               (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user") ||
-              (isAdminRole && task.sourceSystem === "maintenance")  // ✅ Admin cannot submit maintenance
+              (isAdminRole && task.sourceSystem === "maintenance")
               ? "opacity-50 cursor-not-allowed"
               : ""
               }`}
@@ -364,14 +361,14 @@ const TaskRow = memo(function TaskRow({
             disabled={
               (task.sourceSystem === "housekeeping" &&
                 (userRole?.toLowerCase() === "user"
-                  ? task.originalData?.attachment === "confirmed" ||
-                  task.confirmedByHOD === "Confirmed" ||
-                  task.confirmedByHOD === "confirmed"
+                  ? (task.originalData?.attachment === "confirmed" ||
+                    task.confirmedByHOD === "Confirmed" ||
+                    task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
                   task.confirmedByHOD !== "confirmed")) ||
               (task.sourceSystem === "checklist" && userRole?.toLowerCase() !== "user") ||
-              (isAdminRole && task.sourceSystem === "maintenance")  // ✅ Admin cannot submit maintenance
+              (isAdminRole && task.sourceSystem === "maintenance")
             }
           />
         )}
@@ -517,17 +514,27 @@ const TaskRow = memo(function TaskRow({
               {task.originalData?.status || task.originalStatus || "Pending"}
             </span>
           ) : isUserRole ? (
-            <select
-              disabled={!isSelected || task.userStatusChecklist === 'Yes' || task.userStatusChecklist === 'No'}
-              value={rowData.status || ""}
-              onChange={(e) => handleDataChange("status", e.target.value)}
-              className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">Select Status / स्थिति चुनें</option>
-              <option value="Yes">Yes / हाँ</option>
-              <option value="No">No / नहीं</option>
-            </select>
-          ) : isAdminRole && task.sourceSystem === 'housekeeping' ? (
+            task.sourceSystem === 'housekeeping' ? (
+              loggedInUser.trim().toLowerCase() === "htuleshwar verma" ? (
+                <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                  ✅ {rowData.status || "Yes"}
+                </span>
+              ) : (
+                <span className="text-gray-500 text-xs text-center block">Waiting Confirm</span>
+              )
+            ) : (
+              <select
+                disabled={!isSelected || task.userStatusChecklist === 'Yes' || task.userStatusChecklist === 'No'}
+                value={rowData.status || ""}
+                onChange={(e) => handleDataChange("status", e.target.value)}
+                className="border border-gray-300 rounded-md px-2 py-1 w-full text-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">Select Status / स्थिति चुनें</option>
+                <option value="Yes">Yes / हाँ</option>
+                <option value="No">No / नहीं</option>
+              </select>
+            )
+          ) : (isAdminRole || loggedInUser.trim().toLowerCase() === "htuleshwar verma") && task.sourceSystem === 'housekeeping' ? (
             <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
               ✅ {rowData.status || "Yes"}
             </span>
@@ -608,6 +615,7 @@ export const TaskCard = memo(function TaskCard({
   isMaintenanceOnly = false,
   seqNo = 0,
   userRole = "admin",
+  loggedInUser = "",
   onImageClick,
 }) {
   const isCompleted =
@@ -624,9 +632,10 @@ export const TaskCard = memo(function TaskCard({
     isUserRole &&
     task.sourceSystem === "housekeeping" &&
     !isCompleted &&
-    task.originalData?.attachment !== "confirmed" &&
-    task.confirmedByHOD !== "Confirmed" &&
-    task.confirmedByHOD !== "confirmed";
+    (task.originalData?.attachment !== "confirmed" &&
+      task.confirmedByHOD !== "Confirmed" &&
+      task.confirmedByHOD !== "confirmed") ||
+    (loggedInUser.trim().toLowerCase() === "htuleshwar verma");
 
   const shouldShowChecklistRemarkInput =
     isUserRole && task.sourceSystem === "checklist" && !isCompleted;
@@ -656,9 +665,9 @@ export const TaskCard = memo(function TaskCard({
   const isSelectDisabled =
     (task.sourceSystem === "housekeeping" &&
       (isUserRole
-        ? task.originalData?.attachment === "confirmed" ||
-        task.confirmedByHOD === "Confirmed" ||
-        task.confirmedByHOD === "confirmed"
+        ? (task.originalData?.attachment === "confirmed" ||
+          task.confirmedByHOD === "Confirmed" ||
+          task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
         : task.originalData?.attachment !== "confirmed" &&
         task.confirmedByHOD !== "Confirmed" &&
         task.confirmedByHOD !== "confirmed")) ||

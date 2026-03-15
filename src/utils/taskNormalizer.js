@@ -26,16 +26,16 @@ const STATUS_MAP = {
 
 const getUnifiedStatus = (status, isHistory = false) => {
     if (!status) return 'Pending';
-    
+
     // Normalize mapping
     const normalized = STATUS_MAP[status] || STATUS_MAP[status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()] || STATUS_MAP[status.toLowerCase()];
-    
+
     // If we're in history mode and status is 'Pending' or 'No', it's actually 'Not Done' 
     // unless it was explicitly completed.
     if (isHistory && (normalized === 'Pending' || status.toLowerCase() === 'no')) {
         return 'Not Done';
     }
-    
+
     return normalized || status;
 };
 
@@ -288,7 +288,10 @@ export const normalizeHousekeepingTask = (task, isHistory = false) => {
         assignedToSecondary: task.doer_name2 || '—',
         dueDate: task.task_start_date || task.task_date || task.date || task.scheduled_date,
         // dueDateFormatted: formatDate(task.task_start_date || task.task_date || task.date || task.scheduled_date),
-        status: getUnifiedStatus(task.status, isHistory || !!task.submission_date),
+        // status: getUnifiedStatus(task.status, isHistory || !!task.submission_date),
+        status: (task.attachment === 'confirmed' || task.confirmedByHOD === 'Confirmed' || task.confirmedByHOD === 'confirmed') 
+            ? 'Confirmed' 
+            : getUnifiedStatus(task.status, isHistory || !!task.submission_date),
         originalStatus: task.status || 'Pending',
         priority: normalizePriority(task.priority),
 
@@ -437,6 +440,23 @@ export const filterTasks = (tasks, filters) => {
                     task.originalStatus !== 'Completed' && task.originalStatus !== 'Yes' &&
                     task.originalStatus !== 'No'
                 ) {
+                    return false;
+                }
+            } else if (status === 'Pending') {
+                // Show BOTH Pending and Confirmed tasks that have NOT been submitted yet
+                const isSubmitted = task.submissionDate && task.submissionDate !== '—' && task.submissionDate !== '';
+                
+                if (isSubmitted) {
+                    return false;
+                }
+
+                const isPendingOrConfirmed = 
+                    task.status === 'Pending' || task.status === 'Confirmed' || 
+                    task.originalStatus === 'Pending' || task.originalStatus === 'Confirmed' ||
+                    task.originalData?.status === 'Pending' || task.originalData?.status === 'Confirmed' ||
+                    task.originalData?.attachment === 'confirmed' || task.confirmedByHOD === 'Confirmed';
+
+                if (!isPendingOrConfirmed) {
                     return false;
                 }
             } else if (task.status !== status && task.originalStatus !== status) {

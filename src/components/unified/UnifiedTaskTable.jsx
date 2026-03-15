@@ -112,6 +112,9 @@ export default function UnifiedTaskTable({
 
     // Inline editing state - like maintenance page
     const [rowData, setRowData] = useState({});  // { taskId: { status, soundStatus, temperature, remarks } }
+    const loggedInUser = localStorage.getItem("user-name") || "";
+    const isUserRole = userRole?.toLowerCase() === "user";
+    const isAdmin = userRole?.toLowerCase() === "admin";
 
     const tableContainerRef = useRef(null);
 
@@ -190,14 +193,20 @@ export default function UnifiedTaskTable({
         let filtered = filterTasks(tasks, filters);
 
         const normalizedRole = userRole?.toLowerCase();
-        const loggedInUser = localStorage.getItem("user-name") || "";
 
         // 🔒 USER ROLE FILTER (ONLY checklist + maintenance)
         if (normalizedRole === "user") {
             const normalizedLoggedInUser = loggedInUser.trim().toLowerCase();
             filtered = filtered.filter(task => {
 
-                if (task.sourceSystem === "housekeeping") return true;
+                if (task.sourceSystem === "housekeeping") {
+                    const isConfirmed = task.status === "Confirmed" || task.originalStatus === "Confirmed" || task.originalData?.attachment === 'confirmed';
+                    if (isConfirmed) {
+                        // Only Htuleshwar Verma (User role HOD) and Admin can see confirmed tasks
+                        return normalizedLoggedInUser === "htuleshwar verma" || normalizedRole === "admin";
+                    }
+                    return true;
+                }
 
                 const assignedTo = (task.assignedTo || "").trim().toLowerCase();
                 const doerName = (task.doerName || "").trim().toLowerCase();
@@ -265,12 +274,15 @@ export default function UnifiedTaskTable({
 
     // Check if all visible items are selected
     // For housekeeping tasks: Admin selects confirmed, User selects pending
-    const isUserRole = normalizedRole === 'user';
     const isAdminRole = normalizedRole === 'admin';
 
     const selectableTasks = displayTasks.filter(task => {
         if (task.sourceSystem === 'housekeeping') {
             const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+            
+            // Htuleshwar Verma can select both pending and confirmed tasks
+            if (loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;
+
             // Admin: select confirmed tasks, User: select pending tasks
             return isUserRole ? !isConfirmed : isConfirmed;
         }
@@ -291,10 +303,11 @@ export default function UnifiedTaskTable({
             if (isChecked) {
                 newSelected.add(id);
 
-                // Auto-set status to 'Yes' for housekeeping tasks (Admin role)
+                // Auto-set status to 'Yes' for housekeeping tasks (Admin role or Htuleshwar Verma)
                 const task = displayTasks.find(t => t.id === id);
                 const isAdmin = userRole?.toLowerCase() === 'admin';
-                if (isAdmin && task?.sourceSystem === 'housekeeping') {
+                const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
+                if ((isAdmin || isHtuleshwar) && task?.sourceSystem === 'housekeeping') {
                     setRowData(prevData => ({
                         ...prevData,
                         [id]: {
@@ -319,6 +332,7 @@ export default function UnifiedTaskTable({
     const handleSelectAll = useCallback((e) => {
         const isAdmin = userRole?.toLowerCase() === 'admin';
         const isUserRole = userRole?.toLowerCase() === 'user';
+        const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
 
         if (e.target.checked) {
             // Select all visible tasks
@@ -326,6 +340,8 @@ export default function UnifiedTaskTable({
             const tasksToSelect = displayTasks.filter(task => {
                 if (task.sourceSystem === 'housekeeping') {
                     const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+                    
+                    if (isHtuleshwar) return true;
                     return isUserRole ? !isConfirmed : isConfirmed;
                 }
                 // For checklist: Admin cannot select/update them here
@@ -342,8 +358,9 @@ export default function UnifiedTaskTable({
                 return newSet;
             });
 
-            // Auto-set status for housekeeping tasks (Admin role)
-            if (isAdmin) {
+            // Auto-set status for housekeeping tasks (Admin role or Htuleshwar Verma)
+            const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
+            if (isAdmin || isHtuleshwar) {
                 const hkTasksToSelect = tasksToSelect.filter(t => t.sourceSystem === 'housekeeping');
                 if (hkTasksToSelect.length > 0) {
                     setRowData(prevData => {
@@ -436,6 +453,12 @@ export default function UnifiedTaskTable({
         // For Admin: status is auto-set to 'Yes', so always valid if housekeeping
         if (task?.sourceSystem === "housekeeping") {
             if (isAdmin) return true; // Housekeeping admin submission is now just a checkbox
+            
+            const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
+            // If already confirmed (Step 2), it's valid for submission even without changing doer
+            if (isConfirmed && loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;
+
+            // For Step 1 (Confirmation), doerName2 is required
             if (data.doerName2 && data.doerName2.trim()) {
                 return true;
             }
@@ -733,6 +756,7 @@ export default function UnifiedTaskTable({
                                                         isMaintenanceOnly={isMaintenanceOnly}
                                                         seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
                                                         userRole={userRole}
+                                                        loggedInUser={loggedInUser}
                                                     />
                                                 );
                                             })
@@ -765,6 +789,7 @@ export default function UnifiedTaskTable({
                                                 isMaintenanceOnly={isMaintenanceOnly}
                                                 seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
                                                 userRole={userRole}
+                                                loggedInUser={loggedInUser}
                                             />
                                         );
                                     })

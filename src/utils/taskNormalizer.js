@@ -291,9 +291,10 @@ export const normalizeHousekeepingTask = (task, isHistory = false) => {
         // status: getUnifiedStatus(task.status, isHistory || !!task.submission_date),
         status: (task.attachment === 'confirmed' || task.confirmedByHOD === 'Confirmed' || task.confirmedByHOD === 'confirmed') 
             ? 'Confirmed' 
-            : getUnifiedStatus(task.status, isHistory || !!task.submission_date),
+            : (!isHistory && !task.submission_date) ? 'Pending' : getUnifiedStatus(task.status, isHistory || !!task.submission_date),
         originalStatus: task.status || 'Pending',
         priority: normalizePriority(task.priority),
+        hod: task.hod || '—',
 
         // Schedule & Rules
         frequency: task.frequency || '—',
@@ -443,22 +444,17 @@ export const filterTasks = (tasks, filters) => {
                     return false;
                 }
             } else if (status === 'Pending') {
-                // Show BOTH Pending and Confirmed tasks that have NOT been submitted yet
+                // Broad Fix: Show ALL tasks that have NOT been submitted yet in the Pending view
                 const isSubmitted = task.submissionDate && task.submissionDate !== '—' && task.submissionDate !== '';
                 
+                // If it's submitted, it definitely shouldn't be in Pending
                 if (isSubmitted) {
                     return false;
                 }
 
-                const isPendingOrConfirmed = 
-                    task.status === 'Pending' || task.status === 'Confirmed' || 
-                    task.originalStatus === 'Pending' || task.originalStatus === 'Confirmed' ||
-                    task.originalData?.status === 'Pending' || task.originalData?.status === 'Confirmed' ||
-                    task.originalData?.attachment === 'confirmed' || task.confirmedByHOD === 'Confirmed';
-
-                if (!isPendingOrConfirmed) {
-                    return false;
-                }
+                // If it's housekeeping and not submitted, we generally show it in pending
+                // unless it represents some other very specific filtered state.
+                return true;
             } else if (task.status !== status && task.originalStatus !== status) {
                 return false;
             }
@@ -468,10 +464,18 @@ export const filterTasks = (tasks, filters) => {
         if (priority && task.priority !== priority) return false;
 
         // Assigned to filter
-        if (assignedTo && task.assignedTo !== assignedTo) return false;
+        if (assignedTo && assignedTo.trim() !== '') {
+            const filterVal = assignedTo.trim().toLowerCase();
+            const taskVal = (task.assignedTo || '').trim().toLowerCase();
+            if (taskVal !== filterVal) return false;
+        }
 
         // Department filter
-        if (department && task.department !== department) return false;
+        if (department && department.trim() !== '') {
+            const filterVal = department.trim().toLowerCase();
+            const taskVal = (task.department || '').trim().toLowerCase();
+            if (taskVal !== filterVal) return false;
+        }
 
         // Search filter
         if (searchTerm) {

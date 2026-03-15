@@ -60,9 +60,63 @@ export default function UnifiedTaskTable({
         endDate: "",
     });
 
-    // Calculate counts for each system based on current status
+    const loggedInUser = localStorage.getItem("user-name") || "";
+    const isUserRole = userRole?.toLowerCase() === "user";
+    const isAdmin = userRole?.toLowerCase() === "admin";
+    const tableContainerRef = useRef(null);
+
+
+    // 🔍 1. Filter tasks by IDENTITY/ROLE (Identity-based visibility)
+    // This is the core "Who am I and what am I allowed to see?" logic
+    const userVisibleTasks = useMemo(() => {
+        const normalizedRole = userRole?.toLowerCase();
+        const normalizedLoggedInUser = loggedInUser.trim().toLowerCase();
+
+        return tasks.filter(task => {
+            // ADMIN has full visibility
+            if (normalizedRole === "admin") return true;
+
+            // USER Role identity-based filtering
+            if (normalizedRole === "user") {
+                if (task.sourceSystem === "housekeeping") {
+                    // Housekeeping department visibility is already backend-filtered.
+                    // But Step 3 (Confirmed) tasks have extra HOD-specific restrictions.
+                    const isConfirmedByHOD =
+                        task.status === "Confirmed" ||
+                        task.originalStatus === "Confirmed" ||
+                        task.originalData?.attachment === 'confirmed' ||
+                        task.confirmedByHOD === 'Confirmed';
+
+                    if (isConfirmedByHOD) {
+                        const isUserDesignatedHOD = task.hod && normalizedLoggedInUser && 
+                                                 task.hod.toLowerCase().includes(normalizedLoggedInUser);
+                        return normalizedLoggedInUser === "htuleshwar verma" || isUserDesignatedHOD;
+                    }
+                    return true;
+                }
+
+                // Checklist / Maintenance identity check
+                const assignedTo = (task.assignedTo || "").trim().toLowerCase();
+                const doerName = (task.doerName || "").trim().toLowerCase();
+                const doerNameOriginal = (task.doer_name || "").trim().toLowerCase();
+                const originalAssignedTo = (task.originalData?.assigned_to || "").trim().toLowerCase();
+
+                return (
+                    assignedTo === normalizedLoggedInUser ||
+                    doerName === normalizedLoggedInUser ||
+                    doerNameOriginal === normalizedLoggedInUser ||
+                    originalAssignedTo === normalizedLoggedInUser
+                );
+            }
+
+            return true;
+        });
+    }, [tasks, userRole, loggedInUser]);
+
+    // 📊 2. Calculate adjusted counts for each tab
     const systemCounts = useMemo(() => {
         const isHistory = filters.status === "Completed";
+        
         if (isHistory) {
             return {
                 checklist: checklistHistoryTotal,
@@ -70,12 +124,32 @@ export default function UnifiedTaskTable({
                 housekeeping: housekeepingHistoryTotal
             };
         }
-        return {
+
+        const counts = {
             checklist: pendingTotals.checklist || 0,
             maintenance: pendingTotals.maintenance || 0,
             housekeeping: pendingTotals.housekeeping || 0
         };
-    }, [filters.status, pendingTotals, checklistHistoryTotal, maintenanceHistoryTotal, housekeepingHistoryTotal]);
+
+        // Proportional Adjustment: If we find that the user can only see a subset 
+        // of the tasks loaded in memory, we adjust the total count accordingly.
+        ["checklist", "maintenance", "housekeeping"].forEach(system => {
+            const inMemoryTotal = tasks.filter(t => t.sourceSystem === system).length;
+            if (inMemoryTotal > 0) {
+                const inMemoryVisible = userVisibleTasks.filter(t => t.sourceSystem === system).length;
+                
+                // If 0 are visible in memory, the total should be 0
+                if (inMemoryVisible === 0) {
+                    counts[system] = 0;
+                } else if (inMemoryVisible < inMemoryTotal) {
+                    // Adjust total proportionally
+                    counts[system] = Math.round(counts[system] * (inMemoryVisible / inMemoryTotal));
+                }
+            }
+        });
+
+        return counts;
+    }, [filters.status, tasks, userVisibleTasks, pendingTotals, checklistHistoryTotal, maintenanceHistoryTotal, housekeepingHistoryTotal]);
 
     // Compute active options based on selected source system
     const { departmentOptions, assignedToOptions } = useMemo(() => {
@@ -112,11 +186,7 @@ export default function UnifiedTaskTable({
 
     // Inline editing state - like maintenance page
     const [rowData, setRowData] = useState({});  // { taskId: { status, soundStatus, temperature, remarks } }
-    const loggedInUser = localStorage.getItem("user-name") || "";
-    const isUserRole = userRole?.toLowerCase() === "user";
-    const isAdmin = userRole?.toLowerCase() === "admin";
 
-    const tableContainerRef = useRef(null);
 
     // Auto-refresh when source system changes
     useEffect(() => {
@@ -190,37 +260,8 @@ export default function UnifiedTaskTable({
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
-        let filtered = filterTasks(tasks, filters);
-
-        const normalizedRole = userRole?.toLowerCase();
-
-        // 🔒 USER ROLE FILTER (ONLY checklist + maintenance)
-        if (normalizedRole === "user") {
-            const normalizedLoggedInUser = loggedInUser.trim().toLowerCase();
-            filtered = filtered.filter(task => {
-
-                if (task.sourceSystem === "housekeeping") {
-                    const isConfirmed = task.status === "Confirmed" || task.originalStatus === "Confirmed" || task.originalData?.attachment === 'confirmed';
-                    if (isConfirmed) {
-                        // Only Htuleshwar Verma (User role HOD) and Admin can see confirmed tasks
-                        return normalizedLoggedInUser === "htuleshwar verma" || normalizedRole === "admin";
-                    }
-                    return true;
-                }
-
-                const assignedTo = (task.assignedTo || "").trim().toLowerCase();
-                const doerName = (task.doerName || "").trim().toLowerCase();
-                const doerNameOriginal = (task.doer_name || "").trim().toLowerCase();
-                const originalAssignedTo = (task.originalData?.assigned_to || "").trim().toLowerCase();
-
-                return (
-                    assignedTo === normalizedLoggedInUser ||
-                    doerName === normalizedLoggedInUser ||
-                    doerNameOriginal === normalizedLoggedInUser ||
-                    originalAssignedTo === normalizedLoggedInUser
-                );
-            });
-        }
+        // Use userVisibleTasks as base (identity filtering already applied)
+        let filtered = filterTasks(userVisibleTasks, filters);
 
         // Deduplicate & Filter History missing dates
         const seen = new Set();
@@ -242,7 +283,7 @@ export default function UnifiedTaskTable({
         }
 
         return sortByDate(deduplicated, true);
-    }, [tasks, filters, userRole]);
+    }, [userVisibleTasks, filters]);
 
     // Check if showing only housekeeping tasks
     const normalizedRole = userRole?.toLowerCase();
@@ -327,31 +368,16 @@ export default function UnifiedTaskTable({
             }
             return newSelected;
         });
-    }, [displayTasks, userRole]);
+    }, [displayTasks, userRole, loggedInUser]);
 
     const handleSelectAll = useCallback((e) => {
         const isAdmin = userRole?.toLowerCase() === 'admin';
         const isUserRole = userRole?.toLowerCase() === 'user';
         const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
-
         if (e.target.checked) {
-            // Select all visible tasks
-            // For housekeeping: Admin selects confirmed, User selects pending
-            const tasksToSelect = displayTasks.filter(task => {
-                if (task.sourceSystem === 'housekeeping') {
-                    const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
-                    
-                    if (isHtuleshwar) return true;
-                    return isUserRole ? !isConfirmed : isConfirmed;
-                }
-                // For checklist: Admin cannot select/update them here
-                if (task.sourceSystem === 'checklist' && !isUserRole) {
-                    return false;
-                }
-                return true; // Select all other tasks
-            });
-
-            const allIds = tasksToSelect.map(task => task.id);
+            // Simplify: Use the pre-calculated selectableTasks
+            const allIds = selectableTasks.map(task => task.id);
+            
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
                 allIds.forEach(id => newSet.add(id));
@@ -359,9 +385,8 @@ export default function UnifiedTaskTable({
             });
 
             // Auto-set status for housekeeping tasks (Admin role or Htuleshwar Verma)
-            const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
             if (isAdmin || isHtuleshwar) {
-                const hkTasksToSelect = tasksToSelect.filter(t => t.sourceSystem === 'housekeeping');
+                const hkTasksToSelect = selectableTasks.filter(t => t.sourceSystem === 'housekeeping');
                 if (hkTasksToSelect.length > 0) {
                     setRowData(prevData => {
                         const newData = { ...prevData };
@@ -392,7 +417,7 @@ export default function UnifiedTaskTable({
                 });
             });
         }
-    }, [displayTasks, userRole]);
+    }, [displayTasks, userRole, loggedInUser, selectableTasks]);
 
     // Handle inline row data changes
     const handleRowDataChange = useCallback((taskId, field, value) => {
@@ -458,8 +483,9 @@ export default function UnifiedTaskTable({
             // If already confirmed (Step 2), it's valid for submission even without changing doer
             if (isConfirmed && loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;
 
-            // For Step 1 (Confirmation), doerName2 is required
-            if (data.doerName2 && data.doerName2.trim()) {
+            // For Step 1 (Confirmation), doerName2 is required OR it must already have an assignee in DB
+            const existingDoer = task.assignedToSecondary && task.assignedToSecondary !== '—' && task.assignedToSecondary !== '';
+            if ((data.doerName2 && data.doerName2.trim()) || existingDoer) {
                 return true;
             }
         }
@@ -475,7 +501,7 @@ export default function UnifiedTaskTable({
         }
 
         return true;
-    }, [filteredTasks, rowData]);
+    }, [filteredTasks, rowData, userRole, loggedInUser]);
 
 
     const areSelectedTasksValid = useMemo(() => {

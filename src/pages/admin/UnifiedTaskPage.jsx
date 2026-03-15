@@ -243,67 +243,12 @@ export default function UnifiedTaskPage() {
             ? (Array.isArray(maintenanceHistory) ? maintenanceHistory : [])
             : []
 
-        // Filter housekeeping tasks based on access and user_access departments
-        let housekeepingFiltered = []
-        let housekeepingHistoryFiltered = []
+        let housekeepingFiltered = [];
+        let housekeepingHistoryFiltered = [];
 
         if (hasSystemAccess('housekeeping') || systemAccess.length === 0) {
-            const allHousekeepingTasks = Array.isArray(housekeepingTasks) ? housekeepingTasks : []
-            const allHousekeepingHistory = Array.isArray(housekeepingHistory) ? housekeepingHistory : []
-
-            // Get current role from localStorage (stable value)
-            const currentRole = localStorage.getItem("role") || ""
-
-            // For user role, filter by user_access1 departments (for housekeeping)
-            if (currentRole?.toLowerCase() === "user") {
-                // Use user_access1 for housekeeping, fallback to user_access
-                const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
-                const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
-                const accessToUse = userAccess1 || userAccess
-
-                if (accessToUse) {
-                    // Parse departments (comma-separated)
-                    const userDepartments = accessToUse.split(',').map(d => d.trim().toLowerCase()).filter(Boolean)
-
-                    // Filter tasks to only show those matching user's departments
-                    // Match exact or normalized match (case-insensitive, space-normalized)
-                    const normalizeDept = (dept) => dept.replace(/\s+/g, ' ').trim().toLowerCase()
-
-                    housekeepingFiltered = allHousekeepingTasks.filter(task => {
-                        const taskDept = normalizeDept(task.department || '')
-                        if (!taskDept) return false
-                        return userDepartments.some(userDept => {
-                            const normalizedUserDept = normalizeDept(userDept)
-                            // Exact match
-                            if (taskDept === normalizedUserDept) return true
-                            // Partial match - task department contains user department or vice versa
-                            if (taskDept.includes(normalizedUserDept) || normalizedUserDept.includes(taskDept)) return true
-                            return false
-                        })
-                    })
-
-                    housekeepingHistoryFiltered = allHousekeepingHistory.filter(task => {
-                        const taskDept = normalizeDept(task.department || '')
-                        if (!taskDept) return false
-                        return userDepartments.some(userDept => {
-                            const normalizedUserDept = normalizeDept(userDept)
-                            // Exact match
-                            if (taskDept === normalizedUserDept) return true
-                            // Partial match - task department contains user department or vice versa
-                            if (taskDept.includes(normalizedUserDept) || normalizedUserDept.includes(taskDept)) return true
-                            return false
-                        })
-                    })
-                } else {
-                    // No user_access1 or user_access, show nothing for user role
-                    housekeepingFiltered = []
-                    housekeepingHistoryFiltered = []
-                }
-            } else {
-                // Admin role - show all housekeeping tasks
-                housekeepingFiltered = allHousekeepingTasks
-                housekeepingHistoryFiltered = allHousekeepingHistory
-            }
+            housekeepingFiltered = Array.isArray(housekeepingTasks) ? housekeepingTasks : [];
+            housekeepingHistoryFiltered = Array.isArray(housekeepingHistory) ? housekeepingHistory : [];
         }
 
         // Combine pending tasks from all accessible sources
@@ -355,7 +300,8 @@ export default function UnifiedTaskPage() {
         housekeepingTasks,
         housekeepingHistory,
         hasSystemAccess,
-        systemAccess
+        systemAccess,
+        activeStatus
     ])
 
     // Get unique assignees from all sources

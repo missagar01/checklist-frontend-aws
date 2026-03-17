@@ -248,24 +248,24 @@ const HousekeepingVerify = () => {
                         className="w-3.5 h-3.5 rounded border-gray-300 text-[#c41e3a] focus:ring-[#c41e3a] cursor-pointer"
                       />
                     </td>
-                    <td className="px-4 py-5 font-black text-gray-900 border-r border-gray-50/50">#{task.task_id}</td>
-                    <td className="px-4 py-5 text-gray-700 font-bold">{task.department || '—'}</td>
-                    <td className="px-4 py-5 text-gray-600 font-medium">{task.name || '—'}</td>
-                    <td className="px-4 py-5 text-gray-500 max-w-[220px] break-words">{task.task_description || '—'}</td>
-                    <td className="px-4 py-5 text-gray-600 font-black whitespace-nowrap">
+                    <td className="px-4 py-4 font-bold text-gray-900 border-r border-gray-50/50 text-[11px]">#{task.task_id}</td>
+                    <td className="px-4 py-4 text-gray-700 font-bold text-[11px]">{task.department || '—'}</td>
+                    <td className="px-4 py-4 text-gray-600 font-medium text-[11px]">{task.name || '—'}</td>
+                    <td className="px-4 py-4 text-gray-500 max-w-[250px] break-words text-[11px] leading-relaxed">{task.task_description || '—'}</td>
+                    <td className="px-4 py-4 text-gray-600 font-black whitespace-nowrap text-[11px]">
                       {formatDate(task.task_start_date)}
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-4 py-4">
                       <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase tracking-tighter">
                         {task.frequency || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-4 py-5 text-gray-400 italic max-w-[150px] truncate">
+                    <td className="px-4 py-4 text-gray-400 italic max-w-[150px] truncate text-[10px]">
                       {task.remark || (task.originalData?.remark) || '—'}
                     </td>
-                    <td className="px-4 py-5 text-gray-600">{task.hod || '—'}</td>
-                    <td className="px-4 py-5 text-gray-600">{task.doer_name2 || '—'}</td>
-                    <td className="px-4 py-5 text-[10px] font-black text-red-500 uppercase tracking-widest">{task.attachment}</td>
+                    <td className="px-4 py-4 text-gray-600 text-[11px]">{task.hod || '—'}</td>
+                    <td className="px-4 py-4 text-gray-600 text-[11px]">{task.doer_name2 || '—'}</td>
+                    <td className="px-4 py-4 text-[10px] font-black text-red-500 uppercase tracking-widest">{task.attachment}</td>
                   </tr>
                 ))}
               </tbody>

@@ -54,7 +54,7 @@ const TaskRow = memo(function TaskRow({
       task.originalData?.attachment !== "confirmed" &&
       task.confirmedByHOD !== "Confirmed" &&
       task.confirmedByHOD !== "confirmed") ||
-      loggedInUser.trim().toLowerCase() === "htuleshwar verma");
+      localStorage.getItem('page_access')?.includes('housekeeping-verify'));
   const shouldShowChecklistRemarkInput =
     isUserRole && task.sourceSystem === "checklist" && !isCompleted;
 
@@ -175,7 +175,7 @@ const TaskRow = memo(function TaskRow({
                 (userRole?.toLowerCase() === "user"
                   ? (task.originalData?.attachment === "confirmed" ||
                     task.confirmedByHOD === "Confirmed" ||
-                    task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
+                    task.confirmedByHOD === "confirmed") && !localStorage.getItem('page_access')?.includes('housekeeping-verify')
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
                   task.confirmedByHOD !== "confirmed"))
@@ -189,7 +189,7 @@ const TaskRow = memo(function TaskRow({
                 (userRole?.toLowerCase() === "user"
                   ? (task.originalData?.attachment === "confirmed" ||
                     task.confirmedByHOD === "Confirmed" ||
-                    task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
+                    task.confirmedByHOD === "confirmed") && !localStorage.getItem('page_access')?.includes('housekeeping-verify')
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
                   task.confirmedByHOD !== "confirmed")
@@ -285,14 +285,14 @@ const TaskRow = memo(function TaskRow({
           </div>
         </td>
 
-        {/* Status - Show for Step 2 (Admin or Htuleshwar Verma) */}
+        {/* Status cell */}
         {!isHousekeepingPendingEditable && (
           <td className="px-2 sm:px-3 py-2 sm:py-4">
             {isCompleted ? (
               <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
                 ✅ {task.originalStatus || "Yes"}
               </span>
-            ) : (isAdminRole || loggedInUser.trim().toLowerCase() === "htuleshwar verma") ? (
+            ) : (isAdminRole || localStorage.getItem('page_access')?.includes('housekeeping-verify')) ? (
               <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
                 ✅ {rowData.status || "Yes"}
               </span>
@@ -347,7 +347,7 @@ const TaskRow = memo(function TaskRow({
               (userRole?.toLowerCase() === "user"
                 ? (task.originalData?.attachment === "confirmed" ||
                   task.confirmedByHOD === "Confirmed" ||
-                  task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
+                  task.confirmedByHOD === "confirmed") && !localStorage.getItem('page_access')?.includes('housekeeping-verify')
                 : task.originalData?.attachment !== "confirmed" &&
                 task.confirmedByHOD !== "Confirmed" &&
                 task.confirmedByHOD !== "confirmed")) ||
@@ -363,7 +363,7 @@ const TaskRow = memo(function TaskRow({
                 (userRole?.toLowerCase() === "user"
                   ? (task.originalData?.attachment === "confirmed" ||
                     task.confirmedByHOD === "Confirmed" ||
-                    task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
+                    task.confirmedByHOD === "confirmed") && !localStorage.getItem('page_access')?.includes('housekeeping-verify')
                   : task.originalData?.attachment !== "confirmed" &&
                   task.confirmedByHOD !== "Confirmed" &&
                   task.confirmedByHOD !== "confirmed")) ||
@@ -515,7 +515,7 @@ const TaskRow = memo(function TaskRow({
             </span>
           ) : isUserRole ? (
             task.sourceSystem === 'housekeeping' ? (
-              loggedInUser.trim().toLowerCase() === "htuleshwar verma" ? (
+              (isAdminRole || localStorage.getItem('page_access')?.includes('housekeeping-verify')) ? (
                 <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
                   ✅ {rowData.status || "Yes"}
                 </span>
@@ -534,7 +534,7 @@ const TaskRow = memo(function TaskRow({
                 <option value="No">No / नहीं</option>
               </select>
             )
-          ) : (isAdminRole || loggedInUser.trim().toLowerCase() === "htuleshwar verma") && task.sourceSystem === 'housekeeping' ? (
+          ) : (isAdminRole || localStorage.getItem('page_access')?.includes('housekeeping-verify')) && task.sourceSystem === 'housekeeping' ? (
             <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
               ✅ {rowData.status || "Yes"}
             </span>
@@ -635,7 +635,7 @@ export const TaskCard = memo(function TaskCard({
     (task.originalData?.attachment !== "confirmed" &&
       task.confirmedByHOD !== "Confirmed" &&
       task.confirmedByHOD !== "confirmed") ||
-    (loggedInUser.trim().toLowerCase() === "htuleshwar verma");
+    localStorage.getItem('page_access')?.includes('housekeeping-verify');
 
   const shouldShowChecklistRemarkInput =
     isUserRole && task.sourceSystem === "checklist" && !isCompleted;
@@ -667,7 +667,7 @@ export const TaskCard = memo(function TaskCard({
       (isUserRole
         ? (task.originalData?.attachment === "confirmed" ||
           task.confirmedByHOD === "Confirmed" ||
-          task.confirmedByHOD === "confirmed") && loggedInUser.trim().toLowerCase() !== "htuleshwar verma"
+          task.confirmedByHOD === "confirmed") && !localStorage.getItem('page_access')?.includes('housekeeping-verify')
         : task.originalData?.attachment !== "confirmed" &&
         task.confirmedByHOD !== "Confirmed" &&
         task.confirmedByHOD !== "confirmed")) ||
@@ -736,6 +736,9 @@ export const TaskCard = memo(function TaskCard({
             </span>
             <p className="text-[11px] font-bold text-gray-700">
               {task.machineName !== "—" ? task.machineName : task.department}
+              {task.serialNo && task.serialNo !== "—" && (
+                <div className="text-xs text-gray-500">SN: {task.serialNo}</div>
+              )}
             </p>
           </div>
 
@@ -864,17 +867,29 @@ export const TaskCard = memo(function TaskCard({
                   }
                 </p>
               ) : isUserRole || (isAdminRole && task.sourceSystem === "maintenance") ? (
-                <select
-                  disabled={!isSelected}
-                  value={rowData.status || ""}
-                  onChange={(e) => handleDataChange("status", e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-2 py-2 text-sm font-bold disabled:bg-gray-50 focus:border-blue-400 mt-0.5 shadow-sm"
-                >
-                  <option value="">Select Status</option>
-                  <option value="Yes">Yes / हाँ</option>
-                  <option value="No">No / नहीं</option>
-                </select>
-              ) : isAdminRole && task.sourceSystem === "housekeeping" ? (
+                task.sourceSystem === "housekeeping" ? (
+                  (isAdminRole || localStorage.getItem('page_access')?.includes('housekeeping-verify')) ? (
+                    <div className="mt-0.5">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-md border border-blue-100 uppercase inline-flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" /> {rowData.status || "Yes"}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] font-bold text-gray-500 uppercase mt-0.5">Waiting Confirm</p>
+                  )
+                ) : (
+                  <select
+                    disabled={!isSelected}
+                    value={rowData.status || ""}
+                    onChange={(e) => handleDataChange("status", e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-2 py-2 text-sm font-bold disabled:bg-gray-50 focus:border-blue-400 mt-0.5 shadow-sm"
+                  >
+                    <option value="">Select Status</option>
+                    <option value="Yes">Yes / हाँ</option>
+                    <option value="No">No / नहीं</option>
+                  </select>
+                )
+              ) : (isAdminRole || localStorage.getItem('page_access')?.includes('housekeeping-verify')) && task.sourceSystem === "housekeeping" ? (
                 <div className="mt-0.5">
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-md border border-blue-100 uppercase inline-flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" /> {rowData.status || "Yes"}
@@ -998,8 +1013,8 @@ export function TaskTableHeader({
           <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Confirmed By HOD
           </th>
-          {/* Status - Hide for user role OR admin in housekeeping-only mode */}
-          {normalizedRole !== "user" && !isHousekeepingOnly && (
+          {/* Status - Show status header if not in history mode */}
+          {!isHistoryMode && (
             <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>

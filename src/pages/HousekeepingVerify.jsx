@@ -23,61 +23,50 @@ import { formatDate } from '../utils/taskNormalizer';
 const HousekeepingVerify = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [infiniteLoading, setInfiniteLoading] = useState(false);
+  const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
+  const limit = 50;
 
-  const observer = useRef();
-  const lastTaskRef = useCallback(node => {
-    if (loading || infiniteLoading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prevPage => prevPage + 1);
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, infiniteLoading, hasMore]);
-
-  const fetchTasks = async (pageNum, isInitial = false) => {
-    if (isInitial) setLoading(true);
-    else setInfiniteLoading(true);
-
+  const fetchTasks = async (pageNum) => {
+    setLoading(true);
     try {
       const response = await getHousekeepingHistoryTasksAPI(pageNum, {
         unconfirmed: 'true',
-        limit: 50
+        limit: limit
       });
 
       const data = response.data;
       const items = Array.isArray(data) ? data : data?.items || [];
-      const more = data?.hasMore ?? (items.length === 50);
+      const totalCount = parseInt(data?.total || items.length, 10);
 
-      setTasks(prev => isInitial ? items : [...prev, ...items]);
-      setHasMore(more);
+      setTasks(items);
+      setTotal(totalCount);
+      setHasMore(pageNum * limit < totalCount);
     } catch (error) {
       console.error('Error fetching verification tasks:', error);
       toast.error('Failed to load tasks');
     } finally {
-      if (isInitial) setLoading(false);
-      else setInfiniteLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTasks(1, true);
-    setPage(1);
+    fetchTasks(page);
     setSelectedIds(new Set());
-  }, []);
-
-  useEffect(() => {
-    if (page > 1) {
-      fetchTasks(page, false);
-    }
   }, [page]);
+
+  const handleRefresh = () => {
+    if (page === 1) {
+      fetchTasks(1);
+    } else {
+      setPage(1);
+    }
+    setSelectedIds(new Set());
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -174,12 +163,12 @@ const HousekeepingVerify = () => {
                 />
               </div>
               <button
-                onClick={() => { setPage(1); fetchTasks(1, true); }}
+                onClick={handleRefresh}
                 disabled={loading || isVerifying}
                 className="p-1.5 text-gray-400 hover:text-[#c41e3a] transition-all"
                 title="Refresh"
               >
-                <RefreshCcw size={14} className={loading || infiniteLoading ? "animate-spin" : ""} />
+                <RefreshCcw size={14} className={loading ? "animate-spin" : ""} />
               </button>
             </div>
 
@@ -236,7 +225,6 @@ const HousekeepingVerify = () => {
                 {filteredTasks.map((task, index) => (
                   <tr
                     key={task.task_id}
-                    ref={index === filteredTasks.length - 1 ? lastTaskRef : null}
                     className={`hover:bg-red-50/10 transition-colors group cursor-pointer ${selectedIds.has(task.task_id) ? 'bg-red-50/20' : ''}`}
                     onClick={() => toggleSelect(task.task_id)}
                   >
@@ -251,16 +239,16 @@ const HousekeepingVerify = () => {
                     <td className="px-4 py-4 font-bold text-gray-900 border-r border-gray-50/50 text-[11px]">#{task.task_id}</td>
                     <td className="px-4 py-4 text-gray-700 font-bold text-[11px]">{task.department || '—'}</td>
                     <td className="px-4 py-4 text-gray-600 font-medium text-[11px]">{task.name || '—'}</td>
-                    <td className="px-4 py-4 text-gray-500 max-w-[250px] break-words text-[11px] leading-relaxed">{task.task_description || '—'}</td>
+                    <td className="px-4 py-4 text-gray-700 max-w-[250px] break-words text-[11px] leading-relaxed">{task.task_description || '—'}</td>
                     <td className="px-4 py-4 text-gray-600 font-black whitespace-nowrap text-[11px]">
                       {formatDate(task.task_start_date)}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase tracking-tighter">
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-[9px] font-black uppercase tracking-tighter">
                         {task.frequency || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-gray-400 italic max-w-[150px] truncate text-[10px]">
+                    <td className="px-4 py-4 text-gray-600 italic max-w-[150px] truncate text-[10px]">
                       {task.remark || (task.originalData?.remark) || '—'}
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-[11px]">{task.hod || '—'}</td>
@@ -277,7 +265,6 @@ const HousekeepingVerify = () => {
             {filteredTasks.map((task, index) => (
               <div
                 key={task.task_id}
-                ref={index === filteredTasks.length - 1 ? lastTaskRef : null}
                 className={`p-3 space-y-3 relative bg-white transition-all ${selectedIds.has(task.task_id) ? 'ring-1 ring-inset ring-red-100 bg-red-50/10' : ''}`}
                 onClick={() => toggleSelect(task.task_id)}
               >
@@ -353,48 +340,85 @@ const HousekeepingVerify = () => {
             ))}
           </div>
 
-          {/* Empty/Infinite States */}
-          {!loading && filteredTasks.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 bg-gray-50/30">
-              <AlertCircle size={48} className="text-gray-100 mb-4" />
-              <p className="text-gray-400 font-black text-base uppercase tracking-tighter">No records</p>
-              {/* <p className="text-gray-300 text-[9px] uppercase tracking-widest mt-1">Check back later or refresh</p> */}
-            </div>
-          )}
-
-          {(loading || infiniteLoading) && (
+          {loading && (
             <div className="flex items-center justify-center py-10 bg-white">
               <div className="flex items-center gap-3 px-6 py-2 bg-gray-50 rounded-full border border-gray-100 shadow-sm transition-all hover:scale-105">
                 <Loader2 size={16} className="animate-spin text-[#c41e3a]" />
                 <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
-                  {loading ? 'Initializing Stream...' : 'Loading More Chunks...'}
+                  Fetching Records...
                 </span>
               </div>
             </div>
           )}
 
-          {!hasMore && tasks.length > 0 && (
-            <div className="py-8 text-center bg-gray-50/50 border-t border-gray-100">
-              <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] animate-pulse">Reached end of stream</p>
+          {/* Pagination Controls */}
+          <div className="px-4 py-3 bg-white border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+              Showing {Math.min((page - 1) * limit + 1, total)} to {Math.min(page * limit, total)} of {total} records
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                disabled={page === 1 || loading}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 disabled:opacity-40 transition-all"
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const totalPages = Math.ceil(total / limit);
+                  const pages = [];
+                  for (let p = 1; p <= totalPages; p++) {
+                    if (p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1)) {
+                      pages.push(
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${page === p
+                            ? 'bg-[#c41e3a] text-white shadow-sm'
+                            : 'hover:bg-gray-100 text-gray-600'
+                            }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    } else if (p === page - 2 || p === page + 2) {
+                      pages.push(<span key={p} className="text-gray-400">...</span>);
+                    }
+                  }
+                  return pages;
+                })()}
+              </div>
+
+              <button
+                onClick={() => setPage(prev => Math.min(Math.ceil(total / limit), prev + 1))}
+                disabled={page >= Math.ceil(total / limit) || loading}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 disabled:opacity-40 transition-all"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          {!loading && filteredTasks.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-24 bg-gray-50/30">
+              <AlertCircle size={48} className="text-gray-100 mb-4" />
+              <p className="text-gray-400 font-black text-base uppercase tracking-tighter">No records found</p>
             </div>
           )}
 
           {/* Dynamic Footer Status */}
           <div className="px-4 py-2.5 bg-white border-t border-gray-100 flex justify-between items-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-5">
             <div className="flex items-center gap-2.5">
-              {/* <div className="flex -space-x-1">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className={`w-2 h-2 rounded-full border border-white ${i === 0 ? 'bg-[#c41e3a]' : i === 1 ? 'bg-red-300' : 'bg-red-100'}`}></div>
-                ))}
-              </div> */}
-              {/* <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">System Operational</span> */}
             </div>
             <div className="flex items-center gap-4">
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-r border-gray-100 pr-4">
                 Selected: {selectedIds.size}
               </span>
               <span className="text-[10px] font-black text-[#c41e3a] uppercase tracking-widest bg-red-50 px-2.5 py-1 rounded-md border border-red-100">
-                {tasks.length} RECORDS LOADED
+                PAGE {page} OF {Math.ceil(total / limit)}
               </span>
             </div>
           </div>

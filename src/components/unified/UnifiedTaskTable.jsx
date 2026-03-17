@@ -90,7 +90,8 @@ export default function UnifiedTaskTable({
                     if (isConfirmedByHOD) {
                         const isUserDesignatedHOD = task.hod && normalizedLoggedInUser &&
                             task.hod.toLowerCase().includes(normalizedLoggedInUser);
-                        return normalizedLoggedInUser === "htuleshwar verma" || isUserDesignatedHOD;
+                        const canVerifyHousekeeping = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+                        return canVerifyHousekeeping || isUserDesignatedHOD;
                     }
                     return true;
                 }
@@ -321,8 +322,9 @@ export default function UnifiedTaskTable({
         if (task.sourceSystem === 'housekeeping') {
             const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
 
-            // Htuleshwar Verma can select both pending and confirmed tasks
-            if (loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;
+            // Verify page access allows selection of all tasks (unconfirmed)
+            const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+            if (canVerify) return true;
 
             // Admin: select confirmed tasks, User: select pending tasks
             return isUserRole ? !isConfirmed : isConfirmed;
@@ -344,11 +346,9 @@ export default function UnifiedTaskTable({
             if (isChecked) {
                 newSelected.add(id);
 
-                // Auto-set status to 'Yes' for housekeeping tasks (Admin role or Htuleshwar Verma)
+                const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
                 const task = displayTasks.find(t => t.id === id);
-                const isAdmin = userRole?.toLowerCase() === 'admin';
-                const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
-                if ((isAdmin || isHtuleshwar) && task?.sourceSystem === 'housekeeping') {
+                if ((isAdmin || canVerify) && task?.sourceSystem === 'housekeeping') {
                     setRowData(prevData => ({
                         ...prevData,
                         [id]: {
@@ -368,56 +368,46 @@ export default function UnifiedTaskTable({
             }
             return newSelected;
         });
-    }, [displayTasks, userRole, loggedInUser]);
+    }, [displayTasks, isAdmin]);
 
     const handleSelectAll = useCallback((e) => {
-        const isAdmin = userRole?.toLowerCase() === 'admin';
-        const isUserRole = userRole?.toLowerCase() === 'user';
-        const isHtuleshwar = loggedInUser.trim().toLowerCase() === "htuleshwar verma";
         if (e.target.checked) {
-            // Simplify: Use the pre-calculated selectableTasks
             const allIds = selectableTasks.map(task => task.id);
-
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
                 allIds.forEach(id => newSet.add(id));
                 return newSet;
             });
 
-            // Auto-set status for housekeeping tasks (Admin role or Htuleshwar Verma)
-            if (isAdmin || isHtuleshwar) {
+            const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+            if (isAdmin || canVerify) {
                 const hkTasksToSelect = selectableTasks.filter(t => t.sourceSystem === 'housekeeping');
                 if (hkTasksToSelect.length > 0) {
                     setRowData(prevData => {
                         const newData = { ...prevData };
                         hkTasksToSelect.forEach(task => {
-                            newData[task.id] = {
-                                ...newData[task.id],
-                                status: 'Yes'
-                            };
+                            newData[task.id] = { ...newData[task.id], status: 'Yes' };
                         });
                         return newData;
                     });
                 }
             }
         } else {
-            // Deselect all visible tasks
-            const allIds = new Set(displayTasks.map(task => task.id));
+            // Deselect all items in current selectable list
+            const allIds = selectableTasks.map(task => task.id);
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
                 allIds.forEach(id => newSet.delete(id));
                 return newSet;
             });
             // Clean up row data for deselected items
-            allIds.forEach(id => {
-                setRowData(prevData => {
-                    const newData = { ...prevData };
-                    delete newData[id];
-                    return newData;
-                });
+            setRowData(prevData => {
+                const newData = { ...prevData };
+                allIds.forEach(id => delete newData[id]);
+                return newData;
             });
         }
-    }, [displayTasks, userRole, loggedInUser, selectableTasks]);
+    }, [selectableTasks, isAdmin]);
 
     // Handle inline row data changes
     const handleRowDataChange = useCallback((taskId, field, value) => {
@@ -472,16 +462,18 @@ export default function UnifiedTaskTable({
     const isRowValid = useCallback((taskId) => {
         const task = filteredTasks.find(t => t.id === taskId);
         const data = rowData[taskId] || {};
-        const isAdmin = userRole?.toLowerCase() === 'admin';
+        const isAdminRole = userRole?.toLowerCase() === 'admin';
 
         // ✅ HOUSEKEEPING: allow update if doer is selected
         // For Admin: status is auto-set to 'Yes', so always valid if housekeeping
         if (task?.sourceSystem === "housekeeping") {
-            if (isAdmin) return true; // Housekeeping admin submission is now just a checkbox
+            if (isAdminRole) return true; // Housekeeping admin submission is now just a checkbox
 
             const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
-            // If already confirmed (Step 2), it's valid for submission even without changing doer
-            if (isConfirmed && loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;
+            
+            // Permission check for bypass
+            const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+            if (isConfirmed && canVerify) return true;
 
             // For Step 1 (Confirmation), doerName2 is required OR it must already have an assignee in DB
             const existingDoer = task.assignedToSecondary && task.assignedToSecondary !== '—' && task.assignedToSecondary !== '';
@@ -502,7 +494,6 @@ export default function UnifiedTaskTable({
 
         return true;
     }, [filteredTasks, rowData, userRole, loggedInUser]);
-
 
     const areSelectedTasksValid = useMemo(() => {
         if (selectedItems.size === 0) return false;
@@ -658,326 +649,326 @@ export default function UnifiedTaskTable({
     }, [selectedItems, rowData, filteredTasks, onBulkSubmit]);
 
     return (
-        <div className="space-y-4">
-            {/* Filter Bar - Simplified */}
-            <TaskFilterBar
-                filters={filters}
-                onFiltersChange={setFilters}
-                housekeepingDepartments={housekeepingDepartments}
-                departmentOptions={departmentOptions}
-                assignedToOptions={assignedToOptions}
-                userRole={userRole}
-                systemCounts={systemCounts}
-                onTaskAdded={() => onRefresh && onRefresh('checklist')}
-            />
+    <div className="space-y-4">
+        {/* Filter Bar - Simplified */}
+        <TaskFilterBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            housekeepingDepartments={housekeepingDepartments}
+            departmentOptions={departmentOptions}
+            assignedToOptions={assignedToOptions}
+            userRole={userRole}
+            systemCounts={systemCounts}
+            onTaskAdded={() => onRefresh && onRefresh('checklist')}
+        />
 
-            {/* Success Message */}
-            {successMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-2 sm:px-4 py-2 sm:py-3 rounded-md flex items-center justify-between">
-                    <div className="flex items-center flex-1 min-w-0">
-                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-green-500 flex-shrink-0" />
-                        <span className="font-medium text-xs sm:text-sm truncate">{successMessage}</span>
-                    </div>
-                    <button onClick={() => setSuccessMessage("")} className="ml-2 flex-shrink-0">
-                        <X className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 hover:text-green-700" />
-                    </button>
+        {/* Success Message */}
+        {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-2 sm:px-4 py-2 sm:py-3 rounded-md flex items-center justify-between">
+                <div className="flex items-center flex-1 min-w-0">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-green-500 flex-shrink-0" />
+                    <span className="font-medium text-xs sm:text-sm truncate">{successMessage}</span>
                 </div>
-            )}
+                <button onClick={() => setSuccessMessage("")} className="ml-2 flex-shrink-0">
+                    <X className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 hover:text-green-700" />
+                </button>
+            </div>
+        )}
 
-            {/* Error Message */}
-            {errorMessage && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-2 sm:px-4 py-2 sm:py-3 rounded-md flex items-center justify-between">
-                    <div className="flex items-center flex-1 min-w-0">
-                        <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-red-500 flex-shrink-0" />
-                        <span className="font-medium text-xs sm:text-sm truncate">{errorMessage}</span>
-                    </div>
-                    <button onClick={() => setErrorMessage("")} className="ml-2 flex-shrink-0">
-                        <X className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 hover:text-red-700" />
-                    </button>
+        {/* Error Message */}
+        {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-2 sm:px-4 py-2 sm:py-3 rounded-md flex items-center justify-between">
+                <div className="flex items-center flex-1 min-w-0">
+                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 text-red-500 flex-shrink-0" />
+                    <span className="font-medium text-xs sm:text-sm truncate">{errorMessage}</span>
                 </div>
-            )}
+                <button onClick={() => setErrorMessage("")} className="ml-2 flex-shrink-0">
+                    <X className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 hover:text-red-700" />
+                </button>
+            </div>
+        )}
 
-            {/* Table Card */}
-            <div className="w-full rounded-lg border border-blue-200 shadow-md bg-white overflow-hidden">
-                {/* Table Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100 px-2 sm:px-4 py-2 sm:py-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div className="flex-1 min-w-0 flex items-center justify-between">
-                            <p className="text-blue-600 font-medium text-[11px] sm:text-sm">
-                                Showing {displayTasks.length} of {totalCount || displayTasks.length} tasks
-                            </p>
+        {/* Table Card */}
+        <div className="w-full rounded-lg border border-blue-200 shadow-md bg-white overflow-hidden">
+            {/* Table Header */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100 px-2 sm:px-4 py-2 sm:py-1">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex-1 min-w-0 flex items-center justify-between">
+                        <p className="text-blue-600 font-medium text-[11px] sm:text-sm">
+                            Showing {displayTasks.length} of {totalCount || displayTasks.length} tasks
+                        </p>
 
-                            <div className="sm:hidden flex items-center bg-white/50 px-2 py-1 rounded-md border border-blue-100 shadow-sm">
-                                <span className="mr-1.5 text-[10px] font-black text-blue-700 uppercase">Select All</span>
-                                <input
-                                    type="checkbox"
-                                    checked={isAllSelected}
-                                    ref={(el) => {
-                                        if (el) el.indeterminate = isIndeterminate;
-                                    }}
-                                    onChange={handleSelectAll}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                            </div>
+                        <div className="sm:hidden flex items-center bg-white/50 px-2 py-1 rounded-md border border-blue-100 shadow-sm">
+                            <span className="mr-1.5 text-[10px] font-black text-blue-700 uppercase">Select All</span>
+                            <input
+                                type="checkbox"
+                                checked={isAllSelected}
+                                ref={(el) => {
+                                    if (el) el.indeterminate = isIndeterminate;
+                                }}
+                                onChange={handleSelectAll}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
                         </div>
+                    </div>
 
-                        {/* Only show Update button for pending tasks (not history) */}
-                        {filters.status !== "Completed" && (
-                            <button
-                                onClick={handleBulkSubmit}
-                                disabled={selectedItems.size === 0 || isSubmitting || !areSelectedTasksValid}
-                                className={`w-fit self-end sm:self-auto sm:w-auto rounded-md py-1.5 sm:py-2 px-3 sm:px-4
+                    {/* Only show Update button for pending tasks (not history) */}
+                    {filters.status !== "Completed" && (
+                        <button
+                            onClick={handleBulkSubmit}
+                            disabled={selectedItems.size === 0 || isSubmitting || !areSelectedTasksValid}
+                            className={`w-fit self-end sm:self-auto sm:w-auto rounded-md py-1.5 sm:py-2 px-3 sm:px-4
                                         text-white text-[10px] sm:text-sm font-bold whitespace-nowrap shadow-md mt-1 sm:mt-0
                                         ${selectedItems.size > 0 && areSelectedTasksValid
-                                        ? "bg-green-600 hover:bg-green-700 active:scale-95"
-                                        : "bg-gray-300 cursor-not-allowed text-gray-500 shadow-none border border-gray-200"
-                                    } transition-all`}                            >
-                                {isSubmitting ? "⏳ Processing..." : `✅ Update (${selectedItems.size})`}
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Table/Cards Container */}
-                <div
-                    ref={tableContainerRef}
-                    className="w-full overflow-x-auto overflow-y-auto"
-                    style={{ maxHeight: 'calc(100vh - 150px)' }}
-                    onScroll={filters.status === "Completed" ? handleScroll : undefined}
-                >
-                    {loading && displayTasks.length === 0 ? (
-                        <div className="text-center py-8 sm:py-12">
-                            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-                            <p className="text-blue-600 text-xs sm:text-sm">Loading tasks from all sources...</p>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Desktop Table View */}
-                            <div className="hidden sm:block">
-                                <table className="w-full divide-y divide-gray-200" style={{ width: '100%', tableLayout: 'auto' }}>
-                                    <TaskTableHeader
-                                        onSelectAll={handleSelectAll}
-                                        isAllSelected={isAllSelected}
-                                        isIndeterminate={isIndeterminate}
-                                        isHistoryMode={filters.status === "Completed"}
-                                        isHousekeepingOnly={isHousekeepingOnly}
-                                        isMaintenanceOnly={isMaintenanceOnly}
-                                        userRole={userRole}
-                                    />
-                                    <tbody className="bg-white divide-y divide-gray-100">
-                                        {displayTasks.length > 0 ? (
-                                            displayTasks.map((task, index) => {
-                                                const activePage = pendingPages[task.sourceSystem] || 1;
-                                                return (
-                                                    <TaskRow
-                                                        key={`${task.sourceSystem}-${task.id}-${index}`}
-                                                        task={task}
-                                                        isSelected={selectedItems.has(task.id)}
-                                                        onSelect={handleSelectItem}
-                                                        onView={handleViewTask}
-                                                        rowData={rowData[task.id] || {}}
-                                                        onRowDataChange={handleRowDataChange}
-                                                        isHistoryMode={filters.status === "Completed"}
-                                                        isHousekeepingOnly={isHousekeepingOnly}
-                                                        isMaintenanceOnly={isMaintenanceOnly}
-                                                        seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
-                                                        userRole={userRole}
-                                                        loggedInUser={loggedInUser}
-                                                    />
-                                                );
-                                            })
-                                        ) : (
-                                            <TaskTableEmpty
-                                                hasFilters={hasFilters}
-                                                colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isMaintenanceOnly ? 14 : 13)}
-                                            />
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Mobile Card View */}
-                            <div className="sm:hidden bg-gray-50/50 p-3 space-y-3">
-                                {displayTasks.length > 0 ? (
-                                    displayTasks.map((task, index) => {
-                                        const activePage = pendingPages[task.sourceSystem] || 1;
-                                        return (
-                                            <TaskCard
-                                                key={`card-${task.sourceSystem}-${task.id}-${index}`}
-                                                task={task}
-                                                isSelected={selectedItems.has(task.id)}
-                                                onSelect={handleSelectItem}
-                                                onView={handleViewTask}
-                                                rowData={rowData[task.id] || {}}
-                                                onRowDataChange={handleRowDataChange}
-                                                isHistoryMode={filters.status === "Completed"}
-                                                isHousekeepingOnly={isHousekeepingOnly}
-                                                isMaintenanceOnly={isMaintenanceOnly}
-                                                seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
-                                                userRole={userRole}
-                                                loggedInUser={loggedInUser}
-                                            />
-                                        );
-                                    })
-                                ) : (
-                                    <div className="bg-white rounded-lg border border-gray-100 p-8 text-center">
-                                        <TaskTableEmpty
-                                            hasFilters={hasFilters}
-                                            isMobile={true}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Loading indicator at bottom for infinite scroll */}
-                            {filters.status === "Completed" && isFetchingMore && (
-                                <div className="bg-white border-t border-gray-200 py-3">
-                                    <div className="text-center">
-                                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-                                        <p className="text-blue-600 text-xs mt-2">Loading more tasks...</p>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                                    ? "bg-green-600 hover:bg-green-700 active:scale-95"
+                                    : "bg-gray-300 cursor-not-allowed text-gray-500 shadow-none border border-gray-200"
+                                } transition-all`}                            >
+                            {isSubmitting ? "⏳ Processing..." : `✅ Update (${selectedItems.size})`}
+                        </button>
                     )}
                 </div>
+            </div>
 
-                {/* Footer - Modified for pagination */}
-                {displayTasks.length > 0 && (
-                    <div className="bg-gray-50 border-t border-gray-200 px-2 sm:px-4 py-2 sm:py-3 sticky bottom-0 z-10">
-                        {(() => {
-                            const activePage = pendingPages[filters.sourceSystem] || 1;
-                            const activeTotal = pendingTotals[filters.sourceSystem] || 0;
-                            const isPending = filters.status === "Pending";
-
-                            return (
-                                <div className="flex flex-col space-y-3">
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-                                        {/* Task Count Info */}
-                                        <div className="text-xs sm:text-sm text-gray-600">
-                                            <span className="font-medium">
-                                                {isPending
-                                                    ? `${Math.min((activePage - 1) * 50 + 1, activeTotal)} - ${Math.min(activePage * 50, activeTotal)} of ${activeTotal}`
-                                                    : displayTasks.length
-                                                }
-                                            </span> tasks
-                                            {filters.status === "Completed" && hasMore && <span className="text-blue-600 ml-1">• More available (scroll to load)</span>}
-                                        </div>
-
-                                        {/* Selection Info */}
-                                        <div className="text-xs sm:text-sm text-gray-600">
-                                            {selectedItems.size > 0 && (
-                                                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md whitespace-nowrap">
-                                                    ✓ {selectedItems.size} selected
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Pagination Controls - Only for Pending tab */}
-                                    {isPending && activeTotal > 50 && (
-                                        <div className="flex flex-wrap justify-center items-center gap-3 border-t border-gray-100 pt-3">
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => onPageChange(activePage - 1, filters.sourceSystem)}
-                                                    disabled={activePage === 1 || loading}
-                                                    className="px-2 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    Pre
-                                                </button>
-
-                                                <div className="flex items-center gap-1">
-                                                    {(() => {
-                                                        const totalPages = Math.ceil(activeTotal / 50);
-                                                        const pages = [];
-                                                        const maxPagesToShow = 5;
-
-                                                        if (totalPages <= maxPagesToShow) {
-                                                            for (let i = 1; i <= totalPages; i++) pages.push(i);
-                                                        } else {
-                                                            if (activePage <= 3) {
-                                                                for (let i = 1; i <= 4; i++) pages.push(i);
-                                                                pages.push('...');
-                                                                pages.push(totalPages);
-                                                            } else if (activePage >= totalPages - 2) {
-                                                                pages.push(1);
-                                                                pages.push('...');
-                                                                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-                                                            } else {
-                                                                pages.push(1);
-                                                                pages.push('...');
-                                                                for (let i = activePage - 1; i <= activePage + 1; i++) pages.push(i);
-                                                                pages.push('...');
-                                                                pages.push(totalPages);
-                                                            }
-                                                        }
-
-                                                        return pages.map((page, idx) => (
-                                                            page === '...' ? (
-                                                                <span key={`ellipsis-${idx}`} className="px-1 text-gray-500 text-xs">...</span>
-                                                            ) : (
-                                                                <button
-                                                                    key={page}
-                                                                    onClick={() => onPageChange(page, filters.sourceSystem)}
-                                                                    disabled={loading}
-                                                                    className={`min-w-[28px] h-8 flex items-center justify-center rounded-md text-xs font-medium transition-all ${activePage === page
-                                                                        ? 'bg-blue-600 text-white shadow-sm'
-                                                                        : 'border border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
-                                                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                                >
-                                                                    {page}
-                                                                </button>
-                                                            )
-                                                        ));
-                                                    })()}
-                                                </div>
-
-                                                <button
-                                                    onClick={() => onPageChange(activePage + 1, filters.sourceSystem)}
-                                                    disabled={activePage >= Math.ceil(activeTotal / 50) || loading}
-                                                    className="px-2 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    Next
-                                                </button>
-                                            </div>
-
-                                            {/* Go to page jump */}
-                                            <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
-                                                <span className="text-xs text-gray-500">Go to</span>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max={Math.ceil(activeTotal / 50)}
-                                                    className="w-12 h-8 text-center border border-gray-300 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            const page = parseInt(e.target.value);
-                                                            const totalPages = Math.ceil(activeTotal / 50);
-                                                            if (page >= 1 && page <= totalPages) {
-                                                                onPageChange(page, filters.sourceSystem);
-                                                            }
-                                                        }
-                                                    }}
-                                                    placeholder="Pg"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
+            {/* Table/Cards Container */}
+            <div
+                ref={tableContainerRef}
+                className="w-full overflow-x-auto overflow-y-auto"
+                style={{ maxHeight: 'calc(100vh - 150px)' }}
+                onScroll={filters.status === "Completed" ? handleScroll : undefined}
+            >
+                {loading && displayTasks.length === 0 ? (
+                    <div className="text-center py-8 sm:py-12">
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                        <p className="text-blue-600 text-xs sm:text-sm">Loading tasks from all sources...</p>
                     </div>
+                ) : (
+                    <>
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block">
+                            <table className="w-full divide-y divide-gray-200" style={{ width: '100%', tableLayout: 'auto' }}>
+                                <TaskTableHeader
+                                    onSelectAll={handleSelectAll}
+                                    isAllSelected={isAllSelected}
+                                    isIndeterminate={isIndeterminate}
+                                    isHistoryMode={filters.status === "Completed"}
+                                    isHousekeepingOnly={isHousekeepingOnly}
+                                    isMaintenanceOnly={isMaintenanceOnly}
+                                    userRole={userRole}
+                                />
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {displayTasks.length > 0 ? (
+                                        displayTasks.map((task, index) => {
+                                            const activePage = pendingPages[task.sourceSystem] || 1;
+                                            return (
+                                                <TaskRow
+                                                    key={`${task.sourceSystem}-${task.id}-${index}`}
+                                                    task={task}
+                                                    isSelected={selectedItems.has(task.id)}
+                                                    onSelect={handleSelectItem}
+                                                    onView={handleViewTask}
+                                                    rowData={rowData[task.id] || {}}
+                                                    onRowDataChange={handleRowDataChange}
+                                                    isHistoryMode={filters.status === "Completed"}
+                                                    isHousekeepingOnly={isHousekeepingOnly}
+                                                    isMaintenanceOnly={isMaintenanceOnly}
+                                                    seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
+                                                    userRole={userRole}
+                                                    loggedInUser={loggedInUser}
+                                                />
+                                            );
+                                        })
+                                    ) : (
+                                        <TaskTableEmpty
+                                            hasFilters={hasFilters}
+                                            colSpan={isHousekeepingOnly ? (isUserRole ? 10 : 13) : (isMaintenanceOnly ? 14 : 13)}
+                                        />
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="sm:hidden bg-gray-50/50 p-3 space-y-3">
+                            {displayTasks.length > 0 ? (
+                                displayTasks.map((task, index) => {
+                                    const activePage = pendingPages[task.sourceSystem] || 1;
+                                    return (
+                                        <TaskCard
+                                            key={`card-${task.sourceSystem}-${task.id}-${index}`}
+                                            task={task}
+                                            isSelected={selectedItems.has(task.id)}
+                                            onSelect={handleSelectItem}
+                                            onView={handleViewTask}
+                                            rowData={rowData[task.id] || {}}
+                                            onRowDataChange={handleRowDataChange}
+                                            isHistoryMode={filters.status === "Completed"}
+                                            isHousekeepingOnly={isHousekeepingOnly}
+                                            isMaintenanceOnly={isMaintenanceOnly}
+                                            seqNo={index + 1 + (filters.status === "Pending" ? (activePage - 1) * 50 : 0)}
+                                            userRole={userRole}
+                                            loggedInUser={loggedInUser}
+                                        />
+                                    );
+                                })
+                            ) : (
+                                <div className="bg-white rounded-lg border border-gray-100 p-8 text-center">
+                                    <TaskTableEmpty
+                                        hasFilters={hasFilters}
+                                        isMobile={true}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Loading indicator at bottom for infinite scroll */}
+                        {filters.status === "Completed" && isFetchingMore && (
+                            <div className="bg-white border-t border-gray-200 py-3">
+                                <div className="text-center">
+                                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                                    <p className="text-blue-600 text-xs mt-2">Loading more tasks...</p>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
-            {/* Task Drawer - for viewing details */}
-            <TaskDrawer
-                task={selectedTask}
-                isOpen={drawerOpen}
-                onClose={handleCloseDrawer}
-                onUpdate={onUpdateTask}
-                userRole={userRole}
-            />
+            {/* Footer - Modified for pagination */}
+            {displayTasks.length > 0 && (
+                <div className="bg-gray-50 border-t border-gray-200 px-2 sm:px-4 py-2 sm:py-3 sticky bottom-0 z-10">
+                    {(() => {
+                        const activePage = pendingPages[filters.sourceSystem] || 1;
+                        const activeTotal = pendingTotals[filters.sourceSystem] || 0;
+                        const isPending = filters.status === "Pending";
+
+                        return (
+                            <div className="flex flex-col space-y-3">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+                                    {/* Task Count Info */}
+                                    <div className="text-xs sm:text-sm text-gray-600">
+                                        <span className="font-medium">
+                                            {isPending
+                                                ? `${Math.min((activePage - 1) * 50 + 1, activeTotal)} - ${Math.min(activePage * 50, activeTotal)} of ${activeTotal}`
+                                                : displayTasks.length
+                                            }
+                                        </span> tasks
+                                        {filters.status === "Completed" && hasMore && <span className="text-blue-600 ml-1">• More available (scroll to load)</span>}
+                                    </div>
+
+                                    {/* Selection Info */}
+                                    <div className="text-xs sm:text-sm text-gray-600">
+                                        {selectedItems.size > 0 && (
+                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md whitespace-nowrap">
+                                                ✓ {selectedItems.size} selected
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Pagination Controls - Only for Pending tab */}
+                                {isPending && activeTotal > 50 && (
+                                    <div className="flex flex-wrap justify-center items-center gap-3 border-t border-gray-100 pt-3">
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => onPageChange(activePage - 1, filters.sourceSystem)}
+                                                disabled={activePage === 1 || loading}
+                                                className="px-2 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Pre
+                                            </button>
+
+                                            <div className="flex items-center gap-1">
+                                                {(() => {
+                                                    const totalPages = Math.ceil(activeTotal / 50);
+                                                    const pages = [];
+                                                    const maxPagesToShow = 5;
+
+                                                    if (totalPages <= maxPagesToShow) {
+                                                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                                                    } else {
+                                                        if (activePage <= 3) {
+                                                            for (let i = 1; i <= 4; i++) pages.push(i);
+                                                            pages.push('...');
+                                                            pages.push(totalPages);
+                                                        } else if (activePage >= totalPages - 2) {
+                                                            pages.push(1);
+                                                            pages.push('...');
+                                                            for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+                                                        } else {
+                                                            pages.push(1);
+                                                            pages.push('...');
+                                                            for (let i = activePage - 1; i <= activePage + 1; i++) pages.push(i);
+                                                            pages.push('...');
+                                                            pages.push(totalPages);
+                                                        }
+                                                    }
+
+                                                    return pages.map((page, idx) => (
+                                                        page === '...' ? (
+                                                            <span key={`ellipsis-${idx}`} className="px-1 text-gray-500 text-xs">...</span>
+                                                        ) : (
+                                                            <button
+                                                                key={page}
+                                                                onClick={() => onPageChange(page, filters.sourceSystem)}
+                                                                disabled={loading}
+                                                                className={`min-w-[28px] h-8 flex items-center justify-center rounded-md text-xs font-medium transition-all ${activePage === page
+                                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                                    : 'border border-gray-200 text-gray-700 bg-white hover:bg-gray-50'
+                                                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                            >
+                                                                {page}
+                                                            </button>
+                                                        )
+                                                    ));
+                                                })()}
+                                            </div>
+
+                                            <button
+                                                onClick={() => onPageChange(activePage + 1, filters.sourceSystem)}
+                                                disabled={activePage >= Math.ceil(activeTotal / 50) || loading}
+                                                className="px-2 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+
+                                        {/* Go to page jump */}
+                                        <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
+                                            <span className="text-xs text-gray-500">Go to</span>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={Math.ceil(activeTotal / 50)}
+                                                className="w-12 h-8 text-center border border-gray-300 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const targetPage = parseInt(e.target.value);
+                                                        const maxAllowed = Math.ceil(activeTotal / 50);
+                                                        if (targetPage >= 1 && targetPage <= maxAllowed) {
+                                                            onPageChange(targetPage, filters.sourceSystem);
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Pg"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+                </div>
+            )}
         </div>
-    );
+
+        {/* Task Drawer - for viewing details */}
+        <TaskDrawer
+            task={selectedTask}
+            isOpen={drawerOpen}
+            onClose={handleCloseDrawer}
+            onUpdate={onUpdateTask}
+            userRole={userRole}
+        />
+    </div>
+);
 }

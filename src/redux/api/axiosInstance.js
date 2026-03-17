@@ -16,6 +16,7 @@ axiosInstance.interceptors.request.use(
     const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || "";
     const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || "";
     const role = localStorage.getItem("role") || "";
+    const pageAccess = localStorage.getItem("page_access") || "";
 
     if (userAccess1) {
       config.headers["x-user-access1"] = encodeURIComponent(userAccess1);
@@ -25,6 +26,9 @@ axiosInstance.interceptors.request.use(
     }
     if (role) {
       config.headers["x-user-role"] = role;
+    }
+    if (pageAccess) {
+      config.headers["x-page-access"] = encodeURIComponent(pageAccess);
     }
 
     return config;

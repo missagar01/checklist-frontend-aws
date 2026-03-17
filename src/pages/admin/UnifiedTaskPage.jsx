@@ -119,7 +119,9 @@ export default function UnifiedTaskPage() {
         // Pass department filter from user_access1 in query params
         const filters = {}
         const role = localStorage.getItem("role")
-        if (role?.toLowerCase() === "user") {
+        const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+
+        if (role?.toLowerCase() === "user" && !canVerify) {
             // Use user_access1 for housekeeping, fallback to user_access
             const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
             const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
@@ -138,10 +140,12 @@ export default function UnifiedTaskPage() {
         // Pass department filter from user_access1 in query params
         const filters = {}
         const role = localStorage.getItem("role")
-        if (role?.toLowerCase() === "user") {
+        const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+
+        if (role?.toLowerCase() === "user" && !canVerify) {
             // Use user_access1 for housekeeping, fallback to user_access
             const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
-            const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
+            const userAccess = localStorage.getItem("user_access") || localStorage.getItem("user_access") || ""
             const accessToUse = userAccess1 || userAccess
             if (accessToUse) {
                 // Pass department as query param (comma-separated)
@@ -550,7 +554,8 @@ export default function UnifiedTaskPage() {
                 break;
             case 'housekeeping': {
                 const filters = {}
-                if (role?.toLowerCase() === "user") {
+                const canVerify = localStorage.getItem('page_access')?.includes('housekeeping-verify');
+                if (role?.toLowerCase() === "user" && !canVerify) {
                     const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
                     const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
                     const accessToUse = userAccess1 || userAccess
@@ -573,6 +578,7 @@ export default function UnifiedTaskPage() {
             case 'checklist':
                 if (hasSystemAccess('checklist') || systemAccess.length === 0) {
                     dispatch(checklistData({ page: 1, replace: true }))
+                    dispatch(checklistHistoryData({ page: 1, replace: true }))
                     dispatch(fetchChecklistDepartments())
                     dispatch(fetchChecklistDoers())
                 }
@@ -584,20 +590,20 @@ export default function UnifiedTaskPage() {
                         userId: role === "user" ? user : null,
                         replace: true
                     }))
+                    dispatch(fetchCompletedMaintenanceTasks({
+                        page: 1,
+                        filters: {},
+                        userId: role === "user" ? user : null,
+                        replace: true
+                    }))
                     dispatch(fetchMaintenanceDepartments())
                     dispatch(fetchMaintenanceDoers())
                 }
                 break;
             case 'housekeeping':
                 if (hasSystemAccess('housekeeping') || systemAccess.length === 0) {
-                    const filters = {}
-                    if (role?.toLowerCase() === "user") {
-                        const userAccess1 = localStorage.getItem("user_access1") || localStorage.getItem("userAccess1") || ""
-                        const userAccess = localStorage.getItem("user_access") || localStorage.getItem("userAccess") || ""
-                        const accessToUse = userAccess1 || userAccess
-                        if (accessToUse) filters.department = accessToUse
-                    }
-                    dispatch(fetchHousekeepingPendingTasks({ page: 1, filters, replace: true }))
+                    loadHousekeepingData()
+                    loadHousekeepingHistoryData()
                     dispatch(fetchHousekeepingDepartments())
                 }
                 break;

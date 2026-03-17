@@ -88,8 +88,8 @@ export default function UnifiedTaskTable({
                         task.confirmedByHOD === 'Confirmed';
 
                     if (isConfirmedByHOD) {
-                        const isUserDesignatedHOD = task.hod && normalizedLoggedInUser && 
-                                                 task.hod.toLowerCase().includes(normalizedLoggedInUser);
+                        const isUserDesignatedHOD = task.hod && normalizedLoggedInUser &&
+                            task.hod.toLowerCase().includes(normalizedLoggedInUser);
                         return normalizedLoggedInUser === "htuleshwar verma" || isUserDesignatedHOD;
                     }
                     return true;
@@ -116,7 +116,7 @@ export default function UnifiedTaskTable({
     // 📊 2. Calculate adjusted counts for each tab
     const systemCounts = useMemo(() => {
         const isHistory = filters.status === "Completed";
-        
+
         if (isHistory) {
             return {
                 checklist: checklistHistoryTotal,
@@ -137,7 +137,7 @@ export default function UnifiedTaskTable({
             const inMemoryTotal = tasks.filter(t => t.sourceSystem === system).length;
             if (inMemoryTotal > 0) {
                 const inMemoryVisible = userVisibleTasks.filter(t => t.sourceSystem === system).length;
-                
+
                 // If 0 are visible in memory, the total should be 0
                 if (inMemoryVisible === 0) {
                     counts[system] = 0;
@@ -261,7 +261,7 @@ export default function UnifiedTaskTable({
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
         // Use userVisibleTasks as base (identity filtering already applied)
-        let filtered = filterTasks(userVisibleTasks, filters);
+        let filtered = filterTasks(userVisibleTasks, filters, userRole);
 
         // Deduplicate & Filter History missing dates
         const seen = new Set();
@@ -320,7 +320,7 @@ export default function UnifiedTaskTable({
     const selectableTasks = displayTasks.filter(task => {
         if (task.sourceSystem === 'housekeeping') {
             const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
-            
+
             // Htuleshwar Verma can select both pending and confirmed tasks
             if (loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;
 
@@ -377,7 +377,7 @@ export default function UnifiedTaskTable({
         if (e.target.checked) {
             // Simplify: Use the pre-calculated selectableTasks
             const allIds = selectableTasks.map(task => task.id);
-            
+
             setSelectedItems(prev => {
                 const newSet = new Set(prev);
                 allIds.forEach(id => newSet.add(id));
@@ -478,7 +478,7 @@ export default function UnifiedTaskTable({
         // For Admin: status is auto-set to 'Yes', so always valid if housekeeping
         if (task?.sourceSystem === "housekeeping") {
             if (isAdmin) return true; // Housekeeping admin submission is now just a checkbox
-            
+
             const isConfirmed = task.originalData?.attachment === "confirmed" || task.confirmedByHOD === "Confirmed" || task.confirmedByHOD === "confirmed";
             // If already confirmed (Step 2), it's valid for submission even without changing doer
             if (isConfirmed && loggedInUser.trim().toLowerCase() === "htuleshwar verma") return true;

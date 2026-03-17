@@ -137,6 +137,16 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode, onScro
         showFor: ["admin", "user"],
       },
       {
+        href: "/dashboard/housekeeping-verify",
+        label: "Housekeeping Verify",
+        icon: BookmarkCheck,
+        active: location.pathname === "/dashboard/housekeeping-verify",
+        pageKey: "housekeeping-verify",
+        showFor: ["admin", "user"],
+        requiresPageAccess: true,
+        pageKeyAliases: ["housekeeping-verify"],
+      },
+      {
         href: "/dashboard/hrmanager",
         label: "Task Verification",
         icon: UserRound,

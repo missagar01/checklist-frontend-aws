@@ -17,6 +17,7 @@ import Machines from "./pages/admin/maintenance/machines"
 import NewMachine from "./pages/admin/maintenance/newMachine"
 import UnifiedTaskPage from "./pages/admin/UnifiedTaskPage"
 import HrManager from "./pages/admin/HrManager"
+import HousekeepingVerify from "./pages/HousekeepingVerify"
 
 
 import { useSelector } from "react-redux"
@@ -162,6 +163,15 @@ function App() {
           element={
             <ProtectedRoute>
               <MisReport />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/housekeeping-verify"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "user"]}>
+              <HousekeepingVerify />
             </ProtectedRoute>
           }
         />

@@ -289,8 +289,8 @@ export const normalizeHousekeepingTask = (task, isHistory = false) => {
         dueDate: task.task_start_date || task.task_date || task.date || task.scheduled_date,
         // dueDateFormatted: formatDate(task.task_start_date || task.task_date || task.date || task.scheduled_date),
         // status: getUnifiedStatus(task.status, isHistory || !!task.submission_date),
-        status: (task.attachment === 'confirmed' || task.confirmedByHOD === 'Confirmed' || task.confirmedByHOD === 'confirmed') 
-            ? 'Confirmed' 
+        status: (task.attachment === 'confirmed' || task.confirmedByHOD === 'Confirmed' || task.confirmedByHOD === 'confirmed')
+            ? 'Confirmed'
             : (!isHistory && !task.submission_date) ? 'Pending' : getUnifiedStatus(task.status, isHistory || !!task.submission_date),
         originalStatus: task.status || 'Pending',
         priority: normalizePriority(task.priority),
@@ -410,7 +410,7 @@ export const sortByPriority = (tasks) => {
 // =============================================================================
 // FILTER UTILITIES
 // =============================================================================
-export const filterTasks = (tasks, filters) => {
+export const filterTasks = (tasks, filters, userRole = null) => {
     const {
         sourceSystem,
         status,
@@ -428,6 +428,7 @@ export const filterTasks = (tasks, filters) => {
             if (!task.sourceSystem || task.sourceSystem !== sourceSystem) {
                 return false;
             }
+
         }
 
         // Status filter
@@ -435,6 +436,11 @@ export const filterTasks = (tasks, filters) => {
             // Special case: 'Completed' filter shows both 'Completed' and 'Not Done' (History view)
             if (status === 'Completed') {
                 const hasValidSubmission = task.submissionDate && task.submissionDate !== '—' && task.submissionDate !== '';
+
+                // Housekeeping strictly requires submissionDate for Completed tab
+                if (task.sourceSystem === 'housekeeping' && !hasValidSubmission) {
+                    return false;
+                }
 
                 if (!hasValidSubmission &&
                     task.status !== 'Completed' && task.status !== 'Not Done' &&
@@ -446,14 +452,13 @@ export const filterTasks = (tasks, filters) => {
             } else if (status === 'Pending') {
                 // Broad Fix: Show ALL tasks that have NOT been submitted yet in the Pending view
                 const isSubmitted = task.submissionDate && task.submissionDate !== '—' && task.submissionDate !== '';
-                
+
                 // If it's submitted, it definitely shouldn't be in Pending
                 if (isSubmitted) {
                     return false;
                 }
 
-                // If it's housekeeping and not submitted, we generally show it in pending
-                // unless it represents some other very specific filtered state.
+                // If it's housekeeping and not submitted, we show it in pending
                 return true;
             } else if (task.status !== status && task.originalStatus !== status) {
                 return false;

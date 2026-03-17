@@ -43,6 +43,7 @@ const PAGE_ACCESS_OPTIONS = [
     { value: "delegation", label: "Delegation" },
     { value: "all-task", label: "All Task" },
     { value: "hrmanager", label: "Task Verification" },
+    { value: "housekeeping-verify", label: "Housekeeping Verify" },
     { value: "mis-report", label: "MIS Report" },
     { value: "setting", label: "Setting" },
 ];

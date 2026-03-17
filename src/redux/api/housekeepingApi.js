@@ -41,14 +41,16 @@ export const getHousekeepingHistoryTasksAPI = (page = 1, filters = {}) => {
 };
 
 // Confirm Task (single)
-export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null, doerName2 = "", hod = "", status = "") => {
+export const confirmHousekeepingTaskAPI = (taskId, remark = "", imageFile = null, doerName2 = "", hod = "", status = "", attachment = "") => {
   const formData = new FormData();
 
   if (remark) formData.append("remark", remark);
   if (doerName2) formData.append("doer_name2", doerName2);
   if (hod) formData.append("hod", hod);
   if (status) formData.append("status", status);
-  formData.append("attachment", "confirmed");
+  if (attachment) formData.append("attachment", attachment);
+  
+  formData.append("submission_date", new Date().toISOString());
 
   if (imageFile instanceof File) {
     formData.append("image", imageFile);
